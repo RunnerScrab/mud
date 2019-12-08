@@ -41,14 +41,28 @@ void PrintIntBytes(unsigned int bytes)
 	    
 }
 
+struct TelOpts
+{
+
+};
+
+struct Client
+{
+     int sockfd;
+     struct sockaddr addr;
+     int tel_stream_state;
+     struct TelOpts tel_opts;
+     unsigned char tel_cmd_buffer[64];
+     unsigned char* input_buffer;
+};
+
 struct Server
 {
      int sockfd;
      struct sockaddr_in addr_in;
 };
 
-
-int Server_Initialize(struct Server* server, const char* szAddr, unsigned short port)
+int Server_Configure(struct Server* server, const char* szAddr, unsigned short port)
 {
      int result = 0, opts = 1;
      server->sockfd = socket(AF_INET, SOCK_STREAM, 0);
@@ -69,25 +83,34 @@ int Server_Initialize(struct Server* server, const char* szAddr, unsigned short 
      server->addr_in.sin_family = AF_INET;
      server->addr_in.sin_port = htons(port);
      inet_pton(AF_INET, szAddr, &(server->addr_in.sin_addr));
+     
+     return 0;
+}
 
-     result = bind(server->sockfd, (struct sockaddr*) &(server->addr_in),
+int Server_Initialize(struct Server* server, unsigned int backlog)
+{
+ 
+     int result = bind(server->sockfd, (struct sockaddr*) &(server->addr_in),
 	  sizeof(struct sockaddr_in));
      
      if(FAILURE(result))
      {
-	  ServerLog(SERVERLOG_ERROR, "Could not bind to %s:%d.", szAddr, port);
+	  ServerLog(SERVERLOG_ERROR, "Could not bind to %s:%d.",
+		    inet_ntoa(server->addr_in.sin_addr), ntohs(server->addr_in.sin_port));
 	  return -1;
      }
 
-     result = listen(server->sockfd, 64);
+     result = listen(server->sockfd, backlog);
 
      if(FAILURE(result))
      {
-	  ServerLog(SERVERLOG_ERROR, "Could not listen on %s:%d.", szAddr, port);
+	  ServerLog(SERVERLOG_ERROR, "Could not listen on %s:%d.",
+		    inet_ntoa(server->addr_in.sin_addr), ntohs(server->addr_in.sin_port));
 	  return -1;
      }
 
-     ServerLog(SERVERLOG_STATUS, "Server listening on %s:%d.", szAddr, port);
+     ServerLog(SERVERLOG_STATUS, "Server listening on %s:%d.",
+	       inet_ntoa(server->addr_in.sin_addr), ntohs(server->addr_in.sin_port));
      return 0;
 }
 
@@ -101,7 +124,8 @@ int Server_Teardown(struct Server* pServer)
 int main(int argc, char** argv)
 {
      struct Server server;
-     if(FAILURE(Server_Initialize(&server, "127.0.0.1", 9001)))
+     if(FAILURE(Server_Configure(&server, "127.0.0.1", 9001))
+	|| FAILURE(Server_Initialize(&server, 32)))
      {
 	  Server_Teardown(&server);
 	  return -1;

@@ -51,8 +51,6 @@ int main(void)
     Vector_Remove(&clients, iFound);
 
   
-  
-  
   for(i = 0; i < clients.fill_pointer; ++i)
     {
       struct TestClient* pClient = (struct TestClient*) Vector_At(&clients, i);
