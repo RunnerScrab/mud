@@ -40,18 +40,16 @@ int main(void)
       Vector_Push(&clients, (void*) TestClient_Create("Paul", i));
     }
   int searchkey = 16;
-  void* pFound = Vector_Find(&clients, &searchkey, compclients);
-  if(pFound)
-    Vector_Remove(&clients, pFound);
-  else
-    printf("Could not find key.\n");
+  size_t iFound = 0;
 
-    searchkey = 31;
-  pFound = Vector_Find(&clients, &searchkey, compclients);
-  if(pFound)
-    Vector_Remove(&clients, pFound);
-  else
-    printf("Could not find key.\n");
+  if(Vector_Find(&clients, &searchkey, compclients, &iFound) >= 0)
+    Vector_Remove(&clients, iFound);
+
+
+    searchkey = 30;
+  if(Vector_Find(&clients, &searchkey, compclients, &iFound) >= 0)
+    Vector_Remove(&clients, iFound);
+
   
   
   

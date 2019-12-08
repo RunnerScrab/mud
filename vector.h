@@ -13,8 +13,8 @@ void Vector_Destroy(struct Vector* pArray);
 
 int Vector_Push(struct Vector* pArray, void* pVal);
 void* Vector_At(struct Vector* pArray, size_t idx);
-void* Vector_Find(struct Vector* pArray, void* key,
-		  int (*comp)(void*, void*));
-int Vector_Remove(struct Vector* pArray, void* pVal);
+int Vector_Find(struct Vector* pArray, void* key,
+		int (*comp)(void*, void*), size_t* foundidx);
+int Vector_Remove(struct Vector* pArray, size_t idx);
 
 #endif

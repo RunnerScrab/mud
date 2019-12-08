@@ -36,7 +36,6 @@ int Vector_Push(struct Vector* pArray, void* pVal)
 	  pArray->pStorage = (void**) realloc(pArray->pStorage, sizeof(void*) * (pArray->size * 2));
 	  if(!pArray->pStorage)
 	  {
-	    // ServerLog(SERVERLOG_ERROR, "Allocation failed.\n");	       
 	       return -1;
 	  }
 	  pArray->size = pArray->size * 2;
@@ -57,45 +56,38 @@ void* Vector_At(struct Vector* pArray, size_t idx)
      }
 }
 
-void* Vector_Find(struct Vector* pArray, void* key,
-		int (*comp)(void*, void*))
+int Vector_Find(struct Vector* pArray, void* key,
+		int (*comp)(void*, void*), size_t* outkey)
 {
-  int i = 0, z = pArray->fill_pointer;
+  size_t i = 0, z = pArray->fill_pointer;
   //We can use a heap later if performance is unimpressive
   for(; i < z; ++i)
   {
     if(!comp(key, pArray->pStorage[i]))
       {
-	return pArray->pStorage[i];
+	*outkey = i;
+	return 0;
       }
   }
-  return 0;
+  return -1;
 }
 
-void swap(void** a, void** b)
+static void swap(void** a, void** b)
 {
   void* t = *b;
   *b = *a;
   *a = t;
 }
 
-int Vector_Remove(struct Vector* pArray, void* pVal)
+int Vector_Remove(struct Vector* pArray, size_t idx)
 {
-     int i = 0, z = pArray->fill_pointer;
-     for(; i < z; ++i)
-     {
-	  if(pArray->pStorage[i] == pVal)
-	  {
-	    // tfree(pVal); // i = 3, fill pointer 6, size 6
-	    //move pointers from indices 4 to (4 + (6 - 1 - 3)) to idx 3 to (3 + (6 - 1 - 3))
-	    swap(&(pArray->pStorage[i]), &(pArray->pStorage[z - 1]));
-	    tfree(pArray->pStorage[z - 1]);
-	    pArray->pStorage[z - 1] = 0;
-	    --(pArray->fill_pointer);
-	    //0 1 2 3 4 5|6
-	    return 0;
-	  }
-     }
-     return -1;
+    //Beats moving the whole chunk of memory,
+    //since we're going to be O(n) for search anyway
+  int z = pArray->fill_pointer;
+    swap(&(pArray->pStorage[idx]), &(pArray->pStorage[z - 1]));
+    tfree(pArray->pStorage[z - 1]);
+    pArray->pStorage[z - 1] = 0;
+    --(pArray->fill_pointer);
+    return 0;
 }
 
