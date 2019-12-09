@@ -95,14 +95,15 @@ void Heap_BuildMinHeap(struct Heap* pHeap)
     }
 }
 
-void Heap_Create(struct Heap* pHeap, int len)
+int Heap_Create(struct Heap* pHeap, int len)
 {
 	pHeap->capacity = len << 1;
 	pHeap->array = (struct HeapNode*) talloc(sizeof(struct HeapNode) * pHeap->capacity);
 	pHeap->len = len;
+	return (pHeap->array) ? 0 : -1;
 }
 
-void Heap_InitFromArray(struct Heap* pHeap, int* array, int len)
+int Heap_InitFromArray(struct Heap* pHeap, int* array, int len)
 {
   int i = 0;
   pHeap->capacity = (len << 1) + PARAMETER_K;
@@ -111,7 +112,10 @@ void Heap_InitFromArray(struct Heap* pHeap, int* array, int len)
     {
 	    HeapNode_Init(&(pHeap->array[i]), array[i], 0);
     }
+
   pHeap->len = len;
+
+  return (pHeap->array) ? 0 : -1;
 }
 
 void Heap_DecreaseKey(struct Heap* pHeap, int idx, struct HeapNode* pNode)
@@ -165,7 +169,7 @@ const struct HeapNode* Heap_GetMinimum(struct Heap* pHeap)
 	return &pHeap->array[0];
 }
 
-void Heap_MinInsert(struct Heap* pHeap, int key, void* data)
+int Heap_MinInsert(struct Heap* pHeap, int key, void* data)
 {
 
 	if(pHeap->len == pHeap->capacity)
@@ -173,11 +177,16 @@ void Heap_MinInsert(struct Heap* pHeap, int key, void* data)
 		pHeap->capacity = (pHeap->capacity << 1) + PARAMETER_K;
 		pHeap->array = (struct HeapNode*) realloc(pHeap->array,
 							pHeap->capacity * sizeof(struct HeapNode));
+		if(!pHeap->array)
+		{
+			return -1;
+		}
 	}
 
 	HeapNode_Init(&pHeap->array[pHeap->len], key, data);
 	++(pHeap->len);
 	Heap_DecreaseKey(pHeap, pHeap->len - 1, &pHeap->array[pHeap->len]);
+	return 0;
 }
 
 void Heap_Destroy(struct Heap* pHeap)

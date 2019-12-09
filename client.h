@@ -20,7 +20,7 @@ struct Client
 		int sockfd;
 		void* pData;
 	} ev_pkg;
-	
+
      struct sockaddr addr;
      int tel_stream_state;
      struct TelOpts tel_opts;

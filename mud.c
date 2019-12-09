@@ -1,3 +1,4 @@
+#include <sys/sysinfo.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
@@ -36,7 +37,21 @@ struct Server
 {
 	int sockfd;
 	struct sockaddr_in addr_in;
+	struct Vector clients;
+
+	unsigned int cpu_cores;
 };
+
+void Server_SendAllClients(struct Server* pServer, const char* msg)
+{
+	int idx = 0, z = Vector_Count(&(pServer->clients));
+	struct Client *pClient = 0;
+	for(; idx < z; ++idx)
+	{
+		pClient = (struct Client*) Vector_At(&(pServer->clients), idx);
+		send(pClient->ev_pkg.sockfd, msg, strlen(msg), 0);
+	}
+}
 
 int Server_Configure(struct Server* server, const char* szAddr, unsigned short port)
 {
@@ -65,7 +80,8 @@ int Server_Configure(struct Server* server, const char* szAddr, unsigned short p
 
 int Server_Initialize(struct Server* server, unsigned int backlog)
 {
-
+	server->cpu_cores = get_nprocs();
+	ServerLog(SERVERLOG_STATUS, "Server starting. %d cores detected.", server->cpu_cores);
 	int result = bind(server->sockfd, (struct sockaddr*) &(server->addr_in),
 			sizeof(struct sockaddr_in));
 
@@ -92,6 +108,7 @@ int Server_Initialize(struct Server* server, unsigned int backlog)
 
 int Server_Teardown(struct Server* pServer)
 {
+	Vector_Destroy(&(pServer->clients));
 	close(pServer->sockfd);
 	return 0;
 }
@@ -109,7 +126,6 @@ int main(int argc, char** argv)
 	struct sockaddr connecting_addr;
 	struct EvPkg server_epkg;
 	struct epoll_event server_event, clev, evlist[64];
-	struct Vector clientvector;
 	struct EvPkg* pEvPkg = 0;
 	struct Client* pConnectingClient = 0;
 	unsigned int addrlen = 0;
@@ -132,11 +148,21 @@ int main(int argc, char** argv)
 	server_event.events = EPOLLIN;
 	server_event.data.ptr = &server_epkg;
 
-	epoll_ctl(epfd, EPOLL_CTL_ADD, server.sockfd, &server_event);
+	if(FAILURE(epoll_ctl(epfd, EPOLL_CTL_ADD, server.sockfd, &server_event)))
+	{
+		ServerLog(SERVERLOG_ERROR, "FATAL: Could not add server socket to epoll wait list!");
+		Server_Teardown(&server);
+		return -1;
+	}
 
 	memset(evlist, 0, sizeof(struct epoll_event) * 64);
 
-	Vector_Create(&clientvector, 64, Client_Destroy);
+	if(FAILURE(Vector_Create(&(server.clients), 64, Client_Destroy)))
+	{
+		ServerLog(SERVERLOG_ERROR, "FATAL: Failed to allocate memory for client list!");
+		Server_Teardown(&server);
+		return -1;
+	}
 
 	for(;;)
 	{
@@ -166,7 +192,7 @@ int main(int argc, char** argv)
 				clev.events = EPOLLIN;
 				clev.data.ptr = &(pConnectingClient->ev_pkg);
 
-				Vector_Push(&clientvector, pConnectingClient);
+				Vector_Push(&(server.clients), pConnectingClient);
 
 				epoll_ctl(epfd, EPOLL_CTL_ADD, accepted_sock, &clev);
 			}
@@ -177,7 +203,7 @@ int main(int argc, char** argv)
 					256);
 				((struct Client*)pEvPkg->pData)->input_buffer[bytes_read] = 0;
 
-				printf("Received from %s\n",
+				printf("Received: %s\n",
 					((struct Client*)pEvPkg->pData)->input_buffer);
 				if(strstr(((struct Client*)pEvPkg->pData)->input_buffer, "kill"))
 				{
@@ -192,8 +218,9 @@ int main(int argc, char** argv)
 	}
 
 lbl_end_server_loop:
+	ServerLog(SERVERLOG_STATUS, "Server shutting down.");
+	Server_SendAllClients(&server, "Server going down!\r\n");
 
-	Vector_Destroy(&clientvector);
 	Server_Teardown(&server);
 	printf("%d unfreed allocations.\n", toutstanding_allocs());
 	return 0;

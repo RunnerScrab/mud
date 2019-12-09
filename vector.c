@@ -54,6 +54,12 @@ int Vector_Push(struct Vector* pArray, void* pVal)
      }
      pArray->pStorage[pArray->fill_pointer] = pVal;
      ++(pArray->fill_pointer);
+     return 0;
+}
+
+size_t Vector_Count(struct Vector* pArray)
+{
+	return pArray->fill_pointer;
 }
 
 void* Vector_At(struct Vector* pArray, size_t idx)

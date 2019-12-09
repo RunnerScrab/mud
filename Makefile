@@ -1,5 +1,5 @@
 CC = gcc
-FLAGS = -g
+FLAGS = -pthread -g
 
 mud: mud.o talloc.o vector.o heap.o client.o
 	$(CC) mud.o talloc.o vector.o heap.o client.o -o mud $(FLAGS)
@@ -11,8 +11,7 @@ vector.o: vector.c vector.h talloc.o
 	$(CC) -c vector.c $(FLAGS)
 heap.o: heap.c heap.h
 	$(CC) -c heap.c $(FLAGS)
-	
-	
+
 client.o: client.c client.h talloc.o
 	$(CC) -c client.c $(FLAGS)
 
