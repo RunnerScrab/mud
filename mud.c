@@ -31,16 +31,6 @@ void ServerLog(unsigned int code, const char* fmt, ...)
      va_end(arglist);
 }
 
-void PrintIntBytes(unsigned int bytes)
-{
-     printf("%d, %d, %d, %d\n",
-	    255 & (bytes >> 24),
-	    255 & (bytes >> 16),
-	    255 & (bytes >> 8),
-	    255 & (bytes));
-	    
-}
-
 struct TelOpts
 {
 
@@ -83,16 +73,16 @@ int Server_Configure(struct Server* server, const char* szAddr, unsigned short p
      server->addr_in.sin_family = AF_INET;
      server->addr_in.sin_port = htons(port);
      inet_pton(AF_INET, szAddr, &(server->addr_in.sin_addr));
-     
+
      return 0;
 }
 
 int Server_Initialize(struct Server* server, unsigned int backlog)
 {
- 
+
      int result = bind(server->sockfd, (struct sockaddr*) &(server->addr_in),
 	  sizeof(struct sockaddr_in));
-     
+
      if(FAILURE(result))
      {
 	  ServerLog(SERVERLOG_ERROR, "Could not bind to %s:%d.",
@@ -133,10 +123,48 @@ int main(int argc, char** argv)
 
      struct sockaddr connecting_addr;
      unsigned int addrlen = 0;
-     int accepted_sock = accept(server.sockfd, &connecting_addr, &addrlen);
+     int accepted_sock = 0;
+     int epfd = epoll_create(10);
+     int ready = 0;
+     int j = 0;
+     struct epoll_event ev;
+     ev.events = EPOLLIN;
+     ev.data.fd = server.sockfd;
+
+
+     epoll_ctl(epfd, EPOLL_CTL_ADD, server.sockfd, &ev);
+     struct epoll_event evlist[5];
+     for(;;){
+	 printf("epoll_wait()");
+	 ready = epoll_wait(epfd, evlist, 5, -1);
+	 printf("epoll_wait() returns %d\n", ready);
+	 if(ready == -1)
+	     continue;
+	 for(j = 0; j < ready; ++j){
+	     if(evlist[j].data.fd == server.sockfd){
+		 printf("Client connected.\n");
+		 accepted_sock = accept(server.sockfd, &connecting_addr, &addrlen);
+		 struct epoll_event clev;
+		 clev.events = EPOLLIN;
+		 clev.data.fd = accepted_sock;
+		 epoll_ctl(epfd, EPOLL_CTL_ADD, accepted_sock, &clev);
+		 }
+	     else
+		 {
+		     char buf[256] = {0};
+		     read(evlist[j].data.fd, buf, 256);
+		     printf("Received: %s\n", buf);
+
+		 }
+
+	     }
+
+
+     }
      printf("Accepted connection.\n");
      static char* msg = "Hello\r\n";
      send(accepted_sock, msg, strlen(msg), 0);
+
      Server_Teardown(&server);
      printf("%d unfreed allocations.\n", toutstanding_allocs());
      return 0;
