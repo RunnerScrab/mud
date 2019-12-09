@@ -2,13 +2,15 @@
 #define VECTOR_H_
 #include <stddef.h>
 
+//This does NOT preserve relative order of nodes
 struct Vector
 {
      void** pStorage;
      size_t size, fill_pointer;
+     void (*FreeNodeFn) (void*);
 };
 
-int Vector_Create(struct Vector* pArray, size_t initial_size);
+int Vector_Create(struct Vector* pArray, size_t initial_size, void (*FreeNodeFunc) (void*));
 void Vector_Destroy(struct Vector* pArray);
 
 int Vector_Push(struct Vector* pArray, void* pVal);

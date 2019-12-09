@@ -12,6 +12,7 @@
 
 #include "talloc.h"
 #include "vector.h"
+#include "client.h"
 
 #define SUCCESS(x) (x >= 0)
 #define FAILURE(x) (x < 0)
@@ -23,151 +24,177 @@ const int SERVERLOG_ERROR = 2;
 
 void ServerLog(unsigned int code, const char* fmt, ...)
 {
-     va_list arglist;
-     va_start(arglist, fmt);
-     printf("%s: ", g_ServerLogTypes[code]);
-     vprintf(fmt, arglist);
-     printf("\n");
-     va_end(arglist);
+	va_list arglist;
+	va_start(arglist, fmt);
+	printf("%s: ", g_ServerLogTypes[code]);
+	vprintf(fmt, arglist);
+	printf("\n");
+	va_end(arglist);
 }
-
-struct TelOpts
-{
-
-};
-
-struct Client
-{
-     int sockfd;
-     struct sockaddr addr;
-     int tel_stream_state;
-     struct TelOpts tel_opts;
-     unsigned char tel_cmd_buffer[64];
-     unsigned char* input_buffer;
-};
 
 struct Server
 {
-     int sockfd;
-     struct sockaddr_in addr_in;
+	int sockfd;
+	struct sockaddr_in addr_in;
 };
 
 int Server_Configure(struct Server* server, const char* szAddr, unsigned short port)
 {
-     int result = 0, opts = 1;
-     server->sockfd = socket(AF_INET, SOCK_STREAM, 0);
+	int result = 0, opts = 1;
+	server->sockfd = socket(AF_INET, SOCK_STREAM, 0);
 
-     if(FAILURE(server->sockfd))
-     {
-	  ServerLog(SERVERLOG_ERROR, "Could not create socket.");
-	  return -1;
-     }
+	if(FAILURE(server->sockfd))
+	{
+		ServerLog(SERVERLOG_ERROR, "Could not create socket.");
+		return -1;
+	}
 
-     if (FAILURE(setsockopt(server->sockfd, SOL_SOCKET, SO_REUSEADDR, &opts, sizeof(int))))
-     {
-	  ServerLog(SERVERLOG_ERROR, "Failed to set socket options.");
-	  return -1;
-     }
+	if (FAILURE(setsockopt(server->sockfd, SOL_SOCKET, SO_REUSEADDR, &opts, sizeof(int))))
+	{
+		ServerLog(SERVERLOG_ERROR, "Failed to set socket options.");
+		return -1;
+	}
 
-     memset(&(server->addr_in), 0, sizeof(struct sockaddr_in));
-     server->addr_in.sin_family = AF_INET;
-     server->addr_in.sin_port = htons(port);
-     inet_pton(AF_INET, szAddr, &(server->addr_in.sin_addr));
+	memset(&(server->addr_in), 0, sizeof(struct sockaddr_in));
+	server->addr_in.sin_family = AF_INET;
+	server->addr_in.sin_port = htons(port);
+	inet_pton(AF_INET, szAddr, &(server->addr_in.sin_addr));
 
-     return 0;
+	return 0;
 }
 
 int Server_Initialize(struct Server* server, unsigned int backlog)
 {
 
-     int result = bind(server->sockfd, (struct sockaddr*) &(server->addr_in),
-	  sizeof(struct sockaddr_in));
+	int result = bind(server->sockfd, (struct sockaddr*) &(server->addr_in),
+			sizeof(struct sockaddr_in));
 
-     if(FAILURE(result))
-     {
-	  ServerLog(SERVERLOG_ERROR, "Could not bind to %s:%d.",
-		    inet_ntoa(server->addr_in.sin_addr), ntohs(server->addr_in.sin_port));
-	  return -1;
-     }
+	if(FAILURE(result))
+	{
+		ServerLog(SERVERLOG_ERROR, "Could not bind to %s:%d.",
+			inet_ntoa(server->addr_in.sin_addr), ntohs(server->addr_in.sin_port));
+		return -1;
+	}
 
-     result = listen(server->sockfd, backlog);
+	result = listen(server->sockfd, backlog);
 
-     if(FAILURE(result))
-     {
-	  ServerLog(SERVERLOG_ERROR, "Could not listen on %s:%d.",
-		    inet_ntoa(server->addr_in.sin_addr), ntohs(server->addr_in.sin_port));
-	  return -1;
-     }
+	if(FAILURE(result))
+	{
+		ServerLog(SERVERLOG_ERROR, "Could not listen on %s:%d.",
+			inet_ntoa(server->addr_in.sin_addr), ntohs(server->addr_in.sin_port));
+		return -1;
+	}
 
-     ServerLog(SERVERLOG_STATUS, "Server listening on %s:%d.",
-	       inet_ntoa(server->addr_in.sin_addr), ntohs(server->addr_in.sin_port));
-     return 0;
+	ServerLog(SERVERLOG_STATUS, "Server listening on %s:%d.",
+		inet_ntoa(server->addr_in.sin_addr), ntohs(server->addr_in.sin_port));
+	return 0;
 }
 
 int Server_Teardown(struct Server* pServer)
 {
-     close(pServer->sockfd);
-     return 0;
+	close(pServer->sockfd);
+	return 0;
 }
 
 
 int main(int argc, char** argv)
 {
-     struct Server server;
-     if(FAILURE(Server_Configure(&server, "127.0.0.1", 9001))
-	|| FAILURE(Server_Initialize(&server, 32)))
-     {
-	  Server_Teardown(&server);
-	  return -1;
-     }
+	struct EvPkg
+	{
+		int sockfd;
+		void* pData;
+	};
 
-     struct sockaddr connecting_addr;
-     unsigned int addrlen = 0;
-     int accepted_sock = 0;
-     int epfd = epoll_create(10);
-     int ready = 0;
-     int j = 0;
-     struct epoll_event ev;
-     ev.events = EPOLLIN;
-     ev.data.fd = server.sockfd;
+	struct Server server;
+	struct sockaddr connecting_addr;
+	struct EvPkg server_epkg;
+	struct epoll_event server_event, clev, evlist[64];
+	struct Vector clientvector;
+	struct EvPkg* pEvPkg = 0;
+	struct Client* pConnectingClient = 0;
+	unsigned int addrlen = 0;
+	int accepted_sock = 0;
+	int epfd = epoll_create(10);
+	int ready = 0;
+	int loop_ctr = 0;
+	int bytes_read = 0;
+
+	if(FAILURE(Server_Configure(&server, "127.0.0.1", 9001))
+		|| FAILURE(Server_Initialize(&server, 32)))
+	{
+		Server_Teardown(&server);
+		return -1;
+	}
+
+	server_epkg.sockfd = server.sockfd;
+	server_epkg.pData = 0;
+
+	server_event.events = EPOLLIN;
+	server_event.data.ptr = &server_epkg;
+
+	epoll_ctl(epfd, EPOLL_CTL_ADD, server.sockfd, &server_event);
+
+	memset(evlist, 0, sizeof(struct epoll_event) * 64);
+
+	Vector_Create(&clientvector, 64, Client_Destroy);
+
+	for(;;)
+	{
+
+		ready = epoll_wait(epfd, evlist, 64, -1);
+
+		if(ready == -1)
+		{
+			continue;
+		}
+
+		for(loop_ctr = 0; loop_ctr < ready; ++loop_ctr)
+		{
+			pEvPkg = (evlist[loop_ctr].data.ptr);
+			if(pEvPkg->sockfd == server.sockfd)
+			{
+				ServerLog(SERVERLOG_STATUS, "Client connected.\n");
+				pConnectingClient = Client_Create();
+
+				accepted_sock = accept(server.sockfd,
+						&(pConnectingClient->addr), &addrlen);
+
+				pConnectingClient->ev_pkg.sockfd = accepted_sock;
+				pConnectingClient->ev_pkg.pData = pConnectingClient;
 
 
-     epoll_ctl(epfd, EPOLL_CTL_ADD, server.sockfd, &ev);
-     struct epoll_event evlist[5];
-     for(;;){
-	 printf("epoll_wait()");
-	 ready = epoll_wait(epfd, evlist, 5, -1);
-	 printf("epoll_wait() returns %d\n", ready);
-	 if(ready == -1)
-	     continue;
-	 for(j = 0; j < ready; ++j){
-	     if(evlist[j].data.fd == server.sockfd){
-		 printf("Client connected.\n");
-		 accepted_sock = accept(server.sockfd, &connecting_addr, &addrlen);
-		 struct epoll_event clev;
-		 clev.events = EPOLLIN;
-		 clev.data.fd = accepted_sock;
-		 epoll_ctl(epfd, EPOLL_CTL_ADD, accepted_sock, &clev);
-		 }
-	     else
-		 {
-		     char buf[256] = {0};
-		     read(evlist[j].data.fd, buf, 256);
-		     printf("Received: %s\n", buf);
+				clev.events = EPOLLIN;
+				clev.data.ptr = &(pConnectingClient->ev_pkg);
 
-		 }
+				Vector_Push(&clientvector, pConnectingClient);
 
-	     }
+				epoll_ctl(epfd, EPOLL_CTL_ADD, accepted_sock, &clev);
+			}
+			else
+			{
+				bytes_read = read(pEvPkg->sockfd,
+					((struct Client*)pEvPkg->pData)->input_buffer,
+					256);
+				((struct Client*)pEvPkg->pData)->input_buffer[bytes_read] = 0;
+
+				printf("Received from %s\n",
+					((struct Client*)pEvPkg->pData)->input_buffer);
+				if(strstr(((struct Client*)pEvPkg->pData)->input_buffer, "kill"))
+				{
+					goto lbl_end_server_loop;
+				}
+
+			}
+
+		}
 
 
-     }
-     printf("Accepted connection.\n");
-     static char* msg = "Hello\r\n";
-     send(accepted_sock, msg, strlen(msg), 0);
+	}
 
-     Server_Teardown(&server);
-     printf("%d unfreed allocations.\n", toutstanding_allocs());
-     return 0;
+lbl_end_server_loop:
+
+	Vector_Destroy(&clientvector);
+	Server_Teardown(&server);
+	printf("%d unfreed allocations.\n", toutstanding_allocs());
+	return 0;
 }
-
-

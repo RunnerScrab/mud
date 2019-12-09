@@ -6,7 +6,7 @@
 #include <stdio.h>
 #include <string.h>
 
-int Vector_Create(struct Vector* pArray, size_t initial_size)
+int Vector_Create(struct Vector* pArray, size_t initial_size, void (*FreeNodeFunc) (void*))
 {
      pArray->pStorage = talloc(sizeof(void*) * initial_size);
      if(!pArray->pStorage)
@@ -15,16 +15,28 @@ int Vector_Create(struct Vector* pArray, size_t initial_size)
      }
      pArray->size = initial_size;
      pArray->fill_pointer = 0;
+     pArray->FreeNodeFn = FreeNodeFunc;
      return 0;
 }
 
 void Vector_Destroy(struct Vector* pArray)
 {
   int i = 0;
-  for(; i < pArray->fill_pointer; ++i)
-    {
-	tfree(pArray->pStorage[i]);
-    }
+  if(pArray->FreeNodeFn)
+  {
+	  //We have been supplied a destructor for these nodes
+	  for(; i < pArray->fill_pointer; ++i)
+	  {
+		  pArray->FreeNodeFn(pArray->pStorage[i]);
+	  }
+  }
+  else
+  {
+	  for(; i < pArray->fill_pointer; ++i)
+	  {
+		  tfree(pArray->pStorage[i]);
+	  }
+  }
   tfree(pArray->pStorage);
   pArray->pStorage = 0;
 }
@@ -85,7 +97,16 @@ int Vector_Remove(struct Vector* pArray, size_t idx)
     //since we're going to be O(n) for search anyway
   int z = pArray->fill_pointer;
     swap(&(pArray->pStorage[idx]), &(pArray->pStorage[z - 1]));
-    tfree(pArray->pStorage[z - 1]);
+
+    if(pArray->FreeNodeFn)
+    {
+	    pArray->FreeNodeFn(pArray->pStorage[z - 1]);
+    }
+    else
+    {
+	tfree(pArray->pStorage[z - 1]);
+    }
+
     pArray->pStorage[z - 1] = 0;
     --(pArray->fill_pointer);
     return 0;
