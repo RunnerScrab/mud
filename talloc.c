@@ -20,3 +20,13 @@ int toutstanding_allocs()
 {
   return g_allocs - g_frees;
 }
+
+int tget_frees()
+{
+	return g_frees;
+}
+
+int tget_allocs()
+{
+	return g_allocs;
+}

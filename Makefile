@@ -26,6 +26,10 @@ testvector.o: testvector.c
 testvector: testvector.o mud
 	$(CC) testvector.o talloc.o vector.o -o testvector $(FLAGS)
 
+test_threadpool: test_threadpool.o talloc.o heap.o vector.o
+	$(CC) test_threadpool.o talloc.o heap.o vector.o -o test_threadpool $(FLAGS)
+test_threadpool.o: test_threadpool.c
+	$(CC) -c test_threadpool.c $(FLAGS)
 
 clean:
 	rm -f mud *.o a.out *~

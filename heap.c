@@ -3,6 +3,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #define PARAMETER_K 2 //Parameter for heap reallocation if usage crosses (capacity / 2) -/+ K in either direction
 
@@ -99,7 +100,8 @@ int Heap_Create(struct Heap* pHeap, int len)
 {
 	pHeap->capacity = len << 1;
 	pHeap->array = (struct HeapNode*) talloc(sizeof(struct HeapNode) * pHeap->capacity);
-	pHeap->len = len;
+	memset(pHeap->array, 0, sizeof(struct HeapNode) * pHeap->capacity);
+	pHeap->len = 0;
 	return (pHeap->array) ? 0 : -1;
 }
 
@@ -108,6 +110,7 @@ int Heap_InitFromArray(struct Heap* pHeap, int* array, int len)
   int i = 0;
   pHeap->capacity = (len << 1) + PARAMETER_K;
   pHeap->array = (struct HeapNode*) talloc(sizeof(struct HeapNode) * pHeap->capacity);
+  memset(pHeap->array, 0, sizeof(struct HeapNode) * pHeap->capacity);
   for(; i < len; ++i)
     {
 	    HeapNode_Init(&(pHeap->array[i]), array[i], 0);
@@ -162,6 +165,10 @@ void Heap_ExtractMinimum(struct Heap* pHeap, struct HeapNode* pOut)
 
 		min_heapify(pHeap, 0);
 	}
+	else
+	{
+		memset(pOut, 0, sizeof(struct HeapNode));
+	}
 }
 
 const struct HeapNode* Heap_GetMinimum(struct Heap* pHeap)
@@ -171,7 +178,6 @@ const struct HeapNode* Heap_GetMinimum(struct Heap* pHeap)
 
 int Heap_MinInsert(struct Heap* pHeap, int key, void* data)
 {
-
 	if(pHeap->len == pHeap->capacity)
 	{
 		pHeap->capacity = (pHeap->capacity << 1) + PARAMETER_K;
@@ -185,7 +191,7 @@ int Heap_MinInsert(struct Heap* pHeap, int key, void* data)
 
 	HeapNode_Init(&pHeap->array[pHeap->len], key, data);
 	++(pHeap->len);
-	Heap_DecreaseKey(pHeap, pHeap->len - 1, &pHeap->array[pHeap->len]);
+	Heap_DecreaseKey(pHeap, pHeap->len - 1, &pHeap->array[pHeap->len - 1]);
 	return 0;
 }
 
@@ -195,4 +201,3 @@ void Heap_Destroy(struct Heap* pHeap)
   tfree(pHeap->array);
   pHeap->len = 0;
 }
-
