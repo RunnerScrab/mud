@@ -9,7 +9,6 @@
 
 static void* ThreadPool_WorkerThreadFunc(void* pArg)
 {
-	printf("Thread %d starting\n", pthread_self());
 	struct ThreadPool* pPool = (struct ThreadPool*) pArg;
 	struct HeapNode min;
 	while(1)
@@ -20,7 +19,6 @@ static void* ThreadPool_WorkerThreadFunc(void* pArg)
 			if(0 != pthread_cond_wait(&(pPool->wakecond), &(pPool->prio_queue_mutex)))
 			{
 				//Something screwed up
-				printf("Fuck up\n");
 				pthread_mutex_unlock(&(pPool->prio_queue_mutex));
 				return 0;
 			}
@@ -35,7 +33,6 @@ static void* ThreadPool_WorkerThreadFunc(void* pArg)
 		Heap_ExtractMinimum(&(pPool->prio_queue), &min);
 		// min is now a copy, and the original space on the queue is effectively released
 
-		printf("Thread %d - Got task with priority %d!\n", pthread_self(), min.key);
 
 		pthread_mutex_unlock(&(pPool->prio_queue_mutex));
 
@@ -46,19 +43,13 @@ static void* ThreadPool_WorkerThreadFunc(void* pArg)
 		{
 			if(pTask->taskfn)
 			{
-				printf("Calling task\n");
 				pTask->taskfn(pTask->pArgs);
 			}
 
 			if(pTask->releasefn)
 			{
-				printf("Calling task free.\n");
 				pTask->releasefn(pTask);
 				pTask = 0;
-			}
-			else
-			{
-				printf("Not calling task free?");
 			}
 		}
 
@@ -66,7 +57,6 @@ static void* ThreadPool_WorkerThreadFunc(void* pArg)
 	}
 
 	pthread_mutex_unlock(&(pPool->prio_queue_mutex));
-	printf("Thread %d exiting.\n", pthread_self());
 	return 0;
 }
 
@@ -83,8 +73,9 @@ void ThreadPool_Destroy(struct ThreadPool* tp)
 	int idx = 0;
 	for(; idx < tp->thread_count; ++idx)
 	{
-		//This is not how threads should normally terminate!
 	       	pthread_join(tp->pThreads[idx], 0);
+		//TODO: Add some pthread_cancel logic if a thread refuses to join
+		//in a timely fashion
 	}
 
 	pthread_mutex_lock(&(tp->prio_queue_mutex));

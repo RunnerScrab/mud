@@ -220,16 +220,14 @@ int main(int argc, char** argv)
 			}
 			else
 			{
-				printf("Attempting a read.\n");
+
 				memset(((struct Client*)pEvPkg->pData)->input_buffer, 0, sizeof(char) * 256);
-				ssize_t bytes_read = read(pEvPkg->sockfd,
+				bytes_read = read(pEvPkg->sockfd,
 						((struct Client*)pEvPkg->pData)->input_buffer,
 						256);
 
-				printf("Read: %s\n", ((struct Client*)pEvPkg->pData)->input_buffer);
 				if(bytes_read > 0)
 				{
-					printf("Got input!");
 					((struct Client*)pEvPkg->pData)->input_buffer[bytes_read] = 0;
 
 					char* msgcpy = talloc(sizeof(char) * 256);
@@ -256,11 +254,9 @@ int main(int argc, char** argv)
 					}
 					else
 					{
-						printf("Vector count %d\n", Vector_Count(&(server.clients)));
 						Vector_Remove(&(server.clients), foundkey);
-						printf("Vector count %d\n", Vector_Count(&(server.clients)));
 						close(sock);
-						epoll_ctl(epfd, EPOLL_CTL_DEL, sock, 0);
+						epoll_ctl(epfd, EPOLL_CTL_DEL, sock, 0); //This should actually be done automatically, according to man epoll
 					}
 
 				}
