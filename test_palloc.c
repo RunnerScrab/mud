@@ -7,7 +7,7 @@
 struct FreeNode
 {
 	void* pFreeData;
-	struct FreeNode* next;
+	struct FreeNode* pNext;
 };
 
 struct AllocPool
@@ -21,43 +21,33 @@ struct AllocPool
 
 void Pool_Init(struct AllocPool* pool, ssize_t elements, ssize_t element_size)
 {
-	int idx = 0;
-	void* pBase = 0;
+	unsigned int idx = 0;
+
 	pool->pPool = (void*) talloc(elements * element_size);
 	pool->elements = elements;
 	pool->block_size = element_size;
-	pBase = pool->pPool;
 
-	memset(pool->pPool, 0, elements * element_size);
-	struct FreeNode* p = pBase;
-	pool->pHead = pBase;
-	printf("%x\n", p);
+	struct FreeNode* p = pool->pPool;
+	pool->pHead = p;
+
 	for(;idx < elements - 1; ++idx)
 	{
-		p->pFreeData = ((struct FreeNode*) pBase + (idx * element_size));
-	        p->next = ((struct FreeNode*) pBase + ((idx + 1) * element_size));
-		p = p->next;
-
+		p->pFreeData = ((struct FreeNode*) pool->pHead + (idx * element_size));
+	        p->pNext = ((struct FreeNode*) pool->pHead + ((idx + 1) * element_size));
+		p = p->pNext;
 	}
 
 	p->pFreeData = p;
-	p->next = 0;
+	p->pNext = 0;
 	pool->pHead = pool->pPool;
 	p = pool->pHead;
-
-	for(; p; p = p->next)
-	{
-		printf("%x, %x\n", p->pFreeData, p->next);
-
-	}
-
 
 }
 
 void* Pool_Alloc(struct AllocPool* pool)
 {
 	void* returnme = pool->pHead->pFreeData;
-	pool->pHead = ((struct FreeNode*)returnme)->next;
+	pool->pHead = ((struct FreeNode*)returnme)->pNext;
 	return returnme;
 }
 
@@ -71,7 +61,7 @@ void Pool_Destroy(struct AllocPool* pool)
 void Pool_Free(struct AllocPool* pool, void* pFreeMe)
 {
   ((struct FreeNode*) pFreeMe)->pFreeData = pFreeMe;
-  ((struct FreeNode*) pFreeMe)->next = pool->pHead;
+  ((struct FreeNode*) pFreeMe)->pNext = pool->pHead;
   pool->pHead = pFreeMe;
 }
 

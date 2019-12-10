@@ -29,6 +29,11 @@ testvector.o: testvector.c
 testvector: testvector.o mud
 	$(CC) testvector.o talloc.o vector.o -o testvector $(FLAGS)
 
+test_palloc: test_palloc.o talloc.o
+	$(CC) test_palloc.o talloc.o -o test_palloc $(FLAGS)
+test_palloc.o: test_palloc.c
+	$(CC) -c test_palloc.c $(FLAGS)
+
 test_threadpool: test_threadpool.o talloc.o heap.o vector.o threadpool.o
 	$(CC) test_threadpool.o threadpool.o talloc.o heap.o vector.o -o test_threadpool $(FLAGS)
 
