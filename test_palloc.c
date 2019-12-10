@@ -4,144 +4,128 @@
 #include <stdlib.h>
 
 
-struct FreeNode
+struct InplaceFreeNode
 {
-	void* pFreeData;
-	struct FreeNode* pNext;
+	void* nodedata;
+	struct InplaceFreeNode* nextinplacenode;
 };
 
 struct AllocPool
 {
-	struct FreeNode* pData;
-	ssize_t element_size;
-	ssize_t elements;
+	struct PoolMemBlock
+	{
+		void* datablock;
+	} *pool_blocks;
 
-	struct FreeNode* pHead;
+	ssize_t element_size, element_count;
+	struct InplaceFreeNode* headnode;
+	ssize_t block_count;
 };
 
-void Pool_InitFreeData(struct FreeNode* p, ssize_t elements, ssize_t element_size)
+void PoolMemBlock_Init(struct PoolMemBlock* pMemBlock, ssize_t element_count, ssize_t element_size)
 {
-	/*
-	 p points to the root node in the linked list, which is to be
-	 allocated /in/ the memory of the free pool
-	*/
+	pMemBlock->datablock = (void*) talloc(element_count * element_size);
+
 	ssize_t idx = 0;
-	struct FreeNode* pBase = p;
-
-	for(;idx < elements - 1; ++idx)
+	struct InplaceFreeNode* pFreeNode = (struct InplaceFreeNode*) pMemBlock->datablock;
+	for(; idx < element_count - 1; ++idx)
 	{
-		p->pFreeData = ((struct FreeNode*) pBase
-				+ (idx * element_size));
-	        p->pNext = ((struct FreeNode*) pBase
-			+ ((idx + 1) * element_size));
-		p = p->pNext;
+		pFreeNode->nodedata = pFreeNode;
+		pFreeNode->nextinplacenode = pFreeNode + ((idx + 1) * element_size);
+		pFreeNode = pFreeNode->nextinplacenode;
 	}
 
-	p->pFreeData = p;
-	p->pNext = 0ull;
+	pFreeNode->nodedata = pFreeNode;
+	pFreeNode->nextinplacenode = ((void*) 0);
 }
 
-void Pool_Init(struct AllocPool* pool, ssize_t elements, ssize_t element_size)
+void AllocPool_Init(struct AllocPool* pAllocPool, ssize_t element_count,
+		ssize_t element_size)
 {
-	pool->pData = (struct FreeNode*) talloc(sizeof(struct FreeNode));
-
-	pool->pData->pFreeData = (void*) talloc(elements * element_size);
-	pool->pData->pNext = 0;
-
-	pool->elements = elements;
-	pool->element_size = element_size;
-
-	pool->pHead = pool->pData->pFreeData;
-
-	Pool_InitFreeData(pool->pHead, elements, element_size);
+	pAllocPool->element_size = element_size;
+	pAllocPool->element_count = element_count;
+	pAllocPool->pool_blocks = (struct PoolMemBlock*) talloc(sizeof(struct PoolMemBlock));
+	PoolMemBlock_Init(pAllocPool->pool_blocks, element_count, element_size);
+	pAllocPool->block_count = 1;
+	pAllocPool->headnode = pAllocPool->pool_blocks[0].datablock;
 }
 
-void* Pool_ItemAlloc(struct AllocPool* pool)
+void AllocPool_AddBlock(struct AllocPool* pAllocPool)
 {
-	if(pool->pHead)
+	if(!pAllocPool->headnode)
 	{
-		void* returnme = pool->pHead->pFreeData;
-		pool->pHead = pool->pHead->pNext;
-		return returnme;
-	}
-	else
-	{
-		//If we have run out of free nodes, allocate a new data block
-		struct FreeNode** pBlock = &(pool->pData);
-		for(; *pBlock; pBlock = &((*pBlock)->pNext));
-		*pBlock = (struct FreeNode*) talloc(sizeof(struct FreeNode));
-		(*pBlock)->pNext = 0;
-		(*pBlock)->pFreeData = (void*) talloc(pool->elements * 2 * pool->element_size);
+		pAllocPool->pool_blocks = (struct PoolMemBlock*) realloc(pAllocPool->pool_blocks,
+									(pAllocPool->block_count + 1) *
+									sizeof(struct PoolMemBlock));
+		PoolMemBlock_Init(&pAllocPool->pool_blocks[pAllocPool->block_count],
+				pAllocPool->element_count, pAllocPool->element_size);
+		++(pAllocPool->block_count);
 
-		pool->pHead = (*pBlock)->pFreeData;
-		Pool_InitFreeData(pool->pHead, pool->elements * 2, pool->element_size);
-		pool->elements += pool->elements * 2;
-
-		return Pool_ItemAlloc(pool);
-	}
-
-}
-
-void Pool_Destroy(struct AllocPool* pool)
-{
-	struct FreeNode* p = pool->pData, *t = 0;
-	for(;p;)
-	{
-		t = p->pNext;
-		tfree(p->pFreeData);
-		tfree(p);
-		p = t;
-	}
-
-	pool->pData = 0;
-	pool->pHead = 0;
-}
-
-void Pool_ItemFree(struct AllocPool* pool, void* pFreeMe)
-{
-	if(pFreeMe)
-	{
-		((struct FreeNode*) pFreeMe)->pFreeData = pFreeMe;
-		((struct FreeNode*) pFreeMe)->pNext = pool->pHead;
-		pool->pHead = pFreeMe;
+		pAllocPool->headnode = pAllocPool->pool_blocks[pAllocPool->block_count - 1].datablock;
 	}
 }
 
-struct TestDatum
+void* AllocPool_Alloc(struct AllocPool* pAllocPool)
 {
-	int value1, value2, value3, value4;
+	struct InplaceFreeNode* returnval = pAllocPool->headnode;
+	pAllocPool->headnode = returnval->nextinplacenode;
+	if(!pAllocPool->headnode)
+	{
+		AllocPool_AddBlock(pAllocPool);
+	}
+	return returnval->nodedata;
+}
+
+void AllocPool_Free(struct AllocPool* pAllocPool, void* pFreeMe)
+{
+	//Once pFreeMe has been used (which it must be assumed to have been),
+	//the nodedata and nextinplacenode have already been overwritten with data
+	((struct InplaceFreeNode*)pFreeMe)->nextinplacenode = pAllocPool->headnode;
+	((struct InplaceFreeNode*)pFreeMe)->nodedata = pFreeMe;
+	pAllocPool->headnode = pFreeMe;
+}
+
+void AllocPool_Destroy(struct AllocPool* pAllocPool)
+{
+	ssize_t idx = 0;
+	for(; idx < pAllocPool->block_count; ++idx)
+	{
+		tfree(pAllocPool->pool_blocks[idx].datablock);
+	}
+	tfree(pAllocPool->pool_blocks);
+}
+
+
+struct TestData
+{
+	int val1, val2, val3, val4;
 };
 
 int main(void)
 {
-	printf("Size of TestDatum: %d\nSize of FreeNode: %d\n",
-		sizeof(struct TestDatum), sizeof(struct FreeNode));
 	struct AllocPool pool;
-	Pool_Init(&pool, 10, sizeof(struct TestDatum));
-	int i = 0, j = 0;
-	struct TestDatum* data[20];
-	for(; j < 2; ++j)
+	AllocPool_Init(&pool, 10, sizeof(struct TestData));
+	struct TestData* data[20];
+	unsigned int i = 0, j = 0;
+        for(j = 0; j < 3; ++j)
 	{
 		for(i = 0; i < 20; ++i)
 		{
-			data[i] = Pool_ItemAlloc(&pool);
-			data[i]->value1 = 1 + i*2;
-			data[i]->value2 = 2 + i*2;
-			data[i]->value3 = 3 + i*2;
-			data[i]->value4 = 4 + i*2;
+			data[i] = AllocPool_Alloc(&pool);
+			data[i]->val1 = i;
+			data[i]->val2 = i;
+			data[i]->val3 = i;
+			data[i]->val4 = i;
 		}
+
 		for(i = 0; i < 20; ++i)
 		{
-			printf("%d %d %d %d\n", data[i]->value1,
-				data[i]->value2,
-				data[i]->value3,
-				data[i]->value4);
-			Pool_ItemFree(&pool, data[i]);
+			printf("%d %d %d %d\n", data[i]->val1,
+				data[i]->val2, data[i]->val3, data[i]->val4);
+			AllocPool_Free(&pool, data[i]);
 		}
-
 	}
-
-	Pool_Destroy(&pool);
-	printf("%d outstanding allocations.\n", toutstanding_allocs());
+	AllocPool_Destroy(&pool);
+	printf("%d outstanding allocs\n", toutstanding_allocs());
 	return 0;
 }
