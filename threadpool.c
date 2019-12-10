@@ -20,7 +20,9 @@ static void* ThreadPool_WorkerThreadFunc(void* pArg)
 			if(0 != pthread_cond_wait(&(pPool->wakecond), &(pPool->prio_queue_mutex)))
 			{
 				//Something screwed up
-				printf("Fuck\n");
+				printf("Fuck up\n");
+				pthread_mutex_unlock(&(pPool->prio_queue_mutex));
+				return 0;
 			}
 		}
 
@@ -30,8 +32,9 @@ static void* ThreadPool_WorkerThreadFunc(void* pArg)
 		}
 
 
-		// min is now a copy, and the original space on the queue is effectively released
 		Heap_ExtractMinimum(&(pPool->prio_queue), &min);
+		// min is now a copy, and the original space on the queue is effectively released
+
 		printf("Thread %d - Got task with priority %d!\n", pthread_self(), min.key);
 
 		pthread_mutex_unlock(&(pPool->prio_queue_mutex));
@@ -43,13 +46,19 @@ static void* ThreadPool_WorkerThreadFunc(void* pArg)
 		{
 			if(pTask->taskfn)
 			{
+				printf("Calling task\n");
 				pTask->taskfn(pTask->pArgs);
 			}
 
 			if(pTask->releasefn)
 			{
+				printf("Calling task free.\n");
 				pTask->releasefn(pTask);
 				pTask = 0;
+			}
+			else
+			{
+				printf("Not calling task free?");
 			}
 		}
 
@@ -140,6 +149,7 @@ int ThreadPool_Init(struct ThreadPool* tp, unsigned int cores)
 
 static void* DefaultTaskFree(void* args)
 {
+	printf("Task free called.\n");
 	struct ThreadTask* pTask = (struct ThreadTask*) args;
 	tfree(pTask->pArgs);
 	tfree(pTask);
@@ -153,11 +163,11 @@ int ThreadPool_AddTask(struct ThreadPool* tp, void* (*task) (void*), int priorit
 	pTask->pArgs = args;
 	pTask->releasefn = DefaultTaskFree;
 
-	if(Heap_MinInsert(&(tp->prio_queue), priority, pTask) < 0)
-	{
-		printf("Allocation FAILED.\n");
-		return -1;
-	}
+	int insresult = 0;
+	pthread_mutex_lock(&(tp->prio_queue_mutex));
+	insresult = Heap_MinInsert(&(tp->prio_queue), priority, pTask);
+	pthread_mutex_unlock(&(tp->prio_queue_mutex));
+	pthread_cond_signal(&(tp->wakecond));
 
-	return 0;
+	return insresult;
 }

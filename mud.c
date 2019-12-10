@@ -14,6 +14,8 @@
 #include "talloc.h"
 #include "vector.h"
 #include "client.h"
+#include "threadpool.h"
+
 
 #define SUCCESS(x) (x >= 0)
 #define FAILURE(x) (x < 0)
@@ -39,8 +41,15 @@ struct Server
 	struct sockaddr_in addr_in;
 	struct Vector clients;
 
+	struct ThreadPool thread_pool;
 	unsigned int cpu_cores;
 };
+
+int CompClientSock(void* key, void* p)
+{
+	//THe Vector class and this is awful
+	return (*((int*) key) - ((struct Client*) p)->ev_pkg.sockfd);
+}
 
 void Server_SendAllClients(struct Server* pServer, const char* msg)
 {
@@ -81,7 +90,14 @@ int Server_Configure(struct Server* server, const char* szAddr, unsigned short p
 int Server_Initialize(struct Server* server, unsigned int backlog)
 {
 	server->cpu_cores = get_nprocs();
+	if(FAILURE(ThreadPool_Init(&(server->thread_pool), server->cpu_cores)))
+	{
+		ServerLog(SERVERLOG_ERROR, "FAILED TO INIT THREAD POOL!");
+		return -1;
+	}
+
 	ServerLog(SERVERLOG_STATUS, "Server starting. %d cores detected.", server->cpu_cores);
+
 	int result = bind(server->sockfd, (struct sockaddr*) &(server->addr_in),
 			sizeof(struct sockaddr_in));
 
@@ -108,11 +124,17 @@ int Server_Initialize(struct Server* server, unsigned int backlog)
 
 int Server_Teardown(struct Server* pServer)
 {
+//	ThreadPool_Stop(&(pServer->thread_pool));
+	ThreadPool_Destroy(&(pServer->thread_pool));
 	Vector_Destroy(&(pServer->clients));
 	close(pServer->sockfd);
 	return 0;
 }
 
+void* TestHandleClientInput(void* arg)
+{
+	printf("Received: %s\n", (char*) arg);
+}
 
 int main(int argc, char** argv)
 {
@@ -133,7 +155,7 @@ int main(int argc, char** argv)
 	int epfd = epoll_create(10);
 	int ready = 0;
 	int loop_ctr = 0;
-	int bytes_read = 0;
+	ssize_t bytes_read = 0;
 
 	if(FAILURE(Server_Configure(&server, "127.0.0.1", 9001))
 		|| FAILURE(Server_Initialize(&server, 32)))
@@ -198,16 +220,49 @@ int main(int argc, char** argv)
 			}
 			else
 			{
-				bytes_read = read(pEvPkg->sockfd,
-					((struct Client*)pEvPkg->pData)->input_buffer,
-					256);
-				((struct Client*)pEvPkg->pData)->input_buffer[bytes_read] = 0;
+				printf("Attempting a read.\n");
+				memset(((struct Client*)pEvPkg->pData)->input_buffer, 0, sizeof(char) * 256);
+				ssize_t bytes_read = read(pEvPkg->sockfd,
+						((struct Client*)pEvPkg->pData)->input_buffer,
+						256);
 
-				printf("Received: %s\n",
-					((struct Client*)pEvPkg->pData)->input_buffer);
-				if(strstr(((struct Client*)pEvPkg->pData)->input_buffer, "kill"))
+				printf("Read: %s\n", ((struct Client*)pEvPkg->pData)->input_buffer);
+				if(bytes_read > 0)
 				{
-					goto lbl_end_server_loop;
+					printf("Got input!");
+					((struct Client*)pEvPkg->pData)->input_buffer[bytes_read] = 0;
+
+					char* msgcpy = talloc(sizeof(char) * 256);
+					memcpy(msgcpy, ((struct Client*)pEvPkg->pData)->input_buffer, 256 * sizeof(char));
+					if(FAILURE(ThreadPool_AddTask(&(server.thread_pool),
+										TestHandleClientInput, 1, msgcpy)))
+					{
+						ServerLog(SERVERLOG_ERROR, "Failed to add threadpool task!");
+					}
+
+					if(strstr(((struct Client*)pEvPkg->pData)->input_buffer, "kill"))
+					{
+						goto lbl_end_server_loop;
+					}
+				}
+				else
+				{
+					int sock = pEvPkg->sockfd;
+					ServerLog(SERVERLOG_STATUS, "Client disconnected.");
+					size_t foundkey = 0;
+					if(FAILURE(Vector_Find(&(server.clients), &sock, CompClientSock, &foundkey)))
+					{
+						ServerLog(SERVERLOG_DEBUG, "DEBUG: Couldn't find client in vector!");
+					}
+					else
+					{
+						printf("Vector count %d\n", Vector_Count(&(server.clients)));
+						Vector_Remove(&(server.clients), foundkey);
+						printf("Vector count %d\n", Vector_Count(&(server.clients)));
+						close(sock);
+						epoll_ctl(epfd, EPOLL_CTL_DEL, sock, 0);
+					}
+
 				}
 
 			}

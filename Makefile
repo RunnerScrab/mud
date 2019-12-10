@@ -1,8 +1,8 @@
 CC = gcc
 FLAGS = -pthread -g
 
-mud: mud.o talloc.o vector.o heap.o client.o
-	$(CC) mud.o talloc.o vector.o heap.o client.o -o mud $(FLAGS)
+mud: mud.o talloc.o vector.o heap.o client.o threadpool.o
+	$(CC) mud.o threadpool.o talloc.o vector.o heap.o client.o -o mud $(FLAGS)
 mud.o: mud.c
 	$(CC) -c mud.c $(FLAGS)
 talloc.o: talloc.c talloc.h

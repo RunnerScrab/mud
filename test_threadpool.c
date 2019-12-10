@@ -21,14 +21,13 @@ int main(void)
 	}
 
 	int i = 0;
-	pthread_mutex_lock(&(tp.prio_queue_mutex));
-	for(; i < 2000000; ++i)
+
+	for(; i < 200; ++i)
 	{
 		int* argint = talloc(sizeof(int));
 		*argint = i;
 		ThreadPool_AddTask(&tp, TestTask, 1, argint);
 	}
-	pthread_mutex_unlock(&(tp.prio_queue_mutex));
 
 	scanf("%c", &ch);
 
