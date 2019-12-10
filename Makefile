@@ -12,6 +12,9 @@ vector.o: vector.c vector.h talloc.o
 heap.o: heap.c heap.h
 	$(CC) -c heap.c $(FLAGS)
 
+threadpool.o: threadpool.c threadpool.h
+	$(CC) -c threadpool.c $(FLAGS)
+
 client.o: client.c client.h talloc.o
 	$(CC) -c client.c $(FLAGS)
 
@@ -26,12 +29,11 @@ testvector.o: testvector.c
 testvector: testvector.o mud
 	$(CC) testvector.o talloc.o vector.o -o testvector $(FLAGS)
 
-test_threadpool: test_threadpool.o talloc.o heap.o vector.o
-	$(CC) test_threadpool.o talloc.o heap.o vector.o -o test_threadpool $(FLAGS)
+test_threadpool: test_threadpool.o talloc.o heap.o vector.o threadpool.o
+	$(CC) test_threadpool.o threadpool.o talloc.o heap.o vector.o -o test_threadpool $(FLAGS)
+
 test_threadpool.o: test_threadpool.c
 	$(CC) -c test_threadpool.c $(FLAGS)
 
 clean:
 	rm -f mud *.o a.out *~
-
-
