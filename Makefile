@@ -15,6 +15,9 @@ heap.o: heap.c heap.h
 threadpool.o: threadpool.c threadpool.h
 	$(CC) -c threadpool.c $(FLAGS)
 
+poolalloc.o: poolalloc.c poolalloc.h
+	$(CC) -c poolalloc.c $(FLAGS)
+
 client.o: client.c client.h talloc.o
 	$(CC) -c client.c $(FLAGS)
 
@@ -29,8 +32,8 @@ testvector.o: testvector.c
 testvector: testvector.o mud
 	$(CC) testvector.o talloc.o vector.o -o testvector $(FLAGS)
 
-test_palloc: test_palloc.o talloc.o
-	$(CC) test_palloc.o talloc.o -o test_palloc $(FLAGS)
+test_palloc: test_palloc.o talloc.o poolalloc.o
+	$(CC) test_palloc.o talloc.o poolalloc.o -o test_palloc $(FLAGS)
 test_palloc.o: test_palloc.c
 	$(CC) -c test_palloc.c $(FLAGS)
 

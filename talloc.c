@@ -4,10 +4,16 @@
 static int g_allocs = 0;
 static int g_frees = 0;
 
-void* talloc(size_t size)
+void* talloc(ssize_t size)
 {
      ++g_allocs;
      return malloc(size);
+}
+
+void* aligned_talloc(ssize_t alignment, ssize_t size)
+{
+	++g_allocs;
+	return aligned_alloc(alignment, size);
 }
 
 void tfree(void* p)
