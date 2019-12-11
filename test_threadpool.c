@@ -18,10 +18,7 @@ struct Bundle
 
 void* TestTask(void* args)
 {
-	pthread_mutex_lock(&mempool_mtx);
 	printf("Thread %lld: Test task %d!\n", pthread_self(), ((struct Bundle*) args)->v1);
-	MemoryPool_Free(&mempool, sizeof(struct Bundle), args);
-	pthread_mutex_unlock(&mempool_mtx);
 }
 
 void MPoolReleaser(void* args)
@@ -53,8 +50,10 @@ int main(void)
 		pthread_mutex_lock(&mempool_mtx);
 		struct Bundle* argbund = MemoryPool_Alloc(&mempool, sizeof(struct Bundle));
 		argbund->v1 = i;
-		pthread_mutex_unlock(&mempool_mtx);
+		argbund->v2 = i;
 		ThreadPool_AddTask(&tp, TestTask, 1, argbund, MPoolReleaser);
+		pthread_mutex_unlock(&mempool_mtx);
+
 	}
 
 	scanf("%c", &ch);

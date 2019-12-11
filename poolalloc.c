@@ -97,7 +97,7 @@ void PoolMemBlock_Init(struct PoolMemBlock* pMemBlock, ssize_t element_count, ss
 		pFreeNode = ((void*) pFreeNode->nextinplacenode);
 	}
 
-	pFreeNode->nextinplacenode = ((void*) 0);
+	memset(&(pFreeNode->nextinplacenode), 0, sizeof(void*));
 }
 
 void AllocPool_Init(struct AllocPool* pAllocPool, ssize_t element_count,

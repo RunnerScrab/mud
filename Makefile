@@ -21,6 +21,9 @@ poolalloc.o: poolalloc.c poolalloc.h
 client.o: client.c client.h talloc.o
 	$(CC) -c client.c $(FLAGS)
 
+
+test: test_heap testvector test_poolallocator test_threadpool
+
 test_heap: test_heap.o talloc.o heap.o
 	$(CC) test_heap.o talloc.o heap.o -o test_heap $(FLAGS)
 
@@ -44,4 +47,4 @@ test_threadpool.o: test_threadpool.c
 	$(CC) -c test_threadpool.c $(FLAGS)
 
 clean:
-	rm -f mud *.o a.out *~
+	rm -f mud *.o a.out *~ #*

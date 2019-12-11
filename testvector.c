@@ -34,7 +34,7 @@ int main(void)
 	 sizeof(int), sizeof(void*));
   int i = 0, z = 0;
   struct Vector clients;
-  Vector_Create(&clients, 32);
+  Vector_Create(&clients, 32, 0);
   for(z = 32; i < z; ++i)
     {
       Vector_Push(&clients, (void*) TestClient_Create("Paul", i));
@@ -50,7 +50,7 @@ int main(void)
   if(Vector_Find(&clients, &searchkey, compclients, &iFound) >= 0)
     Vector_Remove(&clients, iFound);
 
-  
+
   for(i = 0; i < clients.fill_pointer; ++i)
     {
       struct TestClient* pClient = (struct TestClient*) Vector_At(&clients, i);
