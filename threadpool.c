@@ -49,7 +49,7 @@ static void* ThreadPool_WorkerThreadFunc(void* pArg)
 			if(pTask->releasefn)
 			{
 				pTask->releasefn(pTask);
-				AllocPool_Free(&(pPool->alloc_pool), pTask);
+				AllocPool_LockingFree(&(pPool->alloc_pool), pTask);
 				pTask = 0;
 			}
 		}
@@ -152,7 +152,7 @@ static void* DefaultTaskFree(void* args)
 //args should be a pointer to allocated memory; the threadpool takes ownership
 int ThreadPool_AddTask(struct ThreadPool* tp, void* (*task) (void*), int priority, void* args)
 {
-	struct ThreadTask* pTask = (struct ThreadTask*) AllocPool_Alloc(&(tp->alloc_pool));
+	struct ThreadTask* pTask = (struct ThreadTask*) AllocPool_LockingAlloc(&(tp->alloc_pool));
 
 	pTask->taskfn = task;
 	pTask->pArgs = args;

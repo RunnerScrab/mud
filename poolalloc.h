@@ -32,4 +32,7 @@ void AllocPool_Destroy(struct AllocPool* pAllocPool);
 void* AllocPool_Alloc(struct AllocPool* pAllocPool);
 void AllocPool_Free(struct AllocPool* pAllocPool, void* pFreeMe);
 
+void* AllocPool_LockingAlloc(struct AllocPool* pAllocPool);
+void AllocPool_LockingFree(struct AllocPool* pAllocPool, void* pFreeMe);
+
 #endif

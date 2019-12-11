@@ -56,6 +56,25 @@ void AllocPool_AddBlock(struct AllocPool* pAllocPool)
 
 void* AllocPool_Alloc(struct AllocPool* pAllocPool)
 {
+	struct InplaceFreeNode* returnval = pAllocPool->headnode;
+	pAllocPool->headnode = returnval->nextinplacenode;
+	if(!pAllocPool->headnode)
+	{
+		AllocPool_AddBlock(pAllocPool);
+	}
+	return returnval;
+}
+
+void AllocPool_Free(struct AllocPool* pAllocPool, void* pFreeMe)
+{
+	//Once pFreeMe has been used (which it must be assumed to have been),
+	//the nodedata and nextinplacenode have already been overwritten with data
+	((struct InplaceFreeNode*)pFreeMe)->nextinplacenode = pAllocPool->headnode;
+	pAllocPool->headnode = pFreeMe;
+}
+
+void* AllocPool_LockingAlloc(struct AllocPool* pAllocPool)
+{
 	pthread_mutex_lock(&(pAllocPool->pool_mutex));
 	struct InplaceFreeNode* returnval = pAllocPool->headnode;
 	pAllocPool->headnode = returnval->nextinplacenode;
@@ -67,7 +86,7 @@ void* AllocPool_Alloc(struct AllocPool* pAllocPool)
 	return returnval;
 }
 
-void AllocPool_Free(struct AllocPool* pAllocPool, void* pFreeMe)
+void AllocPool_LockingFree(struct AllocPool* pAllocPool, void* pFreeMe)
 {
 	//Once pFreeMe has been used (which it must be assumed to have been),
 	//the nodedata and nextinplacenode have already been overwritten with data
