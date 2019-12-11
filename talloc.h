@@ -2,6 +2,7 @@
 #define TALLOC_H_
 #include <stddef.h>
 #include <stdlib.h>
+#include <unistd.h>
 
 void* talloc(ssize_t size);
 void* aligned_talloc(ssize_t alignment, ssize_t size);
