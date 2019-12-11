@@ -12,7 +12,7 @@ struct ThreadTask
 
 	//If releasefn is supplied, thread will call
 	//it on the ThreadTask instance to release
-	void* (*releasefn) (void*);
+	void (*releasefn) (void*);
 };
 
 struct ThreadPool
@@ -35,7 +35,6 @@ void ThreadPool_Destroy(struct ThreadPool* tp);
 int ThreadPool_Init(struct ThreadPool* tp, unsigned int cores);
 
 //args should be a pointer to allocated memory; the threadpool takes ownership
-int ThreadPool_AddTask(struct ThreadPool* tp, void* (*task) (void*),
-		int priority, void* args);
-
+int ThreadPool_AddTask(struct ThreadPool* tp, void* (*task) (void*), int priority, void* args,
+				void (*argreleaserfn) (void*));
 #endif

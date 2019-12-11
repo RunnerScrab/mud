@@ -233,7 +233,7 @@ int main(int argc, char** argv)
 					char* msgcpy = talloc(sizeof(char) * 256);
 					memcpy(msgcpy, ((struct Client*)pEvPkg->pData)->input_buffer, 256 * sizeof(char));
 					if(FAILURE(ThreadPool_AddTask(&(server.thread_pool),
-										TestHandleClientInput, 1, msgcpy)))
+						       TestHandleClientInput, 1, msgcpy, tfree)))
 					{
 						ServerLog(SERVERLOG_ERROR, "Failed to add threadpool task!");
 					}

@@ -48,8 +48,9 @@ static void* ThreadPool_WorkerThreadFunc(void* pArg)
 
 			if(pTask->releasefn)
 			{
-				pTask->releasefn(pTask);
-				AllocPool_LockingFree(&(pPool->alloc_pool), pTask);
+				//Release task arguments
+				pTask->releasefn(pTask->pArgs);
+				AllocPool_Free(&(pPool->alloc_pool), pTask);
 				pTask = 0;
 			}
 		}
@@ -142,25 +143,27 @@ int ThreadPool_Init(struct ThreadPool* tp, unsigned int cores)
 	return 0;
 }
 
-
-static void* DefaultTaskFree(void* args)
+struct ThreadTask* CreateTask(struct ThreadPool* tp, void* (*taskfn) (void*), int priority, void* args,
+			void (*argreleaserfn) (void*))
 {
-	struct ThreadTask* pTask = (struct ThreadTask*) args;
-	tfree(pTask->pArgs);
+	struct ThreadTask* pTask = (struct ThreadTask*) AllocPool_Alloc(&(tp->alloc_pool));
+	pTask->taskfn = taskfn;
+	pTask->pArgs = args;
+	pTask->releasefn = argreleaserfn;
+	return pTask;
 }
 
 //args should be a pointer to allocated memory; the threadpool takes ownership
-int ThreadPool_AddTask(struct ThreadPool* tp, void* (*task) (void*), int priority, void* args)
+int ThreadPool_AddTask(struct ThreadPool* tp, void* (*task) (void*), int priority, void* args,
+		void (*argreleaserfn) (void*))
 {
-	struct ThreadTask* pTask = (struct ThreadTask*) AllocPool_LockingAlloc(&(tp->alloc_pool));
-
-	pTask->taskfn = task;
-	pTask->pArgs = args;
-	pTask->releasefn = DefaultTaskFree;
-
+	struct ThreadTask* pTask = CreateTask(tp, task, priority, args, argreleaserfn);
 	int insresult = 0;
+
 	pthread_mutex_lock(&(tp->prio_queue_mutex));
+
 	insresult = Heap_MinInsert(&(tp->prio_queue), priority, pTask);
+
 	pthread_mutex_unlock(&(tp->prio_queue_mutex));
 	pthread_cond_signal(&(tp->wakecond));
 

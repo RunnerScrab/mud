@@ -6,20 +6,20 @@
 
 struct TestData
 {
-	int val1, val2, val3, val4, val5, val6, val7;
+	int val1, val2, val3, val4;
 };
 
 int main(void)
 {
-	struct AllocPool pool;
-	AllocPool_Init(&pool, 10, sizeof(struct TestData));
+	struct MemoryPool mempool;
+	MemoryPool_Init(&mempool);
 	struct TestData* data[100];
 	unsigned int i = 0, j = 0;
         for(j = 0; j < 3; ++j)
 	{
 		for(i = 0; i < 100; ++i)
 		{
-			data[i] = AllocPool_Alloc(&pool);
+			data[i] = MemoryPool_Alloc(&mempool, sizeof(struct TestData));
 			data[i]->val1 = i;
 			data[i]->val2 = i;
 			data[i]->val3 = i;
@@ -30,10 +30,10 @@ int main(void)
 		{
 			printf("%d %d %d %d\n", data[i]->val1,
 				data[i]->val2, data[i]->val3, data[i]->val4);
-			AllocPool_Free(&pool, data[i]);
+			MemoryPool_Free(&mempool, sizeof(struct TestData), data[i]);
 		}
 	}
-	AllocPool_Destroy(&pool);
+	MemoryPool_Destroy(&mempool);
 	printf("%d outstanding allocs\n", toutstanding_allocs());
 	return 0;
 }
