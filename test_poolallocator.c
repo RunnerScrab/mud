@@ -6,18 +6,18 @@
 
 struct TestData
 {
-	int val1, val2, val3, val4;
+	int val1, val2, val3, val4, val5, val6, val7;
 };
 
 int main(void)
 {
 	struct AllocPool pool;
 	AllocPool_Init(&pool, 10, sizeof(struct TestData));
-	struct TestData* data[50];
+	struct TestData* data[100];
 	unsigned int i = 0, j = 0;
         for(j = 0; j < 3; ++j)
 	{
-		for(i = 0; i < 50; ++i)
+		for(i = 0; i < 100; ++i)
 		{
 			data[i] = AllocPool_Alloc(&pool);
 			data[i]->val1 = i;
@@ -26,7 +26,7 @@ int main(void)
 			data[i]->val4 = i;
 		}
 
-		for(i = 0; i < 50; ++i)
+		for(i = 0; i < 100; ++i)
 		{
 			printf("%d %d %d %d\n", data[i]->val1,
 				data[i]->val2, data[i]->val3, data[i]->val4);

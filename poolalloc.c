@@ -13,8 +13,6 @@ static ssize_t np2(ssize_t num, ssize_t multiple)
 
 void PoolMemBlock_Init(struct PoolMemBlock* pMemBlock, ssize_t element_count, ssize_t element_size)
 {
-	printf("Element size :%d\n", element_size);
-
 	pMemBlock->datablock = (void*) talloc(element_count * element_size);
 	memset(pMemBlock->datablock, 0, element_count * element_size);
 	ssize_t idx = 0;
@@ -44,12 +42,11 @@ void AllocPool_AddBlock(struct AllocPool* pAllocPool)
 {
 	if(!pAllocPool->headnode)
 	{
-		printf("Adding block.\n");
 		pAllocPool->pool_blocks = (struct PoolMemBlock*) realloc(pAllocPool->pool_blocks,
 									(pAllocPool->block_count + 1) *
 									sizeof(struct PoolMemBlock));
 		PoolMemBlock_Init(&pAllocPool->pool_blocks[pAllocPool->block_count],
-				pAllocPool->element_count, pAllocPool->element_size);
+				pAllocPool->element_count * 2, pAllocPool->element_size);
 		++(pAllocPool->block_count);
 
 		pAllocPool->headnode = pAllocPool->pool_blocks[pAllocPool->block_count - 1].datablock;

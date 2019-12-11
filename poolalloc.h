@@ -11,6 +11,7 @@ struct InplaceFreeNode
 	struct InplaceFreeNode* nextinplacenode;
 };
 
+//Preallocated memory pool
 struct AllocPool
 {
 	struct PoolMemBlock

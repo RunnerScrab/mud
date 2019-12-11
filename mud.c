@@ -220,7 +220,7 @@ int main(int argc, char** argv)
 			}
 			else
 			{
-
+				//TODO: Replace with a real socket reading function (reads as much as needed)
 				memset(((struct Client*)pEvPkg->pData)->input_buffer, 0, sizeof(char) * 256);
 				bytes_read = read(pEvPkg->sockfd,
 						((struct Client*)pEvPkg->pData)->input_buffer,
@@ -229,7 +229,7 @@ int main(int argc, char** argv)
 				if(bytes_read > 0)
 				{
 					((struct Client*)pEvPkg->pData)->input_buffer[bytes_read] = 0;
-
+					/* DEMO CODE */
 					char* msgcpy = talloc(sizeof(char) * 256);
 					memcpy(msgcpy, ((struct Client*)pEvPkg->pData)->input_buffer, 256 * sizeof(char));
 					if(FAILURE(ThreadPool_AddTask(&(server.thread_pool),
@@ -242,6 +242,7 @@ int main(int argc, char** argv)
 					{
 						goto lbl_end_server_loop;
 					}
+					/* END DEMO CODE */
 				}
 				else
 				{

@@ -49,6 +49,7 @@ static void* ThreadPool_WorkerThreadFunc(void* pArg)
 			if(pTask->releasefn)
 			{
 				pTask->releasefn(pTask);
+				AllocPool_Free(&(pPool->alloc_pool), pTask);
 				pTask = 0;
 			}
 		}
@@ -99,11 +100,15 @@ void ThreadPool_Destroy(struct ThreadPool* tp)
 
 	tfree(tp->pThreads);
 	tp->pThreads = 0;
+
+	AllocPool_Destroy(&(tp->alloc_pool));
 }
 
 int ThreadPool_Init(struct ThreadPool* tp, unsigned int cores)
 {
 	int idx = 0;
+
+	AllocPool_Init(&(tp->alloc_pool), 64, sizeof(struct ThreadTask));
 
 	tp->thread_count = cores; // - 1 for the server thread?
 	tp->pThreads = (pthread_t*) talloc(sizeof(pthread_t) * tp->thread_count);
@@ -140,16 +145,15 @@ int ThreadPool_Init(struct ThreadPool* tp, unsigned int cores)
 
 static void* DefaultTaskFree(void* args)
 {
-	printf("Task free called.\n");
 	struct ThreadTask* pTask = (struct ThreadTask*) args;
 	tfree(pTask->pArgs);
-	tfree(pTask);
 }
 
 //args should be a pointer to allocated memory; the threadpool takes ownership
 int ThreadPool_AddTask(struct ThreadPool* tp, void* (*task) (void*), int priority, void* args)
 {
-	struct ThreadTask* pTask = (struct ThreadTask*) talloc(sizeof(struct ThreadTask));
+	struct ThreadTask* pTask = (struct ThreadTask*) AllocPool_Alloc(&(tp->alloc_pool));
+
 	pTask->taskfn = task;
 	pTask->pArgs = args;
 	pTask->releasefn = DefaultTaskFree;

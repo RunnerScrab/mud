@@ -2,7 +2,7 @@
 #define THREADPOOL_H_
 #include <pthread.h>
 #include <sys/sysinfo.h>
-
+#include "poolalloc.h"
 #include "heap.h"
 
 struct ThreadTask
@@ -25,6 +25,8 @@ struct ThreadPool
 	pthread_cond_t wakecond;
 
 	volatile unsigned char bIsRunning;
+
+	struct AllocPool alloc_pool;
 };
 
 
