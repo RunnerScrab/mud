@@ -37,8 +37,8 @@ test_poolallocator: test_poolallocator.o talloc.o poolalloc.o
 test_poolallocator.o: test_poolallocator.c
 	$(CC) -c test_poolallocator.c $(FLAGS)
 
-test_threadpool: test_threadpool.o talloc.o heap.o vector.o threadpool.o
-	$(CC) test_threadpool.o threadpool.o talloc.o heap.o vector.o -o test_threadpool $(FLAGS)
+test_threadpool: test_threadpool.o poolalloc.o talloc.o heap.o vector.o threadpool.o
+	$(CC) test_threadpool.o poolalloc.o threadpool.o talloc.o heap.o vector.o -o test_threadpool $(FLAGS)
 
 test_threadpool.o: test_threadpool.c
 	$(CC) -c test_threadpool.c $(FLAGS)
