@@ -46,7 +46,7 @@ int Vector_Push(struct Vector* pArray, void* pVal)
      if(pArray->fill_pointer >= pArray->size)
      {
 	  pArray->size = pArray->size * 2;
-	  pArray->pStorage = (void**) realloc(pArray->pStorage, sizeof(void*) * pArray->size);
+	  pArray->pStorage = (void**) trealloc(pArray->pStorage, sizeof(void*) * pArray->size);
 	  if(!pArray->pStorage)
 	  {
 	       return -1;

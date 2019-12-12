@@ -5,7 +5,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define PARAMETER_K 2 //Parameter for heap reallocation if usage crosses (capacity / 2) -/+ K in either direction
+#define PARAMETER_K 2 //Parameter for heap treallocation if usage crosses (capacity / 2) -/+ K in either direction
 
 #define parent(idx) ((idx - 1) >> 1)
 #define left(idx) ((idx << 1) + 1)
@@ -158,7 +158,7 @@ void Heap_ExtractMinimum(struct Heap* pHeap, struct HeapNode* pOut)
 		if(pHeap->len < ((pHeap->capacity >> 1) - PARAMETER_K))
 		{
 			pHeap->capacity = (pHeap->capacity >> 1) + PARAMETER_K;
-			pHeap->array =  (struct HeapNode*) realloc(pHeap->array,
+			pHeap->array =  (struct HeapNode*) trealloc(pHeap->array,
 								pHeap->capacity * sizeof(struct HeapNode));
 
 		}
@@ -181,7 +181,7 @@ int Heap_MinInsert(struct Heap* pHeap, int key, void* data)
 	if(pHeap->len == pHeap->capacity)
 	{
 		pHeap->capacity = (pHeap->capacity << 1) + PARAMETER_K;
-		pHeap->array = (struct HeapNode*) realloc(pHeap->array,
+		pHeap->array = (struct HeapNode*) trealloc(pHeap->array,
 							pHeap->capacity * sizeof(struct HeapNode));
 		if(!pHeap->array)
 		{

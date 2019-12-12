@@ -1,5 +1,5 @@
 CC = gcc
-FLAGS = -pthread -g -Wall
+FLAGS = -pthread -g -Wall -DDEBUG
 
 mud: mud.o talloc.o vector.o heap.o client.o threadpool.o poolalloc.o
 	$(CC) mud.o threadpool.o poolalloc.o talloc.o vector.o heap.o client.o -o mud $(FLAGS)

@@ -46,7 +46,7 @@ int SockArray_Push(struct SockArray* pArray, int sock)
 {
      if(pArray->fill_pointer >= pArray->size)
      {
-	  pArray->pSocks = (int*) realloc(pArray->pSocks, sizeof(int) * (pArray->size * 2));
+	  pArray->pSocks = (int*) trealloc(pArray->pSocks, sizeof(int) * (pArray->size * 2));
 	  if(!pArray->pSocks)
 	  {
 	    // ServerLog(SERVERLOG_ERROR, "Allocation failed.\n");	       

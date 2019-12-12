@@ -124,7 +124,6 @@ int Server_Initialize(struct Server* server, unsigned int backlog)
 
 int Server_Teardown(struct Server* pServer)
 {
-//	ThreadPool_Stop(&(pServer->thread_pool));
 	ThreadPool_Destroy(&(pServer->thread_pool));
 	Vector_Destroy(&(pServer->clients));
 	close(pServer->sockfd);
@@ -228,12 +227,13 @@ int main(int argc, char** argv)
 
 				if(bytes_read > 0)
 				{
-					((struct Client*)pEvPkg->pData)->input_buffer[bytes_read] = 0;
 					/* DEMO CODE */
+					((struct Client*)pEvPkg->pData)->input_buffer[bytes_read] = 0;
+
 					char* msgcpy = talloc(sizeof(char) * 256);
 					memcpy(msgcpy, ((struct Client*)pEvPkg->pData)->input_buffer, 256 * sizeof(char));
 					if(FAILURE(ThreadPool_AddTask(&(server.thread_pool),
-						       TestHandleClientInput, 1, msgcpy, tfree)))
+						       TestHandleClientInput, 1, msgcpy, tfree2)))
 					{
 						ServerLog(SERVERLOG_ERROR, "Failed to add threadpool task!");
 					}
@@ -274,6 +274,7 @@ lbl_end_server_loop:
 	Server_SendAllClients(&server, "Server going down!\r\n");
 
 	Server_Teardown(&server);
+	tprint_summary();
 	printf("%d unfreed allocations.\n", toutstanding_allocs());
 	return 0;
 }

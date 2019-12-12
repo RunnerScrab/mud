@@ -61,7 +61,7 @@ struct AllocPool* MemoryPool_AddBlockSizePool(struct MemoryPool* mp, ssize_t blo
 
 	if(mp->alloc_pool_count > 0)
 	{
-		mp->alloc_pools = realloc(mp->alloc_pools, (1 + mp->alloc_pool_count) * sizeof(struct AllocPool*));
+		mp->alloc_pools = trealloc(mp->alloc_pools, (1 + mp->alloc_pool_count) * sizeof(struct AllocPool*));
 	}
 	else
 	{
@@ -119,7 +119,7 @@ void AllocPool_AddBlock(struct AllocPool* pAllocPool)
 {
 	if(!pAllocPool->headnode)
 	{
-		pAllocPool->pool_blocks = (struct PoolMemBlock*) realloc(pAllocPool->pool_blocks,
+		pAllocPool->pool_blocks = (struct PoolMemBlock*) trealloc(pAllocPool->pool_blocks,
 									(pAllocPool->block_count + 1) *
 									sizeof(struct PoolMemBlock));
 		PoolMemBlock_Init(&pAllocPool->pool_blocks[pAllocPool->block_count],

@@ -92,7 +92,7 @@ int main(void)
 	int poorvalue = 0;
 
 	struct timespec timebegin, timeend;
-	clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &timebegin);
+	clock_gettime(CLOCK_PROCESS_CPUTIME_IDk, &timebegin);
 	for(; i < 2000000; ++i)
 	{
 		//struct Bundle* argbund = talloc(sizeof(struct Bundle));//AllocPool_Alloc(&argpool);
@@ -124,10 +124,6 @@ int main(void)
 	clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &timeend);
 	printf("Computation complete. Result: %d\n", poorvalue);
 	printf("Elapsed time for single thread: %fs\n", (timeend.tv_nsec - timebegin.tv_nsec)/1000000000.0);
-
-
-
-
 	
 	ThreadPool_Destroy(&tp);
 
