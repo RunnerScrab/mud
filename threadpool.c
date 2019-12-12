@@ -50,9 +50,12 @@ static void* ThreadPool_WorkerThreadFunc(void* pArg)
 			{
 				//Release task arguments
 				pTask->releasefn(pTask->pArgs);
-				MemoryPool_Free(&(tb->mem_pool), sizeof(struct ThreadTask), pTask);
-				pTask = 0;
 			}
+			pthread_mutex_lock(&(tb->my_pq_mtx));
+			MemoryPool_Free(&(tb->mem_pool), sizeof(struct ThreadTask), pTask);
+			pthread_mutex_unlock(&(tb->my_pq_mtx));
+			pTask = 0;
+
 		}
 
 
@@ -123,7 +126,7 @@ void ThreadBundle_Destroy(struct ThreadBundle* tb)
 		pTask = min.data;
 		if(pTask && pTask->releasefn)
 		{
-			pTask->releasefn(pTask);
+			pTask->releasefn(pTask->pArgs);
 			pTask = 0;
 		}
 	}
@@ -188,9 +191,7 @@ void ThreadPool_Destroy(struct ThreadPool* tp)
 		ThreadBundle_Destroy(&(tp->thread_bundles[idx]));
 	}
 	tfree(tp->thread_bundles);
-	printf("pThreads should be freed.\n");
 	tfree(tp->pThreads);
-	printf("pThreads was freed.\n");
 	tp->pThreads = 0;
 }
 

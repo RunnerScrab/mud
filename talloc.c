@@ -1,5 +1,7 @@
 #include "talloc.h"
 #include <stdlib.h>
+#include <stdio.h>
+#include <string.h>
 
 static int g_allocs = 0;
 static int g_frees = 0;
@@ -74,7 +76,7 @@ int toutstanding_allocs()
 	{
 		if(g_allocations[i].mem == 0)
 			continue;
-		printf("%s - %x still unfreed!\n", g_allocations[i].desc, g_allocations[i].mem);
+		printf("%s - %llx still unfreed!\n", g_allocations[i].desc, g_allocations[i].mem);
 	}
   return g_allocs - g_frees;
 }
