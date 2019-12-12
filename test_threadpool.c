@@ -94,9 +94,9 @@ int main(void)
 	printf("Elapsed time for single thread: %fs\n", (timeend.tv_nsec - timebegin.tv_nsec)/1000000000.0);
 
 	scanf("%d", &sum);
-	MemoryPool_Destroy(&mempool); //lazy; this joins all threads
-	ThreadPool_Destroy(&tp);
 
+	ThreadPool_Destroy(&tp);
+	MemoryPool_Destroy(&mempool); //lazy; this joins all threads
 	printf("%d outstanding allocations. %d allocs, %d frees.\n", toutstanding_allocs(), tget_allocs(),
 		tget_frees());
 	return 0;
