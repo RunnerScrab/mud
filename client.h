@@ -25,7 +25,7 @@ struct Client
      int tel_stream_state;
      struct TelOpts tel_opts;
      unsigned char tel_cmd_buffer[64];
-     unsigned char* input_buffer;
+     char* input_buffer;
 };
 
 

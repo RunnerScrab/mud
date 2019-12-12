@@ -45,8 +45,8 @@ int Heap_IsMinHeap(struct Heap* pHeap, int idx)
   int leftidx = left(idx);
   int topkey = Heap_GetKeyAt(pHeap, idx);
 
-  int rightheap = rightidx >= pHeap->len || topkey < Heap_GetKeyAt(pHeap, rightidx) && Heap_IsMinHeap(pHeap, rightidx);
-  int leftheap = leftidx >= pHeap->len || topkey < Heap_GetKeyAt(pHeap, leftidx) && Heap_IsMinHeap(pHeap, leftidx);
+  int rightheap = rightidx >= pHeap->len || (topkey < Heap_GetKeyAt(pHeap, rightidx) && Heap_IsMinHeap(pHeap, rightidx));
+  int leftheap = leftidx >= pHeap->len || (topkey < Heap_GetKeyAt(pHeap, leftidx) && Heap_IsMinHeap(pHeap, leftidx));
 
   return rightheap & leftheap;
 }
@@ -197,7 +197,6 @@ int Heap_MinInsert(struct Heap* pHeap, int key, void* data)
 
 void Heap_Destroy(struct Heap* pHeap)
 {
-  int i = 0;
   tfree(pHeap->array);
   pHeap->len = 0;
 }

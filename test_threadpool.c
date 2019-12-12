@@ -19,16 +19,33 @@ struct Bundle
 	pthread_mutex_t* pMtx;
 };
 
+struct ThreadInfo
+{
+	unsigned long int threadid;
+	ssize_t count;
+};
+
+struct ThreadInfo* threadinfo = 0;
+unsigned int threadcount = 0;
 
 
 void* TestTask(void* args)
 {
-	//printf("Thread %lld: Test task %d!\n", pthread_self(), ((struct Bundle*) args)->v1);
-	struct Bundle* pArgs = args;
 	unsigned int i = 0;
+	for(; i < threadcount; ++i)
+	{
+		if(threadinfo[i].threadid == pthread_self())
+		{
+			++threadinfo[i].count;
+			break;
+		}
+	}
+	//	printf("Thread %lld: Test task %d!\n", pthread_self(), ((struct Bundle*) args)->v1);
+	struct Bundle* pArgs = args;
+
 	int sum = 0;
 	int diff = pArgs->v1;
-	for(; i < 2000000; ++i)
+	for(i = 0; i < 2000000; ++i)
 	{
 		sum += diff;
 	}
@@ -45,15 +62,28 @@ void MPoolReleaser(void* args)
 int main(void)
 {
 	char ch = 0;
+	unsigned int cores = get_nprocs() - 1;
+
+
 
 	struct ThreadPool tp;
-	if(ThreadPool_Init(&tp, get_nprocs() - 1) < 0)
+	if(ThreadPool_Init(&tp, cores) < 0)
 	{
 		printf("Fatal error!\n");
 		return -1;
 	}
+	threadinfo = (struct ThreadInfo*) malloc(sizeof(struct ThreadInfo) * cores);
+	memset(threadinfo, 0, sizeof(struct ThreadInfo) * cores);
 
 	int i = 0;
+	threadcount = tp.thread_count;
+	for(; i < tp.thread_count; ++i)
+	{
+		threadinfo[i].threadid = tp.pThreads[i];
+		threadinfo[i].count = 0;
+	}
+
+
 	pthread_mutex_t valmtx;
 	pthread_mutex_init(&valmtx, 0);
 	MemoryPool_Init(&mempool);
@@ -93,11 +123,22 @@ int main(void)
 	printf("Computation complete. Result: %d\n", poorvalue);
 	printf("Elapsed time for single thread: %fs\n", (timeend.tv_nsec - timebegin.tv_nsec)/1000000000.0);
 
-	scanf("%d", &sum);
+
+
+
 
 	ThreadPool_Destroy(&tp);
+
+
+	for(i = 0; i < threadcount; ++i)
+	{
+		printf("%u ran %d times.\n", threadinfo[i].threadid, threadinfo[i].count);
+	}
+	scanf("%d", &sum);
 	MemoryPool_Destroy(&mempool); //lazy; this joins all threads
 	printf("%d outstanding allocations. %d allocs, %d frees.\n", toutstanding_allocs(), tget_allocs(),
 		tget_frees());
+
+
 	return 0;
 }

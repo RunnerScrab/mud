@@ -4,10 +4,12 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+/*
 static ssize_t np2(ssize_t num, ssize_t multiple)
 {
 	return (num + (multiple - 1)) & (-1 * multiple);
 }
+*/
 
 void MemoryPool_Init(struct MemoryPool* mp)
 {
@@ -97,7 +99,7 @@ void PoolMemBlock_Init(struct PoolMemBlock* pMemBlock, ssize_t element_count, ss
 		pFreeNode = ((void*) pFreeNode->nextinplacenode);
 	}
 
-	pFreeNode->nextinplacenode;
+	pFreeNode->nextinplacenode = 0; //Not necessary b/c of the memset, but for clarity
 }
 
 void AllocPool_Init(struct AllocPool* pAllocPool, ssize_t element_count,

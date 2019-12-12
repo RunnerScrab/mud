@@ -64,7 +64,7 @@ void Server_SendAllClients(struct Server* pServer, const char* msg)
 
 int Server_Configure(struct Server* server, const char* szAddr, unsigned short port)
 {
-	int result = 0, opts = 1;
+	int opts = 1;
 	server->sockfd = socket(AF_INET, SOCK_STREAM, 0);
 
 	if(FAILURE(server->sockfd))
@@ -134,6 +134,7 @@ int Server_Teardown(struct Server* pServer)
 void* TestHandleClientInput(void* arg)
 {
 	printf("Received: %s\n", (char*) arg);
+	return ((void*) 0);
 }
 
 int main(int argc, char** argv)
@@ -145,7 +146,6 @@ int main(int argc, char** argv)
 	};
 
 	struct Server server;
-	struct sockaddr connecting_addr;
 	struct EvPkg server_epkg;
 	struct epoll_event server_event, clev, evlist[64];
 	struct EvPkg* pEvPkg = 0;
