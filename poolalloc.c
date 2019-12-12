@@ -94,17 +94,17 @@ void MemoryPool_Destroy(struct MemoryPool* mp)
 void PoolMemBlock_Init(struct PoolMemBlock* pMemBlock, ssize_t element_count, ssize_t element_size)
 {
 	memset(pMemBlock, 0, sizeof(struct PoolMemBlock));
+	pMemBlock->testval = 0xdeadbeef;
 	pMemBlock->datablock = (void*) talloc(element_count * element_size, __FUNCTION__);
-	memset(pMemBlock->datablock, 0, element_count * element_size);
 	ssize_t idx = 0;
 	struct InplaceFreeNode* pFreeNode = (struct InplaceFreeNode*) pMemBlock->datablock;
 	for(; idx < element_count - 1; ++idx)
 	{
-		pFreeNode->nextinplacenode = pFreeNode + element_size;
+		pFreeNode->nextinplacenode = ((struct InplaceFreeNode*) pFreeNode + element_size);
 		pFreeNode = pFreeNode->nextinplacenode;
 	}
 
-	pFreeNode->nextinplacenode = 0;
+	pFreeNode->nextinplacenode = (struct InplaceFreeNode*) 0;
 }
 
 void AllocPool_Init(struct AllocPool* pAllocPool, ssize_t element_count,
@@ -114,7 +114,6 @@ void AllocPool_Init(struct AllocPool* pAllocPool, ssize_t element_count,
 	pAllocPool->element_size = element_size;
 	pAllocPool->element_count = element_count;
 	pAllocPool->pool_blocks = (struct PoolMemBlock*) talloc(sizeof(struct PoolMemBlock), __FUNCTION__);
-	memset(pAllocPool->pool_blocks, 0, sizeof(struct PoolMemBlock));
 	PoolMemBlock_Init(pAllocPool->pool_blocks, element_count, element_size);
 	pAllocPool->block_count = 1;
 	pAllocPool->headnode = (struct InplaceFreeNode*) pAllocPool->pool_blocks[0].datablock;

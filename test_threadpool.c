@@ -104,7 +104,7 @@ int main(void)
 		argbund->pNum = &poorvalue;
 		argbund->pMtx = &valmtx;
 		argbund->v1 = (i & 1) ? 1 : -1;
-		ThreadPool_AddTask(&tp, tb,
+		ThreadPool_AddTask(&tp, ThreadPool_GetLeastBusyThread(&tp),
 				TestTask, 1, argbund, free);
 
 	}

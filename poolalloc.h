@@ -13,6 +13,7 @@ struct InplaceFreeNode
 
 struct PoolMemBlock
 {
+	unsigned int testval;
 	void* datablock;
 };
 
