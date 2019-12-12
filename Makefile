@@ -1,4 +1,4 @@
-CC = g++
+CC = gcc
 FLAGS = -pthread -g -Wall -DDEBUG
 
 mud: mud.o talloc.o vector.o heap.o client.o threadpool.o poolalloc.o

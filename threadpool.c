@@ -90,7 +90,7 @@ unsigned int GetBestThreadID(struct ThreadPool* tp)
 
 struct ThreadBundle* ThreadPool_GetLeastBusyThread(struct ThreadPool* tp)
 {
-	return GetThreadBundleByID(tp, 0);
+	return GetThreadBundleByID(tp, GetBestThreadID(tp));
 }
 
 int ThreadBundle_Init(struct ThreadBundle* tb, struct ThreadPool* tp,

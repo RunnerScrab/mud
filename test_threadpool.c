@@ -7,7 +7,7 @@
 #include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
-
+#include <assert.h>
 
 struct MemoryPool mempool;
 
@@ -22,42 +22,37 @@ struct Bundle
 struct ThreadInfo
 {
 	unsigned long int threadid;
-	ssize_t count;
+	unsigned long long count;
 };
 
 struct ThreadInfo* threadinfo = 0;
 unsigned int threadcount = 0;
 
-
 void* TestTask(void* args)
 {
-	unsigned int i = 0;
+	unsigned int i = 0, found = 0;
 	for(; i < threadcount; ++i)
 	{
 		if(threadinfo[i].threadid == pthread_self())
 		{
 			++threadinfo[i].count;
+			found = 1;
 			break;
 		}
 	}
-	//	printf("Thread %lld: Test task %d!\n", pthread_self(), ((struct Bundle*) args)->v1);
-	struct Bundle* pArgs = (struct Bundle*) args;
+	assert(found == 1);
+
+	struct Bundle* pArgs = (struct Bundle*)args;
 
 	int sum = 0;
 	int diff = pArgs->v1;
-	for(i = 0; i < 2000000; ++i)
-	{
-		sum += diff;
-	}
+
+	sum += diff;
+
 	pthread_mutex_lock(pArgs->pMtx);
 	*(pArgs->pNum) += sum;
 	pthread_mutex_unlock(pArgs->pMtx);
 	return 0;
-}
-
-void MPoolReleaser(void* args)
-{
-	MemoryPool_Free(&mempool, sizeof(struct Bundle), args);
 }
 
 int main(void)
@@ -73,7 +68,7 @@ int main(void)
 	threadinfo = (struct ThreadInfo*) malloc(sizeof(struct ThreadInfo) * cores);
 	memset(threadinfo, 0, sizeof(struct ThreadInfo) * cores);
 
-	unsigned int i = 0;
+	size_t i = 0;
 	threadcount = tp.thread_count;
 	for(; i < tp.thread_count; ++i)
 	{
@@ -84,25 +79,23 @@ int main(void)
 
 	pthread_mutex_t valmtx;
 	pthread_mutex_init(&valmtx, 0);
-
+	MemoryPool_Init(&mempool);
 
 	int poorvalue = 0;
 
 	struct timespec timebegin, timeend;
 	clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &timebegin);
-	for(; i < 20; ++i)
+	for(; i < 2000000; ++i)
 	{
 		//struct Bundle* argbund = talloc(sizeof(struct Bundle));//AllocPool_Alloc(&argpool);
-		struct ThreadBundle* tb = ThreadPool_GetLeastBusyThread(&tp);
-		printf("Thread_num: %d\n", tb->thread_num);
-		struct Bundle* argbund = (struct Bundle*) malloc(sizeof(struct Bundle));
 
+		struct Bundle* argbund = (struct Bundle*) malloc(sizeof(struct Bundle));
+		memset(argbund, 0, sizeof(struct Bundle));
 		argbund->pNum = &poorvalue;
 		argbund->pMtx = &valmtx;
 		argbund->v1 = (i & 1) ? 1 : -1;
 		ThreadPool_AddTask(&tp, ThreadPool_GetLeastBusyThread(&tp),
 				TestTask, 1, argbund, free);
-
 	}
 	clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &timeend);
 	printf("Computation complete. Result: %d\n", poorvalue);
@@ -120,6 +113,8 @@ int main(void)
 		}
 		poorvalue += sum;
 	}
+
+	scanf("%d", &sum);
 	clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &timeend);
 	printf("Computation complete. Result: %d\n", poorvalue);
 	printf("Elapsed time for single thread: %fs\n", (timeend.tv_nsec - timebegin.tv_nsec)/1000000000.0);
@@ -129,12 +124,13 @@ int main(void)
 
 	for(i = 0; i < threadcount; ++i)
 	{
-		printf("%lu ran %lu times.\n", threadinfo[i].threadid, threadinfo[i].count);
+		printf("%lu ran %llu times.\n", threadinfo[i].threadid, threadinfo[i].count);
 	}
-	scanf("%d", &sum);
 
+	MemoryPool_Destroy(&mempool); //lazy; this joins all threads
 	printf("%d outstanding allocations. %d allocs, %d frees.\n", toutstanding_allocs(), tget_allocs(),
 		tget_frees());
+
 
 	return 0;
 }
