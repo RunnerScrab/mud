@@ -11,10 +11,10 @@ const int TEL_STREAM_STATE_CMD3 = 4; //Verbs
 
 struct Client* Client_Create()
 {
-	struct Client* pClient = talloc(sizeof(struct Client));
+	struct Client* pClient = talloc(sizeof(struct Client), __FUNCTION__);
 	pClient->tel_stream_state = TEL_STREAM_STATE_USERINPUT;
 	memset(&(pClient->tel_cmd_buffer), 0, sizeof(char) * 64);
-	pClient->input_buffer = talloc(sizeof(char) * 256);
+	pClient->input_buffer = talloc(sizeof(char) * 256, __FUNCTION__);
 	return pClient;
 }
 

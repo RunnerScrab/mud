@@ -64,7 +64,7 @@ void Server_SendAllClients(struct Server* pServer, const char* msg)
 
 int Server_Configure(struct Server* server, const char* szAddr, unsigned short port)
 {
-	int result = 0, opts = 1;
+	int opts = 1;
 	server->sockfd = socket(AF_INET, SOCK_STREAM, 0);
 
 	if(FAILURE(server->sockfd))
@@ -134,6 +134,7 @@ int Server_Teardown(struct Server* pServer)
 void* TestHandleClientInput(void* arg)
 {
 	printf("Received: %s\n", (char*) arg);
+	return 0;
 }
 
 int main(int argc, char** argv)
@@ -145,7 +146,6 @@ int main(int argc, char** argv)
 	};
 
 	struct Server server;
-	struct sockaddr connecting_addr;
 	struct EvPkg server_epkg;
 	struct epoll_event server_event, clev, evlist[64];
 	struct EvPkg* pEvPkg = 0;
@@ -230,10 +230,11 @@ int main(int argc, char** argv)
 				{
 					((struct Client*)pEvPkg->pData)->input_buffer[bytes_read] = 0;
 					/* DEMO CODE */
-					char* msgcpy = talloc(sizeof(char) * 256);
+					char* msgcpy = talloc(sizeof(char) * 256, __FUNCTION__);
 					memcpy(msgcpy, ((struct Client*)pEvPkg->pData)->input_buffer, 256 * sizeof(char));
-					if(FAILURE(ThreadPool_AddTask(&(server.thread_pool),
-						       TestHandleClientInput, 1, msgcpy, tfree)))
+					struct ThreadBundle* tb = ThreadPool_GetLeastBusyThread(&(server.thread_pool));
+					if(FAILURE(ThreadPool_AddTask(&(server.thread_pool), tb,
+						       TestHandleClientInput, 1, msgcpy, txfree)))
 					{
 						ServerLog(SERVERLOG_ERROR, "Failed to add threadpool task!");
 					}
@@ -255,6 +256,7 @@ int main(int argc, char** argv)
 					}
 					else
 					{
+						//TODO: Get rid of this stupid fucking vector class
 						Vector_Remove(&(server.clients), foundkey);
 						close(sock);
 						epoll_ctl(epfd, EPOLL_CTL_DEL, sock, 0); //This should actually be done automatically, according to man epoll

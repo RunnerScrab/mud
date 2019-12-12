@@ -25,7 +25,7 @@ struct SockArray
 
 int SockArray_Create(struct SockArray* pArray, size_t initial_size)
 {
-     pArray->pSocks = (int*) talloc(sizeof(int) * initial_size);
+     pArray->pSocks = (int*) talloc(sizeof(int) * initial_size, __FUNCTION__);
      if(!pArray->pSocks)
      {
        //ServerLog(SERVERLOG_ERROR, "Allocation failed.\n");

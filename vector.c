@@ -8,7 +8,7 @@
 
 int Vector_Create(struct Vector* pArray, size_t initial_size, void (*FreeNodeFunc) (void*))
 {
-     pArray->pStorage = talloc(sizeof(void*) * initial_size);
+	pArray->pStorage = talloc(sizeof(void*) * initial_size, __FUNCTION__);
      if(!pArray->pStorage)
      {
 	  return -1;
@@ -110,11 +110,10 @@ int Vector_Remove(struct Vector* pArray, size_t idx)
     }
     else
     {
-	tfree(pArray->pStorage[z - 1]);
+	    tfree(pArray->pStorage[z - 1]);
     }
 
     pArray->pStorage[z - 1] = 0;
     --(pArray->fill_pointer);
     return 0;
 }
-

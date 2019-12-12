@@ -11,7 +11,7 @@ struct TestClient
 
 struct TestClient* TestClient_Create(char* n, unsigned int a)
 {
-  struct TestClient* pNew = (struct TestClient*) talloc(sizeof(struct TestClient));
+  struct TestClient* pNew = (struct TestClient*) talloc(sizeof(struct TestClient), __FUNCTION__);
   memset(pNew->name, 0, 64);
   strncpy(pNew->name, n, 63);
   pNew->age = a;

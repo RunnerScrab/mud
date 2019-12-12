@@ -45,8 +45,8 @@ int Heap_IsMinHeap(struct Heap* pHeap, int idx)
   int leftidx = left(idx);
   int topkey = Heap_GetKeyAt(pHeap, idx);
 
-  int rightheap = rightidx >= pHeap->len || topkey < Heap_GetKeyAt(pHeap, rightidx) && Heap_IsMinHeap(pHeap, rightidx);
-  int leftheap = leftidx >= pHeap->len || topkey < Heap_GetKeyAt(pHeap, leftidx) && Heap_IsMinHeap(pHeap, leftidx);
+  int rightheap = rightidx >= pHeap->len || (topkey < Heap_GetKeyAt(pHeap, rightidx) && Heap_IsMinHeap(pHeap, rightidx));
+  int leftheap = leftidx >= pHeap->len || (topkey < Heap_GetKeyAt(pHeap, leftidx) && Heap_IsMinHeap(pHeap, leftidx));
 
   return rightheap & leftheap;
 }
@@ -99,7 +99,7 @@ void Heap_BuildMinHeap(struct Heap* pHeap)
 int Heap_Create(struct Heap* pHeap, int len)
 {
 	pHeap->capacity = len << 1;
-	pHeap->array = (struct HeapNode*) talloc(sizeof(struct HeapNode) * pHeap->capacity);
+	pHeap->array = (struct HeapNode*) talloc(sizeof(struct HeapNode) * pHeap->capacity, __FUNCTION__);
 	memset(pHeap->array, 0, sizeof(struct HeapNode) * pHeap->capacity);
 	pHeap->len = 0;
 	return (pHeap->array) ? 0 : -1;
@@ -109,7 +109,7 @@ int Heap_InitFromArray(struct Heap* pHeap, int* array, int len)
 {
   int i = 0;
   pHeap->capacity = (len << 1) + PARAMETER_K;
-  pHeap->array = (struct HeapNode*) talloc(sizeof(struct HeapNode) * pHeap->capacity);
+  pHeap->array = (struct HeapNode*) talloc(sizeof(struct HeapNode) * pHeap->capacity, __FUNCTION__);
   memset(pHeap->array, 0, sizeof(struct HeapNode) * pHeap->capacity);
   for(; i < len; ++i)
     {
@@ -197,7 +197,10 @@ int Heap_MinInsert(struct Heap* pHeap, int key, void* data)
 
 void Heap_Destroy(struct Heap* pHeap)
 {
-  int i = 0;
-  tfree(pHeap->array);
-  pHeap->len = 0;
+	if(pHeap->array)
+	{
+		tfree(pHeap->array);
+		pHeap->array = 0;
+		pHeap->len = 0;
+	}
 }

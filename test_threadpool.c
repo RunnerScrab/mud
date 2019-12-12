@@ -1,7 +1,7 @@
 #include "threadpool.h"
 #include "talloc.h"
 #include "poolalloc.h"
-
+#include <mcheck.h>
 #include <sys/time.h>
 #include <time.h>
 #include <pthread.h>
@@ -9,7 +9,7 @@
 #include <stdlib.h>
 
 
-struct MemoryPool mempool;
+
 
 
 struct Bundle
@@ -23,7 +23,7 @@ struct Bundle
 
 void* TestTask(void* args)
 {
-	//printf("Thread %lld: Test task %d!\n", pthread_self(), ((struct Bundle*) args)->v1);
+	printf("Test task %d!\n", ((struct Bundle*) args)->v1);
 	struct Bundle* pArgs = args;
 	unsigned int i = 0;
 	int sum = 0;
@@ -35,19 +35,21 @@ void* TestTask(void* args)
 	pthread_mutex_lock(pArgs->pMtx);
 	*(pArgs->pNum) += sum;
 	pthread_mutex_unlock(pArgs->pMtx);
+	return 0;
 }
 
 void MPoolReleaser(void* args)
 {
-	MemoryPool_Free(&mempool, sizeof(struct Bundle), args);
+//	MemoryPool_Free(&mempool, sizeof(struct Bundle), args);
 }
 
 int main(void)
 {
-	char ch = 0;
-
+	mtrace();
+	struct MemoryPool mempool;
+	memset(&mempool, 0, sizeof(struct MemoryPool));
 	struct ThreadPool tp;
-	if(ThreadPool_Init(&tp, get_nprocs() - 1) < 0)
+	if(ThreadPool_Init(&tp, get_nprocs()) < 0)
 	{
 		printf("Fatal error!\n");
 		return -1;
@@ -62,7 +64,7 @@ int main(void)
 
 	struct timespec timebegin, timeend;
 	clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &timebegin);
-	for(; i < 2000000; ++i)
+	for(; i < 200; ++i)
 	{
 		//struct Bundle* argbund = talloc(sizeof(struct Bundle));//AllocPool_Alloc(&argpool);
 
@@ -70,7 +72,8 @@ int main(void)
 		argbund->pNum = &poorvalue;
 		argbund->pMtx = &valmtx;
 		argbund->v1 = (i & 1) ? 1 : -1;
-		ThreadPool_AddTask(&tp, TestTask, 1, argbund, MPoolReleaser);
+		ThreadPool_AddTask(&tp, ThreadPool_GetLeastBusyThread(&tp),
+				TestTask, 1, argbund, MPoolReleaser);
 
 	}
 	clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &timeend);
@@ -81,7 +84,7 @@ int main(void)
 	clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &timebegin);
 	unsigned int j = 0;
 	int sum = 0;
-	for(poorvalue = 0, i = 0; i < 2000000; ++i)
+	for(poorvalue = 0, i = 0; i < 200; ++i)
 	{
 		for(; j < 2000000; ++j)
 		{
@@ -99,5 +102,6 @@ int main(void)
 
 	printf("%d outstanding allocations. %d allocs, %d frees.\n", toutstanding_allocs(), tget_allocs(),
 		tget_frees());
+	muntrace();
 	return 0;
 }

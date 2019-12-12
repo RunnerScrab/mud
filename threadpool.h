@@ -15,26 +15,40 @@ struct ThreadTask
 	void (*releasefn) (void*);
 };
 
-struct ThreadPool
+
+struct ThreadBundle
 {
-	pthread_t* pThreads;
-	unsigned int thread_count;
-
-	struct Heap prio_queue;
-	pthread_mutex_t prio_queue_mutex;
-	pthread_cond_t wakecond;
-
-	volatile unsigned char bIsRunning;
-
-	struct AllocPool alloc_pool;
+	unsigned int thread_num; //Not the Pid, but a number < than the # of cpu cores
+	struct ThreadPool* thread_pool;
+	struct Heap my_pq;
+	pthread_mutex_t my_pq_mtx;
+	pthread_cond_t my_wakecond;
+	volatile unsigned char bShouldBeRunning;
+	struct MemoryPool mem_pool;
 };
 
+
+int ThreadBundle_Init(struct ThreadBundle* tb, struct ThreadPool* tp,
+		unsigned int thread_num);
+void ThreadBundle_Destroy(struct ThreadBundle* tb);
+
+
+struct ThreadPool
+{
+	struct ThreadBundle* thread_bundles;
+	pthread_t* pThreads;
+	unsigned int thread_count, last_thread_assigned;
+};
+
+struct ThreadBundle* ThreadPool_GetLeastBusyThread(struct ThreadPool* tp);
 
 void ThreadPool_Stop(struct ThreadPool* tp);
 void ThreadPool_Destroy(struct ThreadPool* tp);
 int ThreadPool_Init(struct ThreadPool* tp, unsigned int cores);
 
 //args should be a pointer to allocated memory; the threadpool takes ownership
-int ThreadPool_AddTask(struct ThreadPool* tp, void* (*task) (void*), int priority, void* args,
-				void (*argreleaserfn) (void*));
+int ThreadPool_AddTask(struct ThreadPool* tp, struct ThreadBundle* tb,
+		void* (*task) (void*), int priority, void* args,
+		void (*argreleaserfn) (void*));
+
 #endif

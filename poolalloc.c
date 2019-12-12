@@ -63,12 +63,12 @@ struct AllocPool* MemoryPool_AddBlockSizePool(struct MemoryPool* mp, ssize_t blo
 	}
 	else
 	{
-		mp->alloc_pools = talloc(sizeof(struct AllocPool*));
+		mp->alloc_pools = talloc(sizeof(struct AllocPool*), __FUNCTION__);
 	}
 
 	++mp->alloc_pool_count;
 	struct AllocPool** ppAllocPool = &(mp->alloc_pools[mp->alloc_pool_count - 1]);
-	*ppAllocPool = talloc(sizeof(struct AllocPool));
+	*ppAllocPool = talloc(sizeof(struct AllocPool), __FUNCTION__);
 	AllocPool_Init(*ppAllocPool, mp->default_init_elcount, block_size);
 	return *ppAllocPool;
 }
@@ -79,15 +79,21 @@ void MemoryPool_Destroy(struct MemoryPool* mp)
 	for(; idx < mp->alloc_pool_count; ++idx)
 	{
 		AllocPool_Destroy(mp->alloc_pools[idx]);
-		tfree(mp->alloc_pools[idx]);
-		mp->alloc_pools[idx] = 0;
+		if(mp->alloc_pools[idx])
+		{
+			tfree(mp->alloc_pools[idx]);
+			mp->alloc_pools[idx] = 0;
+		}
 	}
-	tfree(mp->alloc_pools);
+	if(mp->alloc_pools)
+	{
+		tfree_(mp->alloc_pools, "MemoryPool_Destroy2");
+	}
 }
 
 void PoolMemBlock_Init(struct PoolMemBlock* pMemBlock, ssize_t element_count, ssize_t element_size)
 {
-	pMemBlock->datablock = (void*) talloc(element_count * element_size);
+	pMemBlock->datablock = (void*) talloc(element_count * element_size, __FUNCTION__);
 	memset(pMemBlock->datablock, 0, element_count * element_size);
 	ssize_t idx = 0;
 	struct InplaceFreeNode* pFreeNode = (struct InplaceFreeNode*) pMemBlock->datablock;
@@ -97,16 +103,15 @@ void PoolMemBlock_Init(struct PoolMemBlock* pMemBlock, ssize_t element_count, ss
 		pFreeNode = ((void*) pFreeNode->nextinplacenode);
 	}
 
-	pFreeNode->nextinplacenode;
+	pFreeNode->nextinplacenode = 0;
 }
 
 void AllocPool_Init(struct AllocPool* pAllocPool, ssize_t element_count,
 		ssize_t element_size)
 {
-	pthread_mutex_init(&(pAllocPool->pool_mutex), 0);
 	pAllocPool->element_size = element_size;
 	pAllocPool->element_count = element_count;
-	pAllocPool->pool_blocks = (struct PoolMemBlock*) talloc(sizeof(struct PoolMemBlock));
+	pAllocPool->pool_blocks = (struct PoolMemBlock*) talloc(sizeof(struct PoolMemBlock), __FUNCTION__);
 	memset(pAllocPool->pool_blocks, 0, sizeof(struct PoolMemBlock));
 	PoolMemBlock_Init(pAllocPool->pool_blocks, element_count, element_size);
 	pAllocPool->block_count = 1;
@@ -131,14 +136,14 @@ void AllocPool_AddBlock(struct AllocPool* pAllocPool)
 
 void* AllocPool_Alloc(struct AllocPool* pAllocPool)
 {
-	pthread_mutex_lock(&(pAllocPool->pool_mutex));
+
 	struct InplaceFreeNode* returnval = pAllocPool->headnode;
 	pAllocPool->headnode = returnval->nextinplacenode;
 	if(!pAllocPool->headnode)
 	{
 		AllocPool_AddBlock(pAllocPool);
 	}
-	pthread_mutex_unlock(&(pAllocPool->pool_mutex));
+
 	return returnval;
 }
 
@@ -146,10 +151,10 @@ void AllocPool_Free(struct AllocPool* pAllocPool, void* pFreeMe)
 {
 	//Once pFreeMe has been used (which it must be assumed to have been),
 	//the nodedata and nextinplacenode have already been overwritten with data
-	pthread_mutex_lock(&(pAllocPool->pool_mutex));
+
 	((struct InplaceFreeNode*)pFreeMe)->nextinplacenode = pAllocPool->headnode;
 	pAllocPool->headnode = pFreeMe;
-	pthread_mutex_unlock(&(pAllocPool->pool_mutex));
+
 }
 
 void AllocPool_Destroy(struct AllocPool* pAllocPool)
@@ -160,5 +165,5 @@ void AllocPool_Destroy(struct AllocPool* pAllocPool)
 		tfree(pAllocPool->pool_blocks[idx].datablock);
 	}
 	tfree(pAllocPool->pool_blocks);
-	pthread_mutex_destroy(&(pAllocPool->pool_mutex));
+
 }

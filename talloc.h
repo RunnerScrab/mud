@@ -3,9 +3,11 @@
 #include <stddef.h>
 #include <stdlib.h>
 
-void* talloc(ssize_t size);
-void* aligned_talloc(ssize_t alignment, ssize_t size);
-void tfree(void* p);
+void* talloc(ssize_t size, const char* desc);
+
+#define tfree(x) (tfree_(x, __FUNCTION__))
+void txfree(void* p);
+void tfree_(void* p, const char* desc);
 int toutstanding_allocs();
 int tget_frees();
 int tget_allocs();
