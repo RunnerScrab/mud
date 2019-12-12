@@ -24,7 +24,7 @@ void* trealloc_(void* origp, ssize_t size, const char* func, const char* file, c
 	{
 		if(origp == g_allocations[idx].mem)
 		{
-			printf("!Moving %llx to %llx\n", origp, newv);
+			printf("!Moving %p to %p\n", origp, newv);
 			g_allocations[idx].mem = newv;
 			break;
 		}
@@ -98,8 +98,8 @@ void tfree_(void* p, const char* func, const char* file, const int line)
 
 	if(!found)
 	{
-		printf("Couldn't find memory block at %llx freed at %s-%s:%d?\n",
-			(unsigned long long int) p, func, file, line);
+		printf("Couldn't find memory block at %p freed at %s-%s:%d?\n",
+			p, func, file, line);
 	}
 	#endif
 	++g_frees;
@@ -112,7 +112,7 @@ void tprint_summary()
 	ssize_t idx = 0;
 	for(; idx < g_allocs; ++idx)
 	{
-		printf("%llx %s- freed %d times\n",
+		printf("%p %s- freed %d times\n",
 			g_allocations[idx].mem, g_allocations[idx].desc,
 			g_allocations[idx].freed);
 	}

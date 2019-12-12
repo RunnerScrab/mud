@@ -92,7 +92,7 @@ int main(void)
 	int poorvalue = 0;
 
 	struct timespec timebegin, timeend;
-	clock_gettime(CLOCK_PROCESS_CPUTIME_IDk, &timebegin);
+	clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &timebegin);
 	for(; i < 2000000; ++i)
 	{
 		//struct Bundle* argbund = talloc(sizeof(struct Bundle));//AllocPool_Alloc(&argpool);
@@ -119,12 +119,12 @@ int main(void)
 		}
 		poorvalue += sum;
 	}
-	
+
 	scanf("%d", &sum);
 	clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &timeend);
 	printf("Computation complete. Result: %d\n", poorvalue);
 	printf("Elapsed time for single thread: %fs\n", (timeend.tv_nsec - timebegin.tv_nsec)/1000000000.0);
-	
+
 	ThreadPool_Destroy(&tp);
 
 
@@ -132,7 +132,7 @@ int main(void)
 	{
 		printf("%u ran %llu times.\n", threadinfo[i].threadid, threadinfo[i].count);
 	}
-	
+
 	MemoryPool_Destroy(&mempool); //lazy; this joins all threads
 	printf("%d outstanding allocations. %d allocs, %d frees.\n", toutstanding_allocs(), tget_allocs(),
 		tget_frees());
