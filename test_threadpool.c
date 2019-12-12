@@ -62,11 +62,7 @@ void MPoolReleaser(void* args)
 
 int main(void)
 {
-	InitTallocSystem();
-
 	unsigned int cores = get_nprocs() - 1;
-
-
 
 	struct ThreadPool tp;
 	if(ThreadPool_Init(&tp, cores) < 0)
@@ -140,6 +136,5 @@ int main(void)
 	printf("%d outstanding allocations. %d allocs, %d frees.\n", toutstanding_allocs(), tget_allocs(),
 		tget_frees());
 
-	StopTallocSystem();
 	return 0;
 }

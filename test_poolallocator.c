@@ -19,7 +19,7 @@ int main(void)
 	{
 		for(i = 0; i < 100; ++i)
 		{
-			data[i] = MemoryPool_Alloc(&mempool, sizeof(struct TestData));
+			data[i] = (struct TestData*) MemoryPool_Alloc(&mempool, sizeof(struct TestData));
 			data[i]->val1 = i;
 			data[i]->val2 = i;
 			data[i]->val3 = i;
