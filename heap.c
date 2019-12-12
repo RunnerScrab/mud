@@ -5,7 +5,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define PARAMETER_K 2 //Parameter for heap reallocation if usage crosses (capacity / 2) -/+ K in either direction
+#define PARAMETER_K 2 //Parameter for heap treallocation if usage crosses (capacity / 2) -/+ K in either direction
 
 #define parent(idx) ((idx - 1) >> 1)
 #define left(idx) ((idx << 1) + 1)
@@ -24,39 +24,39 @@ static void swap_heap_node(struct HeapNode* a, struct HeapNode* b)
   *b = t;
 }
 
-int Heap_GetSize(struct Heap* pHeap)
+size_t Heap_GetSize(struct Heap* pHeap)
 {
   return pHeap->len;
 }
 
-int Heap_GetKeyAt(struct Heap* pHeap, unsigned int idx)
+int Heap_GetKeyAt(struct Heap* pHeap, size_t idx)
 {
   return pHeap->array[idx].key;
 }
 
-int Heap_IsMinHeap(struct Heap* pHeap, unsigned int idx)
+int Heap_IsMinHeap(struct Heap* pHeap, size_t idx)
 {
   if(idx >= pHeap->len)
     {
       return 1;
     }
 
-  unsigned int rightidx = right(idx);
-  unsigned int leftidx = left(idx);
+  size_t rightidx = right(idx);
+  size_t leftidx = left(idx);
   int topkey = Heap_GetKeyAt(pHeap, idx);
 
-  int rightheap = rightidx >= pHeap->len || (topkey < Heap_GetKeyAt(pHeap, rightidx) && Heap_IsMinHeap(pHeap, rightidx));
-  int leftheap = leftidx >= pHeap->len || (topkey < Heap_GetKeyAt(pHeap, leftidx) && Heap_IsMinHeap(pHeap, leftidx));
+  size_t rightheap = rightidx >= pHeap->len || (topkey < Heap_GetKeyAt(pHeap, rightidx) && Heap_IsMinHeap(pHeap, rightidx));
+  size_t leftheap = leftidx >= pHeap->len || (topkey < Heap_GetKeyAt(pHeap, leftidx) && Heap_IsMinHeap(pHeap, leftidx));
 
   return rightheap & leftheap;
 }
 
-static void min_heapify(struct Heap* pHeap, unsigned int idx)
+static void min_heapify(struct Heap* pHeap, size_t idx)
 {
-  unsigned int leftidx = left(idx);
-  unsigned int rightidx = right(idx);
-  unsigned int smallestidx = idx;
-  unsigned int arraylen = pHeap->len;
+  size_t leftidx = left(idx);
+  size_t rightidx = right(idx);
+  size_t smallestidx = idx;
+  size_t arraylen = pHeap->len;
 
   if(leftidx < arraylen && Heap_GetKeyAt(pHeap, idx) > Heap_GetKeyAt(pHeap, leftidx))
     {
@@ -75,7 +75,7 @@ static void min_heapify(struct Heap* pHeap, unsigned int idx)
 
 void Heap_Print(struct Heap *pHeap)
 {
-  int i = 0, z = pHeap->len;
+  size_t i = 0, z = pHeap->len;
   for(; i < z; ++i)
     {
       printf((i < z - 1) ? "%d," : "%d\n", Heap_GetKeyAt(pHeap, i));
@@ -89,38 +89,27 @@ void Heap_BuildMinHeap(struct Heap* pHeap)
     ALL nodes in the tree excluding the root, because the number of
     leaves doubles each successive level.
    */
-  int i = ((pHeap->len)>>1) - 1;
+  size_t i = ((pHeap->len)>>1) - 1;
   for(; i >= 0; --i)
     {
       min_heapify(pHeap, i);
     }
 }
 
-int Heap_Create(struct Heap* pHeap, unsigned int len)
+int Heap_Create(struct Heap* pHeap, size_t len)
 {
-	memset(pHeap, 0, sizeof(struct Heap));
 	pHeap->capacity = len << 1;
-	pHeap->array = (struct HeapNode*) talloc(sizeof(struct HeapNode) * pHeap->capacity, __FUNCTION__);
+	pHeap->array = (struct HeapNode*) talloc(sizeof(struct HeapNode) * pHeap->capacity);
 	memset(pHeap->array, 0, sizeof(struct HeapNode) * pHeap->capacity);
 	pHeap->len = 0;
 	return (pHeap->array) ? 0 : -1;
 }
 
-void Heap_Destroy(struct Heap* pHeap)
+int Heap_InitFromArray(struct Heap* pHeap, int* array, size_t len)
 {
-	if(pHeap->array)
-	{
-		tfree(pHeap->array);
-		pHeap->array = 0;
-		pHeap->len = 0;
-	}
-}
-
-int Heap_InitFromArray(struct Heap* pHeap, int* array, unsigned int len)
-{
-  unsigned int i = 0;
+  size_t i = 0;
   pHeap->capacity = (len << 1) + PARAMETER_K;
-  pHeap->array = (struct HeapNode*) talloc(sizeof(struct HeapNode) * pHeap->capacity, __FUNCTION__);
+  pHeap->array = (struct HeapNode*) talloc(sizeof(struct HeapNode) * pHeap->capacity);
   memset(pHeap->array, 0, sizeof(struct HeapNode) * pHeap->capacity);
   for(; i < len; ++i)
     {
@@ -132,9 +121,9 @@ int Heap_InitFromArray(struct Heap* pHeap, int* array, unsigned int len)
   return (pHeap->array) ? 0 : -1;
 }
 
-void Heap_DecreaseKey(struct Heap* pHeap, int idx, struct HeapNode* pNode)
+void Heap_DecreaseKey(struct Heap* pHeap, size_t idx, struct HeapNode* pNode)
 {
-	int i = 0;
+	size_t i = 0;
 	if(pNode->key <= pHeap->array[idx].key)
 	{
 		for(i = idx; i > 0 && Heap_GetKeyAt(pHeap, parent(i)) > Heap_GetKeyAt(pHeap, i);)
@@ -164,12 +153,12 @@ void Heap_ExtractMinimum(struct Heap* pHeap, struct HeapNode* pOut)
 
 		swap_heap_node(&(pHeap->array[0]), &(pHeap->array[pHeap->len - 1]));
 
-		memset(&(pHeap->array[pHeap->len - 1]), 0, sizeof(struct HeapNode));
+
 		--(pHeap->len);
 		if(pHeap->len < ((pHeap->capacity >> 1) - PARAMETER_K))
 		{
 			pHeap->capacity = (pHeap->capacity >> 1) + PARAMETER_K;
-			pHeap->array =  (struct HeapNode*) realloc(pHeap->array,
+			pHeap->array =  (struct HeapNode*) trealloc(pHeap->array,
 								pHeap->capacity * sizeof(struct HeapNode));
 
 		}
@@ -192,7 +181,7 @@ int Heap_MinInsert(struct Heap* pHeap, int key, void* data)
 	if(pHeap->len == pHeap->capacity)
 	{
 		pHeap->capacity = (pHeap->capacity << 1) + PARAMETER_K;
-		pHeap->array = (struct HeapNode*) realloc(pHeap->array,
+		pHeap->array = (struct HeapNode*) trealloc(pHeap->array,
 							pHeap->capacity * sizeof(struct HeapNode));
 		if(!pHeap->array)
 		{
@@ -206,3 +195,8 @@ int Heap_MinInsert(struct Heap* pHeap, int key, void* data)
 	return 0;
 }
 
+void Heap_Destroy(struct Heap* pHeap)
+{
+  tfree(pHeap->array);
+  pHeap->len = 0;
+}

@@ -11,10 +11,10 @@ const int TEL_STREAM_STATE_CMD3 = 4; //Verbs
 
 struct Client* Client_Create()
 {
-	struct Client* pClient = (struct Client*) talloc(sizeof(struct Client), __FUNCTION__);
+	struct Client* pClient = (struct Client*) talloc(sizeof(struct Client));
 	pClient->tel_stream_state = TEL_STREAM_STATE_USERINPUT;
 	memset(&(pClient->tel_cmd_buffer), 0, sizeof(char) * 64);
-	pClient->input_buffer = (char*) talloc(sizeof(char) * 256, __FUNCTION__);
+	pClient->input_buffer = (char*) talloc(sizeof(char) * 256);
 	return pClient;
 }
 
@@ -28,4 +28,3 @@ void Client_Destroy(void* p)
 	}
 	tfree(pClient);
 }
-

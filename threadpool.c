@@ -146,9 +146,9 @@ int ThreadPool_Init(struct ThreadPool* tp, unsigned int cores)
 
 	tp->thread_count = cores;
 
-	tp->pThreads = (pthread_t*) talloc(sizeof(pthread_t) * tp->thread_count, __FUNCTION__);
+	tp->pThreads = (pthread_t*) talloc(sizeof(pthread_t) * tp->thread_count);
 	tp->last_thread_assigned = 0;
-	tp->thread_bundles = (struct ThreadBundle*) talloc(sizeof(struct ThreadBundle) * tp->thread_count, __FUNCTION__);
+	tp->thread_bundles = (struct ThreadBundle*) talloc(sizeof(struct ThreadBundle) * tp->thread_count);
 
 	for(idx = 0; idx < tp->thread_count; ++idx)
 	{

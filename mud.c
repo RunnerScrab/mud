@@ -139,7 +139,6 @@ void* TestHandleClientInput(void* arg)
 
 int main(int argc, char** argv)
 {
-	InitTallocSystem();
 	struct EvPkg
 	{
 		int sockfd;
@@ -278,6 +277,5 @@ lbl_end_server_loop:
 
 	Server_Teardown(&server);
 	printf("%d unfreed allocations.\n", toutstanding_allocs());
-	StopTallocSystem();
 	return 0;
 }

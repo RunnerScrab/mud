@@ -3,14 +3,23 @@
 #include <stddef.h>
 #include <stdlib.h>
 
-void* talloc(ssize_t size, const char* desc);
+#define talloc(size) talloc_(size, __FUNCTION__, __FILE__, __LINE__)
+#define tfree(p) tfree_(p, __FUNCTION__, __FILE__, __LINE__)
+#define trealloc(orig, size) trealloc_(orig, size, __FUNCTION__, __FILE__, __LINE__)
 
-#define tfree(x) (tfree_(x, __FILE__))
-void txfree(void* p);
-void tfree_(void* p, const char* desc);
+void* trealloc_(void* origp, ssize_t size, const char* func, const char* file, const int line);
+void* talloc_(ssize_t size, const char* func, const char* file, const int line);
+void tfree_(void* p, const char* func, const char* file, const int line);
+
+void tfree2(void* p);
 int toutstanding_allocs();
 int tget_frees();
 int tget_allocs();
-void InitTallocSystem();
-void StopTallocSystem();
+
+
+int toutstanding_allocs();
+int tget_frees();
+int tget_allocs();
+void tprint_summary();
+
 #endif
