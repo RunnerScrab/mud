@@ -1,4 +1,4 @@
-CC = gcc
+CC = g++
 FLAGS = -pthread -g -Wall
 
 mud: mud.o talloc.o vector.o heap.o client.o threadpool.o poolalloc.o

@@ -139,6 +139,7 @@ void* TestHandleClientInput(void* arg)
 
 int main(int argc, char** argv)
 {
+	InitTallocSystem();
 	struct EvPkg
 	{
 		int sockfd;
@@ -198,7 +199,7 @@ int main(int argc, char** argv)
 
 		for(loop_ctr = 0; loop_ctr < ready; ++loop_ctr)
 		{
-			pEvPkg = (evlist[loop_ctr].data.ptr);
+			pEvPkg = (struct EvPkg*) (evlist[loop_ctr].data.ptr);
 			if(pEvPkg->sockfd == server.sockfd)
 			{
 				ServerLog(SERVERLOG_STATUS, "Client connected.\n");
@@ -228,13 +229,13 @@ int main(int argc, char** argv)
 
 				if(bytes_read > 0)
 				{
-					((struct Client*)pEvPkg->pData)->input_buffer[bytes_read] = 0;
+					((struct Client*) pEvPkg->pData)->input_buffer[bytes_read] = 0;
 					/* DEMO CODE */
-					char* msgcpy = talloc(sizeof(char) * 256, __FUNCTION__);
+					char* msgcpy = (char*) malloc(sizeof(char) * 256);
 					memcpy(msgcpy, ((struct Client*)pEvPkg->pData)->input_buffer, 256 * sizeof(char));
 					struct ThreadBundle* tb = ThreadPool_GetLeastBusyThread(&(server.thread_pool));
 					if(FAILURE(ThreadPool_AddTask(&(server.thread_pool), tb,
-						       TestHandleClientInput, 1, msgcpy, txfree)))
+						       TestHandleClientInput, 1, msgcpy, free)))
 					{
 						ServerLog(SERVERLOG_ERROR, "Failed to add threadpool task!");
 					}
@@ -277,5 +278,6 @@ lbl_end_server_loop:
 
 	Server_Teardown(&server);
 	printf("%d unfreed allocations.\n", toutstanding_allocs());
+	StopTallocSystem();
 	return 0;
 }

@@ -25,6 +25,7 @@ struct ThreadBundle
 	pthread_cond_t my_wakecond;
 	volatile unsigned char bShouldBeRunning;
 	struct MemoryPool mem_pool;
+	pthread_mutex_t mem_pool_mtx;
 };
 
 
@@ -46,7 +47,6 @@ void ThreadPool_Stop(struct ThreadPool* tp);
 void ThreadPool_Destroy(struct ThreadPool* tp);
 int ThreadPool_Init(struct ThreadPool* tp, unsigned int cores);
 
-//args should be a pointer to allocated memory; the threadpool takes ownership
 int ThreadPool_AddTask(struct ThreadPool* tp, struct ThreadBundle* tb,
 		void* (*task) (void*), int priority, void* args,
 		void (*argreleaserfn) (void*));

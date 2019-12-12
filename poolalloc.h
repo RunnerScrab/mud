@@ -11,13 +11,15 @@ struct InplaceFreeNode
 	struct InplaceFreeNode* nextinplacenode;
 };
 
+struct PoolMemBlock
+{
+	void* datablock;
+};
+
 //Preallocated memory pool for particular size
 struct AllocPool
 {
-	struct PoolMemBlock
-	{
-		void* datablock;
-	} *pool_blocks;
+	struct PoolMemBlock *pool_blocks;
 
 	ssize_t element_size, element_count;
 	struct InplaceFreeNode* headnode;

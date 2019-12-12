@@ -41,7 +41,7 @@ void* TestTask(void* args)
 		}
 	}
 	//	printf("Thread %lld: Test task %d!\n", pthread_self(), ((struct Bundle*) args)->v1);
-	struct Bundle* pArgs = args;
+	struct Bundle* pArgs = (struct Bundle*) args;
 
 	int sum = 0;
 	int diff = pArgs->v1;
@@ -62,7 +62,8 @@ void MPoolReleaser(void* args)
 
 int main(void)
 {
-	char ch = 0;
+	InitTallocSystem();
+
 	unsigned int cores = get_nprocs() - 1;
 
 
@@ -76,7 +77,7 @@ int main(void)
 	threadinfo = (struct ThreadInfo*) malloc(sizeof(struct ThreadInfo) * cores);
 	memset(threadinfo, 0, sizeof(struct ThreadInfo) * cores);
 
-	int i = 0;
+	unsigned int i = 0;
 	threadcount = tp.thread_count;
 	for(; i < tp.thread_count; ++i)
 	{
@@ -87,17 +88,18 @@ int main(void)
 
 	pthread_mutex_t valmtx;
 	pthread_mutex_init(&valmtx, 0);
-	MemoryPool_Init(&mempool);
+
 
 	int poorvalue = 0;
 
 	struct timespec timebegin, timeend;
 	clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &timebegin);
-	for(; i < 2000000; ++i)
+	for(; i < 20; ++i)
 	{
 		//struct Bundle* argbund = talloc(sizeof(struct Bundle));//AllocPool_Alloc(&argpool);
 		struct ThreadBundle* tb = ThreadPool_GetLeastBusyThread(&tp);
-		struct Bundle* argbund = malloc(sizeof(struct Bundle));
+		printf("Thread_num: %d\n", tb->thread_num);
+		struct Bundle* argbund = (struct Bundle*) malloc(sizeof(struct Bundle));
 
 		argbund->pNum = &poorvalue;
 		argbund->pMtx = &valmtx;
@@ -126,22 +128,18 @@ int main(void)
 	printf("Computation complete. Result: %d\n", poorvalue);
 	printf("Elapsed time for single thread: %fs\n", (timeend.tv_nsec - timebegin.tv_nsec)/1000000000.0);
 
-
-
-
-
 	ThreadPool_Destroy(&tp);
 
 
 	for(i = 0; i < threadcount; ++i)
 	{
-		printf("%u ran %d times.\n", threadinfo[i].threadid, threadinfo[i].count);
+		printf("%lu ran %lu times.\n", threadinfo[i].threadid, threadinfo[i].count);
 	}
 	scanf("%d", &sum);
-	MemoryPool_Destroy(&mempool); //lazy; this joins all threads
+
 	printf("%d outstanding allocations. %d allocs, %d frees.\n", toutstanding_allocs(), tget_allocs(),
 		tget_frees());
 
-
+	StopTallocSystem();
 	return 0;
 }
