@@ -73,7 +73,7 @@ int main(void)
 		printf("Fatal error!\n");
 		return -1;
 	}
-	threadinfo = (struct ThreadInfo*) malloc(sizeof(struct ThreadInfo) * cores);
+	threadinfo = (struct ThreadInfo*) talloc(sizeof(struct ThreadInfo) * cores);
 	memset(threadinfo, 0, sizeof(struct ThreadInfo) * cores);
 
 	int i = 0;
@@ -134,6 +134,7 @@ int main(void)
 	}
 
 	MemoryPool_Destroy(&mempool); //lazy; this joins all threads
+	tfree(threadinfo);
 	printf("%d outstanding allocations. %d allocs, %d frees.\n", toutstanding_allocs(), tget_allocs(),
 		tget_frees());
 
