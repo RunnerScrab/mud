@@ -62,10 +62,8 @@ void MPoolReleaser(void* args)
 
 int main(void)
 {
-	char ch = 0;
+
 	unsigned int cores = get_nprocs() - 1;
-
-
 
 	struct ThreadPool tp;
 	if(ThreadPool_Init(&tp, cores) < 0)
@@ -130,7 +128,7 @@ int main(void)
 
 	for(i = 0; i < threadcount; ++i)
 	{
-		printf("%u ran %llu times.\n", threadinfo[i].threadid, threadinfo[i].count);
+		printf("%lu ran %llu times.\n", threadinfo[i].threadid, threadinfo[i].count);
 	}
 
 	MemoryPool_Destroy(&mempool); //lazy; this joins all threads

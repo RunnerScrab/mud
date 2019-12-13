@@ -99,7 +99,6 @@ int main(int argc, char** argv)
 	server.epfd = epoll_create(10);
 	int ready = 0;
 	int loop_ctr = 0;
-	ssize_t bytes_read = 0;
 
 	if(FAILURE(Server_Configure(&server, "127.0.0.1", 9001))
 		|| FAILURE(Server_Initialize(&server, 32)))
