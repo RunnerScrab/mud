@@ -24,7 +24,6 @@ void* trealloc_(void* origp, ssize_t size, const char* func, const char* file, c
 	{
 		if(origp == g_allocations[idx].mem)
 		{
-			printf("!Moving %p to %p\n", origp, newv);
 			g_allocations[idx].mem = newv;
 			break;
 		}
@@ -123,8 +122,10 @@ void tprint_summary()
 
 int toutstanding_allocs()
 {
+	#ifdef DEBUG
 	if(g_allocations)
 		free(g_allocations);
+	#endif
 	return g_allocs - g_frees;
 }
 
