@@ -4,13 +4,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-/*
-static ssize_t np2(ssize_t num, ssize_t multiple)
-{
-	return (num + (multiple - 1)) & (-1 * multiple);
-}
-*/
-
 void MemoryPool_Init(struct MemoryPool* mp)
 {
 	mp->alloc_pools = 0;
