@@ -55,28 +55,28 @@ int Heap_IsMinHeap(struct Heap* pHeap, int idx)
 		|| (leftidx >= len || (topkey < arr[leftidx].key && Heap_IsMinHeap(pHeap, leftidx)));
 }
 
-static void min_heapify_rec(struct Heap* pHeap, int idx)
-{
-  int leftidx = left(idx);
-  int rightidx = right(idx);
-  int smallestidx = idx;
-  int arraylen = pHeap->len;
-  register struct HeapNode* arr = pHeap->array;
+/* static void min_heapify_rec(struct Heap* pHeap, int idx) */
+/* { */
+/*   int leftidx = left(idx); */
+/*   int rightidx = right(idx); */
+/*   int smallestidx = idx; */
+/*   int arraylen = pHeap->len; */
+/*   register struct HeapNode* arr = pHeap->array; */
 
-  if(leftidx < arraylen && arr[idx].key > arr[leftidx].key)
-    {
-      smallestidx = leftidx;
-    }
-  if(rightidx < arraylen && arr[smallestidx].key > arr[rightidx].key)
-    {
-      smallestidx = rightidx;
-    }
-  if(idx < arraylen && smallestidx != idx)
-    {
-      swap_heap_node(&(arr[idx]), &(arr[smallestidx]));
-      min_heapify_rec(pHeap, smallestidx);
-    }
-}
+/*   if(leftidx < arraylen && arr[idx].key > arr[leftidx].key) */
+/*     { */
+/*       smallestidx = leftidx; */
+/*     } */
+/*   if(rightidx < arraylen && arr[smallestidx].key > arr[rightidx].key) */
+/*     { */
+/*       smallestidx = rightidx; */
+/*     } */
+/*   if(idx < arraylen && smallestidx != idx) */
+/*     { */
+/*       swap_heap_node(&(arr[idx]), &(arr[smallestidx])); */
+/*       min_heapify_rec(pHeap, smallestidx); */
+/*     } */
+/* } */
 
 static inline void min_heapify_it(struct Heap* pHeap, int idx)
 {

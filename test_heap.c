@@ -15,6 +15,7 @@ int randint(int min, int max)
 
 int main(void)
 {
+
   srand(time(NULL));
   int array[8] = {1, 2, 3, 4, 5, 6, 7, 8};
   int array2[8] = {5, 2, 10, 1, 7, 3, 4, 9};
