@@ -1,5 +1,5 @@
 CC = gcc
-FLAGS = -Wall -O3 -pthread
+FLAGS = -Wall -O3 -pthread -DDEBUG
 TESTFLAGS = -pg
 
 mud: mud.o server.o talloc.o vector.o heap.o client.o threadpool.o poolalloc.o

@@ -59,9 +59,11 @@ void Server_HandleUserInput(struct Server* pServer, struct Client* pClient, int 
 
 		if(strstr(pClient->input_buffer, "kill"))
 		{
+			//This is obviously just for debugging!
 			//TODO: Send a kill signal to the process
 			//goto lbl_end_server_loop;
-			printf("No actual kill function yet.\n");
+			//printf("No actual kill function yet.\n");
+			Server_WriteToCmdPipe(pServer, "kill", 5);
 		}
 		/* END DEMO CODE */
 	}
@@ -87,16 +89,15 @@ void Server_HandleUserInput(struct Server* pServer, struct Client* pClient, int 
 
 int main(int argc, char** argv)
 {
-
-
 	struct Server server;
-	struct EvPkg server_epkg;
-	struct epoll_event server_event, clev, evlist[64];
+
+	//Temporary stuff for connecting client - should be put in struct Client
+	struct epoll_event clev;
 	struct EvPkg* pEvPkg = 0;
 	struct Client* pConnectingClient = 0;
+
 	unsigned int addrlen = 0;
 	int accepted_sock = 0;
-	server.epfd = epoll_create(10);
 	int ready = 0;
 	int loop_ctr = 0;
 
@@ -107,32 +108,10 @@ int main(int argc, char** argv)
 		return -1;
 	}
 
-	server_epkg.sockfd = server.sockfd;
-	server_epkg.pData = 0;
-
-	server_event.events = EPOLLIN;
-	server_event.data.ptr = &server_epkg;
-
-	if(FAILURE(epoll_ctl(server.epfd, EPOLL_CTL_ADD, server.sockfd, &server_event)))
-	{
-		ServerLog(SERVERLOG_ERROR, "FATAL: Could not add server socket to epoll wait list!");
-		Server_Teardown(&server);
-		return -1;
-	}
-
-	memset(evlist, 0, sizeof(struct epoll_event) * 64);
-
-	if(FAILURE(Vector_Create(&(server.clients), 64, Client_Destroy)))
-	{
-		ServerLog(SERVERLOG_ERROR, "FATAL: Failed to allocate memory for client list!");
-		Server_Teardown(&server);
-		return -1;
-	}
-
 	for(;;)
 	{
 
-		ready = epoll_wait(server.epfd, evlist, 64, -1);
+		ready = epoll_wait(server.epfd, server.evlist, server.evlist_len, -1);
 
 		if(ready == -1)
 		{
@@ -142,7 +121,7 @@ int main(int argc, char** argv)
 
 		for(loop_ctr = 0; loop_ctr < ready; ++loop_ctr)
 		{
-			pEvPkg = (evlist[loop_ctr].data.ptr);
+			pEvPkg = (server.evlist[loop_ctr].data.ptr);
 			if(pEvPkg->sockfd == server.sockfd)
 			{
 				ServerLog(SERVERLOG_STATUS, "Client connected.\n");
@@ -161,6 +140,19 @@ int main(int argc, char** argv)
 
 				epoll_ctl(server.epfd, EPOLL_CTL_ADD, accepted_sock, &clev);
 			}
+			//HACK: ugh, I should make "EvPkg" both more general and descriptive
+			else if(server.evlist[loop_ctr].data.ptr == server.cmd_pipe)
+			{
+				//Received something on cmd pipe
+				char buf[256] = {0};
+				size_t bread = read(server.cmd_pipe[0], buf, 256);
+				buf[bread - 1] = 0;
+				printf("Received on cmd pipe: %s\n", buf);
+				if(strstr(buf, "kill"))
+				{
+					goto lbl_servershutdown;
+				}
+			}
 			else
 			{
 				Server_HandleUserInput(&server, pEvPkg->pData, pEvPkg->sockfd);
@@ -171,6 +163,7 @@ int main(int argc, char** argv)
 
 	}
 
+lbl_servershutdown:
 	ServerLog(SERVERLOG_STATUS, "Server shutting down.");
 	Server_SendAllClients(&server, "Server going down!\r\n");
 

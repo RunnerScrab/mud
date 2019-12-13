@@ -13,19 +13,21 @@ struct TelOpts
 
 };
 
+struct EvPkg
+{
+	int sockfd;
+	void* pData;
+};
+
+
 struct Client
 {
-	struct EvPkg
-	{
-		int sockfd;
-		void* pData;
-	} ev_pkg;
-
-     struct sockaddr addr;
-     int tel_stream_state;
-     struct TelOpts tel_opts;
-     unsigned char tel_cmd_buffer[64];
-     char* input_buffer;
+	struct EvPkg ev_pkg;
+	struct sockaddr addr;
+	int tel_stream_state;
+	struct TelOpts tel_opts;
+	unsigned char tel_cmd_buffer[64];
+	char* input_buffer;
 };
 
 
