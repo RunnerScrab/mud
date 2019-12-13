@@ -1,6 +1,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <time.h>
+#include <assert.h>
 
 #include "heap.h"
 #include "talloc.h"
@@ -24,24 +25,26 @@ int main(void)
   Heap_InitFromArray(&heap2, array2, 8);
 
 
-  printf("Array %s a minheap.\n", Heap_IsMinHeap(&heap1, 0) ? "is" : "is not");
+  //printf("Array %s a minheap.\n", Heap_IsMinHeap(&heap1, 0) ? "is" : "is not");
   Heap_BuildMinHeap(&heap2);
-  printf("Array2 %s a minheap.\n", Heap_IsMinHeap(&heap2, 0) ? "is" : "is not");
-  Heap_Print(&heap2);
+  //printf("Array2 %s a minheap.\n", Heap_IsMinHeap(&heap2, 0) ? "is" : "is not");
+  //Heap_Print(&heap2);
 
   int i = 0;
-  for(; i < 10; ++i)
+  for(; i < 1000000; ++i)
   {
 	  Heap_MinInsert(&heap2, randint(1, 1000), 0);
   }
-  printf("Array2 %s a minheap.\n", Heap_IsMinHeap(&heap2, 0) ? "is" : "is not");
-  Heap_Print(&heap2);
+  //printf("Array2 %s a minheap.\n", Heap_IsMinHeap(&heap2, 0) ? "is" : "is not");
+  //Heap_Print(&heap2);
 
   struct HeapNode min;
-  for(i = 0; i < 10; ++i)
+  int lastval = 0;
+  for(i = 0; i < 1000000; ++i)
   {
 	  Heap_ExtractMinimum(&heap2, &min);
-	  printf("Extracted node w/ key %d from Array2.\n", min.key);
+	  assert(lastval <= min.key);
+	  lastval = min.key;
   }
 
   Heap_ExtractMinimum(&heap2, &min);
