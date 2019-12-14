@@ -1,6 +1,6 @@
 CC = gcc
 FLAGS = -Wall -O3 -pthread -DDEBUG
-TESTFLAGS = -pg
+TESTFLAGS = -pg -g
 
 mud: mud.o server.o talloc.o vector.o heap.o client.o threadpool.o poolalloc.o
 	$(CC) mud.o server.o threadpool.o poolalloc.o talloc.o vector.o heap.o client.o -o mud $(FLAGS) $(LDFLAGS)
@@ -8,6 +8,9 @@ mud.o: mud.c
 	$(CC) -c mud.c $(FLAGS)
 server.o: server.c
 	$(CC) -c server.c $(FLAGS)
+
+clientvec.o: clientvector.c clientvector.h
+	$(CC) -c clientvector.c $(FLAGS)
 
 talloc.o: talloc.c talloc.h
 	$(CC) -c talloc.c $(FLAGS)
@@ -25,7 +28,6 @@ poolalloc.o: poolalloc.c poolalloc.h
 client.o: client.c client.h talloc.o
 	$(CC) -c client.c $(FLAGS)
 
-
 test: test_heap testvector test_poolallocator test_threadpool
 
 test_heap: test_heap.o talloc.o heap.o
@@ -33,9 +35,12 @@ test_heap: test_heap.o talloc.o heap.o
 
 test_heap.o: test_heap.c
 	$(CC) -c test_heap.c $(FLAGS) $(TESTFLAGS)
+
+test_clientvec: talloc.o
+	$(CC) talloc.o test_clientvec.c -o test_clientvec $(FLAGS) $(TESTFLAGS)
+
 testvector.o: testvector.c
 	$(CC) -c testvector.c $(FLAGS) $(TESTFLAGS)
-
 testvector: testvector.o mud
 	$(CC) testvector.o talloc.o vector.o -o testvector $(FLAGS) $(TESTFLAGS)
 

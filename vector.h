@@ -6,7 +6,7 @@
 struct Vector
 {
      void** pStorage;
-     size_t size, fill_pointer;
+     size_t capacity, length;
      void (*FreeNodeFn) (void*);
 };
 

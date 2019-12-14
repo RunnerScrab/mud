@@ -2,8 +2,8 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-static ssize_t g_allocs = 0;
-static ssize_t g_frees = 0;
+static size_t g_allocs = 0;
+static size_t g_frees = 0;
 
 #ifdef DEBUG
 struct allocblock
@@ -12,13 +12,27 @@ struct allocblock
 	char desc[64];
 	unsigned char freed;
 } *g_allocations = 0;
-static ssize_t g_alloccount = 0;
+
+static size_t g_alloccount = 0;
+
+struct allocblock* findmemintable(void* p)
+{
+	size_t idx = 0;
+	for(; idx < g_allocs; ++idx)
+	{
+		if(p == g_allocations[idx].mem)
+		{
+			return &(g_allocations[idx]);
+		}
+	}
+	return 0;
+}
 #endif
 
 void* trealloc_(void* origp, ssize_t size, const char* func, const char* file, const int line)
 {
 	void *newv = realloc(origp, size);
-	#ifdef DEBUG
+#ifdef DEBUG
 	ssize_t idx = 0;
 	for(; idx < g_allocs; ++idx)
 	{
@@ -28,14 +42,15 @@ void* trealloc_(void* origp, ssize_t size, const char* func, const char* file, c
 			break;
 		}
 	}
-	#endif
+#endif
 	return newv;
 }
 
 void* talloc_(ssize_t size, const char* func, const char* file, const int line)
 {
 	void* returnval = malloc(size);
-	#ifdef DEBUG
+#ifdef DEBUG
+	struct allocblock* pexistingtableentry = findmemintable(returnval);
 	if(!g_allocations)
 	{
 		g_alloccount = 256;
@@ -43,7 +58,7 @@ void* talloc_(ssize_t size, const char* func, const char* file, const int line)
 		g_allocations = (struct allocblock*) malloc(blocksize);
 		memset(g_allocations, 0, blocksize);
 	}
-	else if (g_alloccount <= g_allocs)
+	else if (g_alloccount <= g_allocs && !pexistingtableentry)
 	{
 		ssize_t blocksize = (g_alloccount * 2) * sizeof(struct allocblock);
 		g_allocations = (struct allocblock*) trealloc(g_allocations, blocksize);
@@ -52,12 +67,17 @@ void* talloc_(ssize_t size, const char* func, const char* file, const int line)
 			(g_alloccount - g_allocs) * sizeof(struct allocblock));
 
 	}
-		struct allocblock* alloc = &(g_allocations[g_allocs]);
-		alloc->mem = returnval;
-		sprintf(alloc->desc, "%s-%s:%d", func, file, line);
 
 
-	#endif
+	//malloc can return a block of memory you have used before
+	//if it has been freed - which is the point of freeing memory
+	struct allocblock* alloc = &(g_allocations[g_allocs]);
+	alloc->mem = returnval;
+	sprintf(alloc->desc, pexistingtableentry ?
+		"REUSED BLOCK %s-%s:%d" : "%s-%s:%d", func, file, line);
+
+
+#endif
 	++g_allocs;
 	return returnval;
 
@@ -65,7 +85,7 @@ void* talloc_(ssize_t size, const char* func, const char* file, const int line)
 
 void tfree2(void* p)
 {
-	#ifdef DEBUG
+#ifdef DEBUG
 	ssize_t idx = 0;
 	for(; idx < g_allocs; ++idx)
 	{
@@ -75,15 +95,30 @@ void tfree2(void* p)
 			break;
 		}
 	}
-	#endif
+#endif
 	++g_frees;
 	free(p);
 }
 
+void tswap_memory(void** a, void** b)
+{
+#ifdef DEBUG
+	struct allocblock *table_a = findmemintable(*a);
+	struct allocblock *table_b = findmemintable(*b);
+	struct allocblock table_t = *table_a;
+	*table_a = *table_b;
+	*table_b = table_t;
+#endif
+	void* t = *b;
+	*b = *a;
+	*a = t;
+}
+
+
 void tfree_(void* p, const char* func, const char* file, const int line)
 {
-	#ifdef DEBUG
-	ssize_t idx = 0;
+#ifdef DEBUG
+	size_t idx = 0;
 	unsigned char found = 0;
 	for(; idx < g_allocs; ++idx)
 	{
@@ -100,14 +135,14 @@ void tfree_(void* p, const char* func, const char* file, const int line)
 		printf("Couldn't find memory block at %p freed at %s-%s:%d?\n",
 			p, func, file, line);
 	}
-	#endif
+#endif
 	++g_frees;
 	free(p);
 }
 
 void tprint_summary()
 {
-	#ifdef DEBUG
+#ifdef DEBUG
 	ssize_t idx = 0;
 	for(; idx < g_allocs; ++idx)
 	{
@@ -117,15 +152,15 @@ void tprint_summary()
 	}
 	free(g_allocations);
 	g_allocations = 0;
-	#endif
+#endif
 }
 
 int toutstanding_allocs()
 {
-	#ifdef DEBUG
+#ifdef DEBUG
 	if(g_allocations)
 		free(g_allocations);
-	#endif
+#endif
 	return g_allocs - g_frees;
 }
 

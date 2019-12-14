@@ -11,6 +11,8 @@ void* trealloc_(void* origp, ssize_t size, const char* func, const char* file, c
 void* talloc_(ssize_t size, const char* func, const char* file, const int line);
 void tfree_(void* p, const char* func, const char* file, const int line);
 
+void tswap_memory(void** a, void** b);
+
 void tfree2(void* p);
 int toutstanding_allocs();
 int tget_frees();
