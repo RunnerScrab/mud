@@ -1,6 +1,7 @@
 #ifndef CLIENT_H_
 #define CLIENT_H_
 #include <sys/socket.h>
+#include <stdarg.h>
 
 extern const int TEL_STREAM_STATE_USERINPUT;
 extern const int TEL_STREAM_STATE_IAC;
@@ -31,12 +32,8 @@ struct Client
 	char* input_buffer;
 };
 
-
-
-
+void Client_SendMsg(struct Client* pTarget, const char* fmt, ...);
 struct Client* Client_Create();
-
 void Client_Destroy(void* p);
-
 
 #endif

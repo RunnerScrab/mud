@@ -1,7 +1,8 @@
 #include "client.h"
 #include "talloc.h"
-
+#include <sys/socket.h>
 #include <string.h>
+#include <stdio.h>
 
 const int TEL_STREAM_STATE_USERINPUT = 0;
 const int TEL_STREAM_STATE_IAC = 1;
@@ -29,3 +30,10 @@ void Client_Destroy(void* p)
 	tfree(pClient);
 }
 
+void Client_SendMsg(struct Client* pTarget, const char* fmt, ...)
+{
+	va_list arglist;
+	va_start(arglist, fmt);
+	vdprintf(pTarget->sock, fmt, arglist);
+	va_end(arglist);
+}

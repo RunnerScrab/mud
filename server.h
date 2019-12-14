@@ -44,5 +44,9 @@ int Server_Configure(struct Server* server, const char* szAddr, unsigned short p
 int Server_Initialize(struct Server* server, unsigned int backlog);
 int Server_Teardown(struct Server* pServer);
 
+int Server_AcceptClient(struct Server* server);
+void Server_HandleUserInput(struct Server* pServer, struct Client* pClient);
 
+void Server_HandleClientDisconnect(struct Server* pServer, struct Client* pClient);
+void Server_SendAllClients(struct Server* pServer, const char* fmt, ...);
 #endif

@@ -92,13 +92,6 @@ int Vector_Find(struct Vector* pArray, void* key,
 	return -1;
 }
 
-static void swap(void** a, void** b)
-{
-	void* t = *b;
-	*b = *a;
-	*a = t;
-}
-
 int Vector_Remove(struct Vector* pArray, size_t idx)
 {
 	//Beats moving the whole chunk of memory,
