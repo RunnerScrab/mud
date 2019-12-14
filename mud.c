@@ -26,6 +26,14 @@ void* TestHandleClientInput(void* arg)
 	return ((void*) 0);
 }
 
+void Server_SendClient(struct Client* pTarget, const char* fmt, ...)
+{
+	va_list arglist;
+	va_start(arglist, fmt);
+	vdprintf(pTarget->sock, fmt, arglist);
+	va_end(arglist);
+}
+
 void Server_SendAllClients(struct Server* pServer, const char* msg)
 {
 	int idx = 0, z = Vector_Count(&(pServer->clients));
@@ -33,7 +41,7 @@ void Server_SendAllClients(struct Server* pServer, const char* msg)
 	for(; idx < z; ++idx)
 	{
 		pClient = (struct Client*) Vector_At(&(pServer->clients), idx);
-		send(pClient->ev_pkg.sockfd, msg, strlen(msg), 0);
+		send(pClient->sock, msg, strlen(msg), 0);
 	}
 }
 
@@ -87,17 +95,52 @@ void Server_HandleUserInput(struct Server* pServer, struct Client* pClient, int 
 
 }
 
+int Server_AcceptClient(struct Server* server)
+{
+	unsigned int addrlen = 0;
+	struct Client* pConnectingClient = Client_Create();
+
+
+	int accepted_sock = accept(server->sockfd,
+				&(pConnectingClient->addr), &addrlen);
+	if(SUCCESS(accepted_sock))
+	{
+		ServerLog(SERVERLOG_STATUS, "Client connected.\n");
+		pConnectingClient->sock = accepted_sock;
+		pConnectingClient->ev_pkg.sockfd = accepted_sock;
+		pConnectingClient->ev_pkg.pData = pConnectingClient;
+
+		struct epoll_event clev;
+		clev.events = EPOLLIN | EPOLLEXCLUSIVE;
+		clev.data.ptr = &(pConnectingClient->ev_pkg);
+
+		Vector_Push(&(server->clients), pConnectingClient);
+
+#ifdef DEBUG
+		Server_SendClient(pConnectingClient, "*****The server is running as a DEBUG build*****\r\n");
+#endif
+
+		epoll_ctl(server->epfd, EPOLL_CTL_ADD, accepted_sock, &clev);
+		return accepted_sock;
+	}
+	else
+	{
+		ServerLog(SERVERLOG_STATUS, "Client attempted and failed to connect.\n");
+		return -1;
+	}
+}
+
 int main(int argc, char** argv)
 {
+#ifdef DEBUG
+	ServerLog(SERVERLOG_STATUS, "*****DEBUG BUILD*****");
+#endif
 	struct Server server;
 
 	//Temporary stuff for connecting client - should be put in struct Client
-	struct epoll_event clev;
-	struct EvPkg* pEvPkg = 0;
-	struct Client* pConnectingClient = 0;
 
-	unsigned int addrlen = 0;
-	int accepted_sock = 0;
+	struct EvPkg* pEvPkg = 0;
+
 	int ready = 0;
 	int loop_ctr = 0;
 
@@ -124,21 +167,7 @@ int main(int argc, char** argv)
 			pEvPkg = (server.evlist[loop_ctr].data.ptr);
 			if(pEvPkg->sockfd == server.sockfd)
 			{
-				ServerLog(SERVERLOG_STATUS, "Client connected.\n");
-				pConnectingClient = Client_Create();
-
-				accepted_sock = accept(server.sockfd,
-						&(pConnectingClient->addr), &addrlen);
-
-				pConnectingClient->ev_pkg.sockfd = accepted_sock;
-				pConnectingClient->ev_pkg.pData = pConnectingClient;
-
-				clev.events = EPOLLIN;
-				clev.data.ptr = &(pConnectingClient->ev_pkg);
-
-				Vector_Push(&(server.clients), pConnectingClient);
-
-				epoll_ctl(server.epfd, EPOLL_CTL_ADD, accepted_sock, &clev);
+				Server_AcceptClient(&server);
 			}
 			//HACK: ugh, I should make "EvPkg" both more general and descriptive
 			else if(server.evlist[loop_ctr].data.ptr == server.cmd_pipe)

@@ -36,7 +36,6 @@ void ServerLog(unsigned int code, const char* fmt, ...)
 
 int CompClientSock(void* key, void* p)
 {
-	//THe Vector class and this is awful
 	return (*((int*) key) - ((struct Client*) p)->ev_pkg.sockfd);
 }
 
@@ -71,10 +70,10 @@ int Server_Configure(struct Server* server, const char* szAddr, unsigned short p
 	server->epkg.sockfd = server->sockfd;
 	server->epkg.pData = 0;
 
-	server->server_event.events = EPOLLIN;
+	server->server_event.events = EPOLLIN | EPOLLEXCLUSIVE;
 	server->server_event.data.ptr = &(server->epkg);
 
-	server->cmdpipe_event.events = EPOLLIN;
+	server->cmdpipe_event.events = EPOLLIN | EPOLLEXCLUSIVE;
 	server->cmdpipe_event.data.ptr = server->cmd_pipe;
 
 	//Open a pipe for in-process server commands and have epoll watch the

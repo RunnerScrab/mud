@@ -22,6 +22,7 @@ struct EvPkg
 
 struct Client
 {
+	int sock;
 	struct EvPkg ev_pkg;
 	struct sockaddr addr;
 	int tel_stream_state;
