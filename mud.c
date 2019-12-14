@@ -26,7 +26,7 @@ void* TestHandleClientInput(void* arg)
 	return ((void*) 0);
 }
 
-void Server_SendClient(struct Client* pTarget, const char* fmt, ...)
+void Client_SendMsg(struct Client* pTarget, const char* fmt, ...)
 {
 	va_list arglist;
 	va_start(arglist, fmt);
@@ -34,17 +34,19 @@ void Server_SendClient(struct Client* pTarget, const char* fmt, ...)
 	va_end(arglist);
 }
 
-void Server_SendAllClients(struct Server* pServer, const char* msg)
+void Server_SendAllClients(struct Server* pServer, const char* fmt, ...)
 {
-	int idx = 0, z = Vector_Count(&(pServer->clients));
+	size_t idx = 0, z = Vector_Count(&(pServer->clients));
 	struct Client *pClient = 0;
+	va_list arglist;
+	va_start(arglist, fmt);
 	for(; idx < z; ++idx)
 	{
 		pClient = (struct Client*) Vector_At(&(pServer->clients), idx);
-		send(pClient->sock, msg, strlen(msg), 0);
+		Client_SendMsg(pClient, fmt, arglist);
 	}
+	va_end(arglist);
 }
-
 
 void Server_HandleUserInput(struct Server* pServer, struct Client* pClient, int clientsock)
 {
@@ -69,8 +71,6 @@ void Server_HandleUserInput(struct Server* pServer, struct Client* pClient, int 
 		{
 			//This is obviously just for debugging!
 			//TODO: Send a kill signal to the process
-			//goto lbl_end_server_loop;
-			//printf("No actual kill function yet.\n");
 			Server_WriteToCmdPipe(pServer, "kill", 5);
 		}
 		/* END DEMO CODE */
@@ -117,7 +117,7 @@ int Server_AcceptClient(struct Server* server)
 		Vector_Push(&(server->clients), pConnectingClient);
 
 #ifdef DEBUG
-		Server_SendClient(pConnectingClient, "*****The server is running as a DEBUG build*****\r\n");
+		Client_SendMsg(pConnectingClient, "*****The server is running as a DEBUG build*****\r\n");
 #endif
 
 		epoll_ctl(server->epfd, EPOLL_CTL_ADD, accepted_sock, &clev);
