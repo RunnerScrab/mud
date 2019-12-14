@@ -5,7 +5,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-int randint(int min, int max)
+unsigned int randint(unsigned int min, unsigned int max)
 {
 	return rand() % max + min;
 }
@@ -14,16 +14,18 @@ int main(void)
 {
 	srand(time(NULL));
 	_init_gc_subsystem();
-	pq_t* queue = pq_init(0);
+	pq_t* queue = pq_init(32);
 
 	int randarr[100] = {0};
 	int i = 0;
-	for(; i < 100; ++i)
+	unsigned long long key = 0ull;
+	for(; i < 10; ++i)
 	{
-		randarr[i] = i;
-		insert(queue, randint(1, 10), &(randarr[i]));
+		randarr[i%100] = i;
+		key = randint(0, -1) | ((unsigned long long int) i << 32);
+		insert(queue, key, &(randarr[i%100]));
 	}
-	for(i = 0; i < 100; ++i)
+	for(i = 0; i < 10; ++i)
 	{
 		int* pVal = deletemin(queue);
 		if(pVal)
@@ -31,5 +33,7 @@ int main(void)
 	}
 
 	pq_destroy(queue);
+	_destroy_gc_subsystem();
+
 	return 0;
 }

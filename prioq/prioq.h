@@ -3,7 +3,7 @@
 
 #include "common.h"
 
-typedef unsigned long pkey_t;
+typedef unsigned long long pkey_t;
 typedef void         *pval_t;
 
 #define KEY_NULL 0
