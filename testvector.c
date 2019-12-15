@@ -55,7 +55,7 @@ int main(void)
 	}
 
 
-	for(i = 0; i < clients.fill_pointer; ++i)
+	for(i = 0; i < clients.capacity; ++i)
 	{
 		struct TestClient* pClient = (struct TestClient*) Vector_At(&clients, i);
 		printf("%s %d\n", pClient->name, pClient->age);

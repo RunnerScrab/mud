@@ -152,6 +152,8 @@ void tprint_summary()
 	}
 	free(g_allocations);
 	g_allocations = 0;
+	printf("%d outstanding allocations.\n", toutstanding_allocs());
+
 #endif
 }
 

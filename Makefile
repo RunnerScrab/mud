@@ -13,9 +13,14 @@ clientvec.o: clientvector.c clientvector.h
 	$(CC) -c clientvector.c $(FLAGS)
 
 talloc.o: talloc.c talloc.h
-	$(CC) -c talloc.c $(FLAGS)
+	$(CC) -c talloc.c $(FLAGS) $(TESTFLAGS)
+
 vector.o: vector.c vector.h talloc.o
 	$(CC) -c vector.c $(FLAGS) $(TESTFLAGS)
+
+charvector.o: charvector.c charvector.h
+	$(CC) -c charvector.c $(FLAGS) $(TESTFLAGS)
+
 heap.o: heap.c heap.h
 	$(CC) -c heap.c $(FLAGS) $(TESTFLAGS)
 
@@ -28,10 +33,13 @@ poolalloc.o: poolalloc.c poolalloc.h
 client.o: client.c client.h talloc.o
 	$(CC) -c client.c $(FLAGS)
 
-test: test_heap testvector test_poolallocator test_threadpool
+test: test_heap testvector test_poolallocator test_threadpool testcharvector
 
 test_heap: test_heap.o talloc.o heap.o
 	$(CC) test_heap.o talloc.o heap.o -o test_heap $(FLAGS) $(TESTFLAGS)
+
+testcharvector: talloc.o testcharvector.o charvector.o
+	$(CC) talloc.o testcharvector.o charvector.o -o testcharvector $(FLAGS) $(TESTFLAGS)
 
 test_heap.o: test_heap.c
 	$(CC) -c test_heap.c $(FLAGS) $(TESTFLAGS)
