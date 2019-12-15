@@ -12,47 +12,81 @@ int randint(int min, int max)
 	return rand() % max + min;
 }
 
+START_TEST(heap_create)
+{
+	struct Heap testheap;
+	Heap_Create(&testheap, 10);
+
+	size_t idx = 0;
+	for(; idx < 10; ++idx)
+	{
+		Heap_MinInsert(&testheap, idx, 0);
+	}
+
+	ck_assert_int_eq(Heap_GetSize(&testheap), 10);
+	Heap_Destroy(&testheap);
+}
+END_TEST
+
+START_TEST(heap_insert)
+{
+	struct Heap testheap;
+	Heap_Create(&testheap, 10);
+	size_t idx = 0, testiterations = 10000;
+	for(; idx < testiterations; ++idx)
+	{
+		unsigned long long keytest = (unsigned long long) randint(1, testiterations << 1);
+		Heap_MinInsert(&testheap, keytest, (void*) keytest);
+	}
+	unsigned long long lastval = 0;
+	for(idx = 0; idx < testiterations; ++idx)
+	{
+		unsigned long long val = (unsigned long long) Heap_ExtractMinimum(&testheap);
+		if(idx)
+		{
+			ck_assert(lastval <= val);
+		}
+		lastval = val;
+	}
+
+	ck_assert(0 == Heap_GetSize(&testheap));
+	Heap_Destroy(&testheap);
+}
+END_TEST
+
+START_TEST(heap_memoryleak_check)
+{
+	ck_assert(toutstanding_allocs() == 0);
+}
+END_TEST
+
+Suite* heap_test_suite(void)
+{
+	Suite* s = suite_create("heap");
+	TCase* testcases = tcase_create("Core");
+
+	tcase_add_test(testcases, heap_create);
+	tcase_add_test(testcases, heap_insert);
+	tcase_add_test(testcases, heap_memoryleak_check);
+
+	suite_add_tcase(s, testcases);
+
+	return s;
+}
+
+
 int main(void)
 {
+	size_t tests_failed = 0;
+	srand(time(NULL));
+	Suite* s = heap_test_suite();
+	SRunner *sr = srunner_create(s);
 
-  srand(time(NULL));
-  int array[8] = {1, 2, 3, 4, 5, 6, 7, 8};
-  int array2[8] = {5, 2, 10, 1, 7, 3, 4, 9};
+	srunner_run_all(sr, CK_NORMAL);
+	tests_failed = srunner_ntests_failed(sr);
 
-  struct Heap heap1;
-  Heap_InitFromArray(&heap1, array, 8);
-  struct Heap heap2;
-  Heap_InitFromArray(&heap2, array2, 8);
+	srunner_free(sr);
 
-
-  //printf("Array %s a minheap.\n", Heap_IsMinHeap(&heap1, 0) ? "is" : "is not");
-  Heap_BuildMinHeap(&heap2);
-  //printf("Array2 %s a minheap.\n", Heap_IsMinHeap(&heap2, 0) ? "is" : "is not");
-  //Heap_Print(&heap2);
-
-  int i = 0;
-  for(; i < 1000000; ++i)
-  {
-	  Heap_MinInsert(&heap2, randint(1, 1000), 0);
-  }
-  //printf("Array2 %s a minheap.\n", Heap_IsMinHeap(&heap2, 0) ? "is" : "is not");
-  //Heap_Print(&heap2);
-
-  struct HeapNode min;
-  int lastval = 0;
-  for(i = 0; i < 1000000; ++i)
-  {
-	  Heap_ExtractMinimum(&heap2, &min);
-	  assert(lastval <= min.key);
-	  lastval = min.key;
-  }
-
-  Heap_ExtractMinimum(&heap2, &min);
-  printf("Extracted node w/ key %d from Array2.\n", min.key);
-  Heap_Print(&heap2);
-
-  Heap_Destroy(&heap1);
-  Heap_Destroy(&heap2);
-  printf("%d outstanding allocations.\n", toutstanding_allocs());
-  return 0;
+	talloc_subsys_release();
+	return (tests_failed == 0) ? EXIT_SUCCESS : EXIT_FAILURE;
 }

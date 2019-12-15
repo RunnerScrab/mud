@@ -18,7 +18,7 @@ int toutstanding_allocs();
 int tget_frees();
 int tget_allocs();
 
-
+void talloc_subsys_release();
 int toutstanding_allocs();
 int tget_frees();
 int tget_allocs();

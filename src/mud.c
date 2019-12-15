@@ -89,5 +89,6 @@ lbl_servershutdown:
 	Server_Teardown(&server);
 	tprint_summary();
 	printf("%d unfreed allocations.\n", toutstanding_allocs());
+	talloc_subsys_release();
 	return 0;
 }

@@ -140,18 +140,36 @@ void tfree_(void* p, const char* func, const char* file, const int line)
 	free(p);
 }
 
+void talloc_subsys_release()
+{
+#ifdef DEBUG
+	if(g_allocations)
+	{
+		free(g_allocations);
+		g_allocations = 0;
+	}
+#endif
+}
+
 void tprint_summary()
 {
 #ifdef DEBUG
-	ssize_t idx = 0;
-	for(; idx < g_allocs; ++idx)
+	if(g_allocations)
 	{
-		printf("%p %s- freed %d times\n",
-			g_allocations[idx].mem, g_allocations[idx].desc,
-			g_allocations[idx].freed);
+		ssize_t idx = 0;
+		for(; idx < g_allocs; ++idx)
+		{
+			printf("%p %s- freed %d times\n",
+				g_allocations[idx].mem, g_allocations[idx].desc,
+				g_allocations[idx].freed);
+		}
+		free(g_allocations);
+		g_allocations = 0;
 	}
-	free(g_allocations);
-	g_allocations = 0;
+	else
+	{
+		printf("Allocations table has already been freed.\n");
+	}
 	printf("%d outstanding allocations.\n", toutstanding_allocs());
 
 #endif
@@ -159,10 +177,6 @@ void tprint_summary()
 
 int toutstanding_allocs()
 {
-#ifdef DEBUG
-	if(g_allocations)
-		free(g_allocations);
-#endif
 	return g_allocs - g_frees;
 }
 
