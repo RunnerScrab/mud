@@ -81,6 +81,17 @@ inline static void swap_elements(el_t* a, el_t* b)
 	*a = t;
 }
 
+
+el_t cv_at(cv_t* cv, size_t idx)
+{
+	return cv->data[idx];
+}
+
+int cv_len(cv_t* cv)
+{
+	return cv->length;
+}
+
 int cv_remove(cv_t* cv, el_t targel)
 {
 	size_t idx = 0, len = cv->length;
