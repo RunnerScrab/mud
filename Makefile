@@ -44,9 +44,6 @@ testcharvector: talloc.o testcharvector.o charvector.o
 test_heap.o: test_heap.c
 	$(CC) -c test_heap.c $(FLAGS) $(TESTFLAGS)
 
-test_clientvec: talloc.o
-	$(CC) talloc.o test_clientvec.c -o test_clientvec $(FLAGS) $(TESTFLAGS)
-
 testvector.o: testvector.c
 	$(CC) -c testvector.c $(FLAGS) $(TESTFLAGS)
 testvector: testvector.o mud
