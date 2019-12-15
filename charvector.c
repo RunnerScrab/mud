@@ -38,6 +38,14 @@ int cv_init(cv_t* cv, size_t startsize)
 	return (startsize > 0 && cv->data) ? 0 : -1;
 }
 
+void cv_cpy(cv_t* dest, cv_t* source)
+{
+	dest->length = source->length;
+	dest->capacity = source->capacity;
+	dest->data = (el_t*) talloc(sizeof(el_t) * dest->capacity);
+	memcpy(dest->data, source->data, dest->capacity);
+}
+
 void cv_destroy(cv_t* cv)
 {
 	cv->length = 0;
@@ -71,16 +79,6 @@ inline static void swap_elements(el_t* a, el_t* b)
 	el_t t = *b;
 	*b = *a;
 	*a = t;
-}
-
-el_t cv_at(cv_t* cv, size_t idx)
-{
-	return cv->data[idx];
-}
-
-int cv_len(cv_t* cv)
-{
-	return cv->length;
 }
 
 int cv_remove(cv_t* cv, el_t targel)
