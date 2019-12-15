@@ -1,5 +1,4 @@
 #include "vector.h"
-
 #include "talloc.h"
 
 #include <stdlib.h>
