@@ -20,7 +20,8 @@ int Heap_Create(struct Heap* pHeap, int len);
 int Heap_InitFromArray(struct Heap* pHeap, int* array, int len);
 void Heap_Destroy(struct Heap* pHeap);
 
-void Heap_ExtractMinimum(struct Heap* pHeap, struct HeapNode* pOut);
+void* Heap_ExtractMinimum(struct Heap* pHeap);
+void Heap_ExtractMinimumNode(struct Heap* pHeap, struct HeapNode* pOut);
 int Heap_MinInsert(struct Heap* pHeap, int key, void* data);
 
 int Heap_GetSize(struct Heap* pHeap);

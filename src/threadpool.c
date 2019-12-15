@@ -10,7 +10,7 @@
 static void* ThreadPool_WorkerThreadFunc(void* pArg)
 {
 	struct ThreadPool* pPool = (struct ThreadPool*) pArg;
-	struct HeapNode min;
+
 	while(1)
 	{
 		for(pthread_mutex_lock(&(pPool->prio_queue_mutex));
@@ -30,14 +30,14 @@ static void* ThreadPool_WorkerThreadFunc(void* pArg)
 		}
 
 
-		Heap_ExtractMinimum(&(pPool->prio_queue), &min);
+
 		// min is now a copy, and the original space on the queue is effectively released
 
-
+		struct ThreadTask* pTask = (struct ThreadTask*) Heap_ExtractMinimum(&(pPool->prio_queue));
 		pthread_mutex_unlock(&(pPool->prio_queue_mutex));
 
 
-		struct ThreadTask* pTask = (struct ThreadTask*) min.data;
+
 
 		if(pTask)
 		{
@@ -84,10 +84,8 @@ void ThreadPool_Destroy(struct ThreadPool* tp)
 	struct ThreadTask* pTask = 0;
 	do
 	{
-		struct HeapNode min;
+		pTask = Heap_ExtractMinimum(&(tp->prio_queue));
 
-		Heap_ExtractMinimum(&(tp->prio_queue), &min);
-		pTask = min.data;
 		if(pTask && pTask->releasefn)
 		{
 			pTask->releasefn(pTask);

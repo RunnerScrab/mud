@@ -177,7 +177,39 @@ void HeapNode_Copy(struct HeapNode* pSrc, struct HeapNode* pDest)
 	pDest->data = pSrc->data;
 }
 
-void Heap_ExtractMinimum(struct Heap* pHeap, struct HeapNode* pOut)
+void* Heap_ExtractMinimum(struct Heap* pHeap)
+{
+	if(pHeap->len > 0)
+	{
+		struct HeapNode* pMin = &(pHeap->array[0]);
+
+		void* returnvalue = pMin->data;
+
+		pMin->key = 0;
+		pMin->data = 0;
+
+		swap_heap_node(&(pHeap->array[0]), &(pHeap->array[pHeap->len - 1]));
+
+		--(pHeap->len);
+		if(pHeap->len < ((pHeap->capacity >> 1) - PARAMETER_K))
+		{
+			pHeap->capacity = (pHeap->capacity >> 1) + PARAMETER_K;
+			pHeap->array =  (struct HeapNode*) trealloc(pHeap->array,
+								pHeap->capacity * sizeof(struct HeapNode));
+
+		}
+
+		min_heapify(pHeap, 0);
+		return returnvalue;
+	}
+	else
+	{
+		return ((void*) 0);
+	}
+
+}
+
+void Heap_ExtractMinimumNode(struct Heap* pHeap, struct HeapNode* pOut)
 {
 	if(pHeap->len > 0)
 	{
