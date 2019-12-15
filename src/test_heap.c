@@ -74,7 +74,6 @@ Suite* heap_test_suite(void)
 	return s;
 }
 
-
 int main(void)
 {
 	size_t tests_failed = 0;

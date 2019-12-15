@@ -15,13 +15,12 @@ void tswap_memory(void** a, void** b);
 
 void tfree2(void* p);
 int toutstanding_allocs();
-int tget_frees();
-int tget_allocs();
 
 void talloc_subsys_release();
 int toutstanding_allocs();
-int tget_frees();
-int tget_allocs();
+size_t tget_frees();
+size_t tget_allocs();
+size_t tget_reallocs();
 void tprint_summary();
 
 #endif

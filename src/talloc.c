@@ -4,6 +4,7 @@
 #include <string.h>
 static size_t g_allocs = 0;
 static size_t g_frees = 0;
+static size_t g_reallocs = 0;
 
 #ifdef DEBUG
 struct allocblock
@@ -31,6 +32,7 @@ struct allocblock* findmemintable(void* p)
 
 void* trealloc_(void* origp, ssize_t size, const char* func, const char* file, const int line)
 {
+	++g_reallocs;
 	void *newv = realloc(origp, size);
 #ifdef DEBUG
 	ssize_t idx = 0;
@@ -177,15 +179,20 @@ void tprint_summary()
 
 int toutstanding_allocs()
 {
-	return g_allocs - g_frees;
+	return (int) g_allocs - (int) g_frees;
 }
 
-int tget_frees()
+size_t tget_frees()
 {
 	return g_frees;
 }
 
-int tget_allocs()
+size_t tget_allocs()
 {
 	return g_allocs;
+}
+
+size_t tget_reallocs()
+{
+	return g_reallocs;
 }
