@@ -5,6 +5,9 @@
 #include <stdio.h>
 #include <string.h>
 
+#define min(a, b) (a < b ? a : b)
+#define max(a, b) (a > b ? a : b)
+
 void cv_sprintf(cv_t* pcv, const char* fmt, ...)
 {
 	va_list arglist, cpyarglist;
@@ -26,6 +29,46 @@ void cv_sprintf(cv_t* pcv, const char* fmt, ...)
 	}
 	va_end(cpyarglist);
 }
+
+int cv_append(cv_t* cv, el_t* data, size_t len)
+{
+	if((cv->length + len) > cv->capacity)
+	{
+		cv->capacity = max((cv->capacity << 1),(cv->capacity + len));
+		cv->data = (el_t*) trealloc(cv->data,
+					sizeof(el_t) * cv->capacity);
+		if(!cv->data)
+		{
+			return -1;
+		}
+	}
+	memcpy(&(cv->data[cv->length]), data, len * sizeof(el_t));
+	cv->length = cv->length + len;
+	return cv->length;
+}
+
+int cv_appendstr(cv_t* cv, el_t* data)
+{
+	size_t len = strlen(data) + 1;
+	if(!cv->data[cv->length - 1])
+	{
+		--cv->length;
+	}
+	if((cv->length + len) > cv->capacity)
+	{
+		cv->capacity = max((cv->capacity << 1),(cv->capacity + len));
+		cv->data = (el_t*) trealloc(cv->data,
+					sizeof(el_t) * cv->capacity);
+		if(!cv->data)
+		{
+			return -1;
+		}
+	}
+	memcpy(&(cv->data[cv->length]), data, len * sizeof(el_t));
+	cv->length = cv->length + len;
+	return cv->length;
+}
+
 
 int cv_init(cv_t* cv, size_t startsize)
 {

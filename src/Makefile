@@ -29,5 +29,10 @@ mud: $(OBJ)
 %.o:%.c $(SRC) $(patsubst %.c,%.h,$(SRC))
 	$(CC) -c $< $(CFLAGS)
 
+test_charvector.o: test_charvector.c
+
+test_charvector: talloc.o test_charvector.o charvector.o
+	$(CC) $^ -o $@ $(LDFLAGS)
+
 clean:
 	rm -f *.o gmon.out *.core *~ mud
