@@ -31,7 +31,7 @@ int Heap_GetSize(struct Heap* pHeap)
 	return pHeap->len;
 }
 
-inline int Heap_GetKeyAt(struct Heap* pHeap, int idx)
+int Heap_GetKeyAt(struct Heap* pHeap, int idx)
 {
 	return pHeap->array[idx].key;
 }
@@ -171,7 +171,7 @@ void Heap_DecreaseKey(struct Heap* pHeap, int idx, struct HeapNode* pNode)
 	}
 }
 
-inline void HeapNode_Copy(struct HeapNode* pSrc, struct HeapNode* pDest)
+void HeapNode_Copy(struct HeapNode* pSrc, struct HeapNode* pDest)
 {
 	pDest->key = pSrc->key;
 	pDest->data = pSrc->data;
