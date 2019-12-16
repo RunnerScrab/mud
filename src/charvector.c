@@ -47,6 +47,17 @@ int cv_append(cv_t* cv, el_t* data, size_t len)
 	return cv->length;
 }
 
+void cv_clear(cv_t* cv)
+{
+	memset(cv->data, 0, sizeof(el_t) * cv->capacity);
+	cv->length = 0;
+}
+
+int cv_appendcv(cv_t* dest, cv_t* src)
+{
+	return cv_append(dest, src->data, src->length);
+}
+
 int cv_appendstr(cv_t* cv, el_t* data)
 {
 	size_t len = strlen(data) + 1;
@@ -92,6 +103,8 @@ void cv_cpy(cv_t* dest, cv_t* source)
 {
 	dest->length = source->length;
 	dest->capacity = source->capacity;
+	if(dest->data)
+		tfree(dest->data);
 	dest->data = (el_t*) talloc(sizeof(el_t) * dest->capacity);
 	memcpy(dest->data, source->data, dest->capacity);
 }

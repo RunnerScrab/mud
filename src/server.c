@@ -24,12 +24,6 @@ const int SERVERLOG_DEBUG = 0;
 const int SERVERLOG_STATUS = 1;
 const int SERVERLOG_ERROR = 2;
 
-void* TestHandleClientInput(void* arg)
-{
-	printf("Received: %s\n", (char*) arg);
-	return ((void*) 0);
-}
-
 void ServerLog(unsigned int code, const char* fmt, ...)
 {
 	va_list arglist;
@@ -213,13 +207,29 @@ struct HandleUserInputTaskPkg
 	struct Client* pClient;
 };
 
-void RearmClientSocket(struct Server* pServer, struct Client* pClient)
+void ReleaseHandleUserInputTaskPkg(void* pArg)
 {
+	struct Server* pServer = ((struct HandleUserInputTaskPkg*) pArg)->pServer;
+	MemoryPool_Free(&(pServer->mem_pool), sizeof(struct HandleUserInputTaskPkg), pArg);
+}
+
+static void RearmClientSocket(struct Server* pServer, struct Client* pClient)
+{
+	//Rearm this socket in the epoll interest list
 	struct epoll_event ev;
 	ev.events = EPOLLIN | EPOLLONESHOT;
 	ev.data.ptr = &(pClient->ev_pkg);
 	epoll_ctl(pServer->epfd, EPOLL_CTL_MOD,
 		pClient->sock, &ev);
+}
+
+void DebugPrintCV(cv_t* buf)
+{
+	size_t idx = 0, z = buf->capacity;
+	for(; idx < z; ++idx)
+	{
+		printf(idx < z - 1 ? "%d," : "%d\n", cv_at(buf, idx));
+	}
 }
 
 void* HandleUserInputTask(void* pArg)
@@ -229,25 +239,38 @@ void* HandleUserInputTask(void* pArg)
 	struct Client* pClient = pPkg->pClient;
 
 	cv_t clientinput;
-	cv_init(&clientinput, 256);
-	read_to_cv(pClient->sock, &clientinput, 256);
-	size_t bytes_read = cv_len(&clientinput);
-	cv_push(&clientinput, 0);
-	if(bytes_read > 0)
+	cv_init(&clientinput, CLIENT_MAXINPUTLEN);
+	size_t bytes_read = read_to_cv(pClient->sock, &clientinput, 0, CLIENT_MAXINPUTLEN);
+	unsigned char inputcomplete = 0;
+	cv_t* cbuf = &(pClient->input_buffer);
+	cv_appendcv(cbuf, &clientinput);
+	if(cbuf->length >= 2)
+	{
+		if(((cbuf->data[cbuf->length - 2] << 8 )
+				| cbuf->data[cbuf->length - 1])
+			== ((13<<8)|10))
+		{
+			cbuf->length -= 2;
+			cv_push(cbuf, 0);
+			inputcomplete = 1;
+		}
+	}
+
+	if(bytes_read > 0 && inputcomplete)
 	{
 		/* DEMO CODE */
-		printf("Received: %s\n", clientinput.data);
-
-		if(strstr(clientinput.data, "kill"))
+		printf("Received: %s\n", cbuf->data);
+		if(strstr(cbuf->data, "kill"))
 		{
 			//This is obviously just for debugging!
-			//TODO: Send a kill signal to the process
+			//TODO: Get rid of this or put it in an admin only command
 
 			Server_WriteToCmdPipe(pServer, "kill", 5);
 		}
+		cv_clear(cbuf);
 		/* END DEMO CODE */
 	}
-	else
+	else if(!bytes_read)
 	{
 		Server_HandleClientDisconnect(pServer, pClient);
 	}
@@ -258,39 +281,33 @@ void* HandleUserInputTask(void* pArg)
 	return 0;
 }
 
-void ReleaseTaskPkg(void* pArg)
-{
-	struct Server* pServer = ((struct HandleUserInputTaskPkg*) pArg)->pServer;
-	MemoryPool_Free(&(pServer->mem_pool), sizeof(struct HandleUserInputTaskPkg), pArg);
-}
-
 void Server_HandleUserInput(struct Server* pServer, struct Client* pClient)
 {
-	printf("Dispatching task.\n");
-
 	struct timespec curtime;
 
 	if(FAILURE(clock_gettime(CLOCK_BOOTTIME, &curtime)))
 	{
-		printf("CLOCK FAILED\n");
+		ServerLog(SERVERLOG_DEBUG, "CLOCK FAILED\n");
 	}
-	float interval = (curtime.tv_sec - pClient->last_input_time.tv_sec) + (curtime.tv_nsec - pClient->last_input_time.tv_nsec)/1000000000.0;
+	float interval = (curtime.tv_sec - pClient->last_input_time.tv_sec) +
+		(curtime.tv_nsec - pClient->last_input_time.tv_nsec)/1000000000.0;
 
-	pClient->cmd_intervals[pClient->interval_idx % 6] = interval;
-	++pClient->interval_idx;
-	printf("%f s since user's last input.\n", interval);
+	pClient->cmd_intervals[pClient->interval_idx] = interval;
+	pClient->interval_idx = (pClient->interval_idx + 1) % CLIENT_STOREDCMDINTERVALS;
 	memcpy(&(pClient->last_input_time), &curtime, sizeof(struct timespec));
 
 	unsigned char idx = 0;
 	float sum = 0.f;
-	for(; idx < 6; ++idx)
+	for(; idx < CLIENT_STOREDCMDINTERVALS; ++idx)
 	{
 		sum += pClient->cmd_intervals[idx];
 	}
-	float average_cps = 6.f / sum;
-	if(average_cps > 10.f)
+	float average_cps = ((float) CLIENT_STOREDCMDINTERVALS) / sum;
+	if(average_cps > CLIENT_MAXCMDRATE)
 	{
-		Client_SendMsg(pClient, "You are sending commands at an average rate of %f per second and are being disconnected.\n", average_cps);
+		Client_SendMsg(pClient,
+			"You are sending commands at an average rate of %f per second"
+			" and are being disconnected.\n", average_cps);
 		Server_DisconnectClient(pServer, pClient);
 		return;
 	}
@@ -300,18 +317,20 @@ void Server_HandleUserInput(struct Server* pServer, struct Client* pClient)
 		RearmClientSocket(pServer, pClient);
 		return;
 	}
+
 	struct HandleUserInputTaskPkg* pPkg = MemoryPool_Alloc(&(pServer->mem_pool),
 							sizeof(struct HandleUserInputTaskPkg));
 
-//talloc(sizeof(struct HandleUserInputTaskPkg));
 	pPkg->pServer = pServer;
 	pPkg->pClient = pClient;
 
 	if(FAILURE(ThreadPool_AddTask(&(pServer->thread_pool),
-						HandleUserInputTask, 1, pPkg, ReleaseTaskPkg)))
+						HandleUserInputTask, 1, pPkg,
+						ReleaseHandleUserInputTaskPkg)))
 	{
 		ServerLog(SERVERLOG_ERROR,
 			"Failed to add threadpool task!");
+		RearmClientSocket(pServer, pClient);
 	}
 
 }
@@ -319,7 +338,7 @@ void Server_HandleUserInput(struct Server* pServer, struct Client* pClient)
 int Server_AcceptClient(struct Server* server)
 {
 	unsigned int addrlen = 0;
-	struct Client* pConnectingClient = Client_Create();
+	struct Client* pConnectingClient = 0;
 
 
 	int accepted_sock = accept(server->sockfd,
@@ -327,15 +346,7 @@ int Server_AcceptClient(struct Server* server)
 	if(SUCCESS(accepted_sock))
 	{
 		ServerLog(SERVERLOG_STATUS, "Client connected.\n");
-		pConnectingClient->sock = accepted_sock;
-		pConnectingClient->ev_pkg.sockfd = accepted_sock;
-		pConnectingClient->ev_pkg.pData = pConnectingClient;
-
-		clock_gettime(CLOCK_BOOTTIME,	&(pConnectingClient->connection_time));
-		clock_gettime(CLOCK_BOOTTIME,	&(pConnectingClient->last_input_time));
-		pConnectingClient->interval_idx = 0;
-		memset(pConnectingClient->cmd_intervals, 0, sizeof(float) * 6);
-
+		pConnectingClient = Client_Create(accepted_sock);
 		struct epoll_event clev;
 		clev.events = EPOLLIN | EPOLLONESHOT;
 		clev.data.ptr = &(pConnectingClient->ev_pkg);

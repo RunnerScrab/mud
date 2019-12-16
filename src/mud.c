@@ -16,6 +16,7 @@
 #include "client.h"
 #include "threadpool.h"
 #include "server.h"
+#include "constants.h"
 
 #define SUCCESS(x) (x >= 0)
 #define FAILURE(x) (x < 0)
@@ -33,9 +34,9 @@ int main(int argc, char** argv)
 
 	int ready = 0;
 	int loop_ctr = 0;
-
-	if(FAILURE(Server_Configure(&server, "127.0.0.1", 9001))
-		|| FAILURE(Server_Initialize(&server, 32)))
+	//TODO: Handle binding properly w/ ipv6 support
+	if(FAILURE(Server_Configure(&server, "127.0.0.1", SERVER_PORT))
+		|| FAILURE(Server_Initialize(&server, SERVER_LISTENQUEUELEN)))
 	{
 		Server_Teardown(&server);
 		return -1;
@@ -45,11 +46,10 @@ int main(int argc, char** argv)
 	{
 
 		ready = epoll_wait(server.epfd, server.evlist, server.evlist_len, -1);
-		printf("Ready:%d\n", ready);
 
 		if(ready == -1)
 		{
-			printf("Ready -1\n");
+			ServerLog(SERVERLOG_ERROR, "Ready -1\n");
 			break;
 		}
 

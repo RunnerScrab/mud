@@ -8,6 +8,7 @@
 #include "client.h"
 #include "vector.h"
 #include "threadpool.h"
+#include "constants.h"
 
 #define SUCCESS(x) (x >= 0)
 #define FAILURE(x) (x < 0)

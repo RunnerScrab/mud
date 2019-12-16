@@ -89,13 +89,11 @@ void tfree2(void* p)
 {
 #ifdef DEBUG
 	size_t idx = 0;
-	unsigned char found = 0;
 	for(; idx < g_allocs; ++idx)
 	{
 		if(p == g_allocations[idx].mem)
 		{
 			g_allocations[idx].freed += 1;
-			found = 1;
 			break;
 		}
 	}

@@ -18,8 +18,9 @@ void cv_destroy(cv_t* cv);
 int cv_push(cv_t* cv, el_t newel);
 int cv_resize(cv_t* cv, size_t newsize);
 int cv_appendstr(cv_t* cv, el_t* data);
+int cv_appendcv(cv_t* dest, cv_t* src);
 int cv_append(cv_t* cv, el_t* data, size_t len);
-
+void cv_clear(cv_t* cv);
 int cv_remove(cv_t* cv, el_t targ); //Deprecated for char sequences
 
 el_t cv_at(cv_t* cv, size_t idx);

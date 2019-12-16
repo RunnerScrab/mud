@@ -10,23 +10,32 @@ const int TEL_STREAM_STATE_SB = 2;
 const int TEL_STREAM_STATE_SE = 3;
 const int TEL_STREAM_STATE_CMD3 = 4; //Verbs
 
-struct Client* Client_Create()
+struct Client* Client_Create(int sock)
 {
 	struct Client* pClient = talloc(sizeof(struct Client));
 	pClient->tel_stream_state = TEL_STREAM_STATE_USERINPUT;
 	memset(&(pClient->tel_cmd_buffer), 0, sizeof(char) * 64);
-	pClient->input_buffer = talloc(sizeof(char) * 256);
+
+	pClient->sock = sock;
+	pClient->ev_pkg.sockfd = sock;
+	pClient->ev_pkg.pData = pClient;
+
+	clock_gettime(CLOCK_BOOTTIME, &(pClient->connection_time));
+	clock_gettime(CLOCK_BOOTTIME, &(pClient->last_input_time));
+	pClient->interval_idx = 0;
+
+	cv_init(&(pClient->input_buffer), CLIENT_MAXINPUTLEN);
+	memset(pClient->cmd_intervals, 0, sizeof(float) * 6);
+
 	return pClient;
 }
 
 void Client_Destroy(void* p)
 {
 	struct Client* pClient = (struct Client*) p;
-	if(pClient->input_buffer)
-	{
-		tfree(pClient->input_buffer);
-		pClient->input_buffer = 0;
-	}
+
+	cv_destroy(&(pClient->input_buffer));
+
 	tfree(pClient);
 }
 
