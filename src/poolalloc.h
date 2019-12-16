@@ -31,6 +31,7 @@ struct MemoryPool
 	struct AllocPool** alloc_pools;
 	ssize_t alloc_pool_count;
 	ssize_t default_init_elcount;
+	pthread_mutex_t mtx;
 };
 
 void MemoryPool_Init(struct MemoryPool* mp);

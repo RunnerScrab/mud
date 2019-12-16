@@ -32,6 +32,8 @@ struct Server
 
 	struct ThreadPool thread_pool;
 	unsigned int cpu_cores;
+
+	struct MemoryPool mem_pool;
 };
 
 void ServerLog(unsigned int code, const char* fmt, ...);

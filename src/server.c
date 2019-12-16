@@ -111,6 +111,19 @@ int Server_Configure(struct Server* server, const char* szAddr, unsigned short p
 		return -1;
 	}
 
+	MemoryPool_Init(&(server->mem_pool));
+	return 0;
+}
+
+int Server_Teardown(struct Server* pServer)
+{
+	MemoryPool_Destroy(&(pServer->mem_pool));
+	tfree(pServer->evlist);
+	ThreadPool_Destroy(&(pServer->thread_pool));
+	Vector_Destroy(&(pServer->clients));
+	close(pServer->sockfd);
+	close(pServer->cmd_pipe[0]);
+	close(pServer->cmd_pipe[1]);
 	return 0;
 }
 
@@ -153,17 +166,6 @@ int Server_Initialize(struct Server* server, unsigned int backlog)
 	ServerLog(SERVERLOG_STATUS, "Server listening on %s:%d.",
 		inet_ntoa(server->addr_in.sin_addr), ntohs(server->addr_in.sin_port));
 
-	return 0;
-}
-
-int Server_Teardown(struct Server* pServer)
-{
-	tfree(pServer->evlist);
-	ThreadPool_Destroy(&(pServer->thread_pool));
-	Vector_Destroy(&(pServer->clients));
-	close(pServer->sockfd);
-	close(pServer->cmd_pipe[0]);
-	close(pServer->cmd_pipe[1]);
 	return 0;
 }
 
@@ -220,9 +222,6 @@ void* HandleUserInputTask(void* pArg)
 	if(bytes_read > 0)
 	{
 		/* DEMO CODE */
-//		char* msgcpy = talloc(sizeof(char) * 256);
-//		memset(msgcpy, 0, sizeof(char) * 256);
-//		memcpy(msgcpy, clientinput.data, clientinput.length * sizeof(char));
 		printf("Received: %s\n", clientinput.data);
 
 		if(strstr(clientinput.data, "kill"))
@@ -238,24 +237,54 @@ void* HandleUserInputTask(void* pArg)
 	{
 		Server_HandleClientDisconnect(pServer, pClient);
 	}
+
+	//Need to rearm the socket in the epoll interest list
 	struct epoll_event ev;
 	ev.events = EPOLLIN | EPOLLONESHOT;
 	ev.data.ptr = &(pClient->ev_pkg);
 	epoll_ctl(pServer->epfd, EPOLL_CTL_MOD,
 		pClient->sock, &ev);
+	printf("client sock rearmed\n");
 	cv_destroy(&clientinput);
 	return 0;
 }
 
+void ReleaseTaskPkg(void* pArg)
+{
+	struct Server* pServer = ((struct HandleUserInputTaskPkg*) pArg)->pServer;
+	MemoryPool_Free(&(pServer->mem_pool), sizeof(struct HandleUserInputTaskPkg), pArg);
+}
 
 void Server_HandleUserInput(struct Server* pServer, struct Client* pClient)
 {
 	printf("Dispatching task.\n");
-	struct HandleUserInputTaskPkg* pPkg = talloc(sizeof(struct HandleUserInputTaskPkg));
+
+	struct timespec curtime;
+	clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &curtime);
+	float interval = (curtime.tv_nsec - pClient->last_input_time.tv_nsec) / 1000000000.0;
+	pClient->cmd_intervals[pClient->interval_idx % 3] = interval;
+	++pClient->interval_idx;
+
+	memcpy(&(pClient->last_input_time), &curtime, sizeof(struct timespec));
+
+	unsigned char idx = 0;
+	float sum = 0.f;
+	for(; idx < 3; ++idx)
+	{
+		sum += pClient->cmd_intervals[idx];
+	}
+	float average_interval = sum / 3.f;
+	Client_SendMsg(pClient, "You are sending commands at an average rate of %f per second.\n", average_interval);
+
+	struct HandleUserInputTaskPkg* pPkg = MemoryPool_Alloc(&(pServer->mem_pool),
+							sizeof(struct HandleUserInputTaskPkg));
+
+//talloc(sizeof(struct HandleUserInputTaskPkg));
 	pPkg->pServer = pServer;
 	pPkg->pClient = pClient;
+
 	if(FAILURE(ThreadPool_AddTask(&(pServer->thread_pool),
-						HandleUserInputTask, 1, pPkg, tfree2)))
+						HandleUserInputTask, 1, pPkg, ReleaseTaskPkg)))
 	{
 		ServerLog(SERVERLOG_ERROR,
 			"Failed to add threadpool task!");
@@ -277,6 +306,11 @@ int Server_AcceptClient(struct Server* server)
 		pConnectingClient->sock = accepted_sock;
 		pConnectingClient->ev_pkg.sockfd = accepted_sock;
 		pConnectingClient->ev_pkg.pData = pConnectingClient;
+
+		clock_gettime(CLOCK_PROCESS_CPUTIME_ID,	&(pConnectingClient->connection_time));
+		clock_gettime(CLOCK_PROCESS_CPUTIME_ID,	&(pConnectingClient->last_input_time));
+		pConnectingClient->interval_idx = 0;
+		memset(pConnectingClient->cmd_intervals, 0, sizeof(float) * 3);
 
 		struct epoll_event clev;
 		clev.events = EPOLLIN | EPOLLONESHOT;

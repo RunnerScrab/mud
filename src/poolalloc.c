@@ -6,6 +6,7 @@
 
 void MemoryPool_Init(struct MemoryPool* mp)
 {
+	pthread_mutex_init(&(mp->mtx), 0);
 	mp->alloc_pools = 0;
 	mp->alloc_pool_count = 0;
 	mp->default_init_elcount = 32;
@@ -29,29 +30,38 @@ struct AllocPool* MemoryPool_FindAllocPool(struct MemoryPool* mp, ssize_t block_
 
 void* MemoryPool_Alloc(struct MemoryPool* mp, ssize_t block_size)
 {
+	void* returnvalue = 0;
+	pthread_mutex_lock(&(mp->mtx));
 	struct AllocPool* ap = MemoryPool_FindAllocPool(mp, block_size);
 	if(ap)
 	{
-		return AllocPool_Alloc(ap);
+		returnvalue = AllocPool_Alloc(ap);
+		pthread_mutex_unlock(&(mp->mtx));
+		return returnvalue;
 	}
 	else
 	{
-		return AllocPool_Alloc(MemoryPool_AddBlockSizePool(mp, block_size));
+		returnvalue = MemoryPool_AddBlockSizePool(mp, block_size);
+		pthread_mutex_unlock(&(mp->mtx));
+		return AllocPool_Alloc(returnvalue);
 	}
 }
 
 void MemoryPool_Free(struct MemoryPool* mp, ssize_t block_size, void* pFreeMe)
 {
+	pthread_mutex_lock(&(mp->mtx));
 	struct AllocPool* ap = MemoryPool_FindAllocPool(mp, block_size);
 	if(ap)
 	{
 		AllocPool_Free(ap, pFreeMe);
 	}
+	pthread_mutex_unlock(&(mp->mtx));
 }
 
 struct AllocPool* MemoryPool_AddBlockSizePool(struct MemoryPool* mp, ssize_t block_size)
 {
-
+	//We are only reallocing the array which holds pointers to the memory blocks,
+	//so the pointers we've given out up to this point are not invalidated
 	if(mp->alloc_pool_count > 0)
 	{
 		mp->alloc_pools = trealloc(mp->alloc_pools, (1 + mp->alloc_pool_count) * sizeof(struct AllocPool*));
@@ -70,6 +80,7 @@ struct AllocPool* MemoryPool_AddBlockSizePool(struct MemoryPool* mp, ssize_t blo
 
 void MemoryPool_Destroy(struct MemoryPool* mp)
 {
+	pthread_mutex_lock(&(mp->mtx));
 	ssize_t idx = 0;
 	for(; idx < mp->alloc_pool_count; ++idx)
 	{
@@ -78,6 +89,7 @@ void MemoryPool_Destroy(struct MemoryPool* mp)
 		mp->alloc_pools[idx] = 0;
 	}
 	tfree(mp->alloc_pools);
+	pthread_mutex_destroy(&(mp->mtx));
 }
 
 void PoolMemBlock_Init(struct PoolMemBlock* pMemBlock, ssize_t element_count, ssize_t element_size)

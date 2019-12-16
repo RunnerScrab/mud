@@ -2,6 +2,7 @@
 #define CLIENT_H_
 #include <sys/socket.h>
 #include <stdarg.h>
+#include <time.h>
 
 extern const int TEL_STREAM_STATE_USERINPUT;
 extern const int TEL_STREAM_STATE_IAC;
@@ -30,6 +31,11 @@ struct Client
 	struct TelOpts tel_opts;
 	unsigned char tel_cmd_buffer[64];
 	char* input_buffer;
+
+	struct timespec connection_time;
+	struct timespec last_input_time;
+	float cmd_intervals[3]; // average commands per second sent
+	unsigned char interval_idx;
 };
 
 void Client_SendMsg(struct Client* pTarget, const char* fmt, ...);
