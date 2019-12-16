@@ -45,6 +45,7 @@ int main(int argc, char** argv)
 	{
 
 		ready = epoll_wait(server.epfd, server.evlist, server.evlist_len, -1);
+		printf("Ready:%d\n", ready);
 
 		if(ready == -1)
 		{

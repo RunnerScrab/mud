@@ -1,5 +1,5 @@
 CC = gcc
-CFLAGS = -Wall -DDEBUG
+CFLAGS = -Wall -DDEBUG -g
 LDFLAGS = -pthread -lcheck
 DEBUG_CFLAGS = -DDEBUG
 DEBUG_LDFLAGS = -g -lm -pg

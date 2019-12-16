@@ -200,26 +200,32 @@ void Server_HandleClientDisconnect(struct Server* pServer,
 
 }
 
-void Server_HandleUserInput(struct Server* pServer, struct Client* pClient)
+struct HandleUserInputTaskPkg
 {
+	struct Server* pServer;
+	struct Client* pClient;
+};
+
+void* HandleUserInputTask(void* pArg)
+{
+	struct HandleUserInputTaskPkg* pPkg = pArg;
+	struct Server* pServer = pPkg->pServer;
+	struct Client* pClient = pPkg->pClient;
+
 	cv_t clientinput;
 	cv_init(&clientinput, 256);
-	size_t bytes_read = read_to_cv(pClient->sock, &clientinput, 256);
+	read_to_cv(pClient->sock, &clientinput, 256);
+	size_t bytes_read = cv_len(&clientinput);
 	cv_push(&clientinput, 0);
 	if(bytes_read > 0)
 	{
 		/* DEMO CODE */
-		char* msgcpy = talloc(sizeof(char) * 256);
-		memset(msgcpy, 0, sizeof(char) * 256);
-		memcpy(msgcpy, clientinput.data, clientinput.length * sizeof(char));
-		if(FAILURE(ThreadPool_AddTask(&(pServer->thread_pool),
-							TestHandleClientInput, 1, msgcpy, tfree2)))
-		{
-			ServerLog(SERVERLOG_ERROR,
-				"Failed to add threadpool task!");
-		}
+//		char* msgcpy = talloc(sizeof(char) * 256);
+//		memset(msgcpy, 0, sizeof(char) * 256);
+//		memcpy(msgcpy, clientinput.data, clientinput.length * sizeof(char));
+		printf("Received: %s\n", clientinput.data);
 
-		if(strstr(msgcpy, "kill"))
+		if(strstr(clientinput.data, "kill"))
 		{
 			//This is obviously just for debugging!
 			//TODO: Send a kill signal to the process
@@ -232,8 +238,28 @@ void Server_HandleUserInput(struct Server* pServer, struct Client* pClient)
 	{
 		Server_HandleClientDisconnect(pServer, pClient);
 	}
-
+	struct epoll_event ev;
+	ev.events = EPOLLIN | EPOLLONESHOT;
+	ev.data.ptr = &(pClient->ev_pkg);
+	epoll_ctl(pServer->epfd, EPOLL_CTL_MOD,
+		pClient->sock, &ev);
 	cv_destroy(&clientinput);
+	return 0;
+}
+
+
+void Server_HandleUserInput(struct Server* pServer, struct Client* pClient)
+{
+	printf("Dispatching task.\n");
+	struct HandleUserInputTaskPkg* pPkg = talloc(sizeof(struct HandleUserInputTaskPkg));
+	pPkg->pServer = pServer;
+	pPkg->pClient = pClient;
+	if(FAILURE(ThreadPool_AddTask(&(pServer->thread_pool),
+						HandleUserInputTask, 1, pPkg, tfree2)))
+	{
+		ServerLog(SERVERLOG_ERROR,
+			"Failed to add threadpool task!");
+	}
 
 }
 
@@ -253,7 +279,7 @@ int Server_AcceptClient(struct Server* server)
 		pConnectingClient->ev_pkg.pData = pConnectingClient;
 
 		struct epoll_event clev;
-		clev.events = EPOLLIN | EPOLLEXCLUSIVE;
+		clev.events = EPOLLIN | EPOLLONESHOT;
 		clev.data.ptr = &(pConnectingClient->ev_pkg);
 
 		Vector_Push(&(server->clients), pConnectingClient);
