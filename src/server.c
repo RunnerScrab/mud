@@ -228,7 +228,7 @@ void DebugPrintCV(cv_t* buf)
 	size_t idx = 0, z = buf->capacity;
 	for(; idx < z; ++idx)
 	{
-		printf(idx < z - 1 ? "%d," : "%d\n", cv_at(buf, idx));
+		printf(idx < z - 1 ? "%d," : "%d\n", 255 & cv_at(buf, idx));
 	}
 }
 
@@ -244,13 +244,23 @@ void* HandleUserInputTask(void* pArg)
 	unsigned char inputcomplete = 0;
 	cv_t* cbuf = &(pClient->input_buffer);
 	cv_appendcv(cbuf, &clientinput);
+	printf("Received %lu bytes.\n", bytes_read);
+	DebugPrintCV(&clientinput);
 	if(cbuf->length >= 2)
 	{
+		//Look for a crlf
 		if(((cbuf->data[cbuf->length - 2] << 8 )
 				| cbuf->data[cbuf->length - 1])
 			== ((13<<8)|10))
 		{
 			cbuf->length -= 2;
+			cv_push(cbuf, 0);
+			inputcomplete = 1;
+		}
+		else if(cbuf->data[cbuf->length - 2] == 13)
+		{
+			//in CHAR mode - do we really want to support this
+			--cbuf->length;
 			cv_push(cbuf, 0);
 			inputcomplete = 1;
 		}
