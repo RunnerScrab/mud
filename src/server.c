@@ -202,11 +202,25 @@ void Server_HandleClientDisconnect(struct Server* pServer,
 
 }
 
+void Server_DisconnectClient(struct Server* pServer, struct Client* pClient)
+{
+	Server_HandleClientDisconnect(pServer, pClient);
+}
+
 struct HandleUserInputTaskPkg
 {
 	struct Server* pServer;
 	struct Client* pClient;
 };
+
+void RearmClientSocket(struct Server* pServer, struct Client* pClient)
+{
+	struct epoll_event ev;
+	ev.events = EPOLLIN | EPOLLONESHOT;
+	ev.data.ptr = &(pClient->ev_pkg);
+	epoll_ctl(pServer->epfd, EPOLL_CTL_MOD,
+		pClient->sock, &ev);
+}
 
 void* HandleUserInputTask(void* pArg)
 {
@@ -239,12 +253,7 @@ void* HandleUserInputTask(void* pArg)
 	}
 
 	//Need to rearm the socket in the epoll interest list
-	struct epoll_event ev;
-	ev.events = EPOLLIN | EPOLLONESHOT;
-	ev.data.ptr = &(pClient->ev_pkg);
-	epoll_ctl(pServer->epfd, EPOLL_CTL_MOD,
-		pClient->sock, &ev);
-	printf("client sock rearmed\n");
+	RearmClientSocket(pServer, pClient);
 	cv_destroy(&clientinput);
 	return 0;
 }
@@ -267,20 +276,30 @@ void Server_HandleUserInput(struct Server* pServer, struct Client* pClient)
 	}
 	float interval = (curtime.tv_sec - pClient->last_input_time.tv_sec) + (curtime.tv_nsec - pClient->last_input_time.tv_nsec)/1000000000.0;
 
-	pClient->cmd_intervals[pClient->interval_idx % 3] = interval;
+	pClient->cmd_intervals[pClient->interval_idx % 6] = interval;
 	++pClient->interval_idx;
 	printf("%f s since user's last input.\n", interval);
 	memcpy(&(pClient->last_input_time), &curtime, sizeof(struct timespec));
 
 	unsigned char idx = 0;
 	float sum = 0.f;
-	for(; idx < 3; ++idx)
+	for(; idx < 6; ++idx)
 	{
 		sum += pClient->cmd_intervals[idx];
 	}
-	float average_interval = sum / 3.f;
-	Client_SendMsg(pClient, "You are sending commands at an average rate of %f per second.\n", 1.0/average_interval);
-
+	float average_cps = 6.f / sum;
+	if(average_cps > 10.f)
+	{
+		Client_SendMsg(pClient, "You are sending commands at an average rate of %f per second and are being disconnected.\n", average_cps);
+		Server_DisconnectClient(pServer, pClient);
+		return;
+	}
+	else if(average_cps > 5.f)
+	{
+		Client_SendMsg(pClient, "You are sending commands at an average rate of %f per second.\n", average_cps);
+		RearmClientSocket(pServer, pClient);
+		return;
+	}
 	struct HandleUserInputTaskPkg* pPkg = MemoryPool_Alloc(&(pServer->mem_pool),
 							sizeof(struct HandleUserInputTaskPkg));
 
@@ -315,7 +334,7 @@ int Server_AcceptClient(struct Server* server)
 		clock_gettime(CLOCK_BOOTTIME,	&(pConnectingClient->connection_time));
 		clock_gettime(CLOCK_BOOTTIME,	&(pConnectingClient->last_input_time));
 		pConnectingClient->interval_idx = 0;
-		memset(pConnectingClient->cmd_intervals, 0, sizeof(float) * 3);
+		memset(pConnectingClient->cmd_intervals, 0, sizeof(float) * 6);
 
 		struct epoll_event clev;
 		clev.events = EPOLLIN | EPOLLONESHOT;

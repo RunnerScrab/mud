@@ -34,7 +34,7 @@ struct Client
 
 	struct timespec connection_time;
 	struct timespec last_input_time;
-	float cmd_intervals[3]; // average commands per second sent
+	float cmd_intervals[6]; // average commands per second sent
 	unsigned char interval_idx;
 };
 
