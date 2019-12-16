@@ -29,8 +29,6 @@ static void* ThreadPool_WorkerThreadFunc(void* pArg)
 			break;
 		}
 
-
-
 		// min is now a copy, and the original space on the queue is effectively released
 
 		struct ThreadTask* pTask = (struct ThreadTask*) Heap_ExtractMinimum(&(pPool->prio_queue));
@@ -49,10 +47,12 @@ static void* ThreadPool_WorkerThreadFunc(void* pArg)
 			if(pTask->releasefn)
 			{
 				//Release task arguments
+				printf("Release pargs\n");
 				pTask->releasefn(pTask->pArgs);
-				AllocPool_Free(&(pPool->alloc_pool), pTask);
-				pTask = 0;
+
 			}
+			AllocPool_Free(&(pPool->alloc_pool), pTask);
+			pTask = 0;
 		}
 
 

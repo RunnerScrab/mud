@@ -81,6 +81,13 @@ int cv_init(cv_t* cv, size_t startsize)
 	return (startsize > 0 && cv->data) ? 0 : -1;
 }
 
+int cv_resize(cv_t* cv, size_t newcap)
+{
+	cv->data = (el_t*) trealloc(cv->data, sizeof(el_t) * newcap);
+	cv->capacity = newcap;
+	return cv->data ? 0 : -1;
+}
+
 void cv_cpy(cv_t* dest, cv_t* source)
 {
 	dest->length = source->length;

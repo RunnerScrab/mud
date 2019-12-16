@@ -50,9 +50,8 @@ Suite* cv_test_suite(void)
 	TCase* testcases = tcase_create("Core");
 
 	tcase_add_test(testcases, cv_append_and_push);
-	tcase_add_test(testcases, memoryleak_check);
 	tcase_add_test(testcases, cv_as_string);
-
+	tcase_add_test(testcases, memoryleak_check);
 	suite_add_tcase(s, testcases);
 
 	return s;

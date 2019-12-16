@@ -88,15 +88,18 @@ void* talloc_(ssize_t size, const char* func, const char* file, const int line)
 void tfree2(void* p)
 {
 #ifdef DEBUG
-	ssize_t idx = 0;
+	size_t idx = 0;
+	unsigned char found = 0;
 	for(; idx < g_allocs; ++idx)
 	{
 		if(p == g_allocations[idx].mem)
 		{
 			g_allocations[idx].freed += 1;
+			found = 1;
 			break;
 		}
 	}
+
 #endif
 	++g_frees;
 	free(p);

@@ -16,6 +16,8 @@
 #include "vector.h"
 #include "client.h"
 #include "threadpool.h"
+#include "charvector.h"
+#include "iohelper.h"
 
 const char *g_ServerLogTypes[] = {"DEBUG", "STATUS", "ERROR"};
 const int SERVERLOG_DEBUG = 0;
@@ -160,6 +162,8 @@ int Server_Teardown(struct Server* pServer)
 	ThreadPool_Destroy(&(pServer->thread_pool));
 	Vector_Destroy(&(pServer->clients));
 	close(pServer->sockfd);
+	close(pServer->cmd_pipe[0]);
+	close(pServer->cmd_pipe[1]);
 	return 0;
 }
 
@@ -180,22 +184,34 @@ void Server_SendAllClients(struct Server* pServer, const char* fmt, ...)
 void Server_HandleClientDisconnect(struct Server* pServer,
 				struct Client* pClient)
 {
+	ServerLog(SERVERLOG_STATUS, "Client disconnected.");
+	size_t foundkey = 0;
+	if(FAILURE(Vector_Find(&(pServer->clients), &(pClient->sock), CompClientSock, &foundkey)))
+	{
+		ServerLog(SERVERLOG_DEBUG, "DEBUG: Couldn't find client in vector!");
+	}
+	else
+	{
+		close(pClient->sock);
+		//This should actually be done automatically, according to man epoll
+		epoll_ctl(pServer->epfd, EPOLL_CTL_DEL, pClient->sock, 0);
+		Vector_Remove(&(pServer->clients), foundkey);
+	}
 
 }
 
 void Server_HandleUserInput(struct Server* pServer, struct Client* pClient)
 {
-	//TODO: Replace with a real socket reading function (reads as much as needed)
-	memset(pClient->input_buffer, 0, sizeof(char) * 256);
-	size_t bytes_read = read(pClient->sock, pClient->input_buffer, 256);
-
+	cv_t clientinput;
+	cv_init(&clientinput, 256);
+	size_t bytes_read = read_to_cv(pClient->sock, &clientinput, 256);
+	cv_push(&clientinput, 0);
 	if(bytes_read > 0)
 	{
 		/* DEMO CODE */
-		pClient->input_buffer[bytes_read] = 0;
-
 		char* msgcpy = talloc(sizeof(char) * 256);
-		memcpy(msgcpy, pClient->input_buffer, 256 * sizeof(char));
+		memset(msgcpy, 0, sizeof(char) * 256);
+		memcpy(msgcpy, clientinput.data, clientinput.length * sizeof(char));
 		if(FAILURE(ThreadPool_AddTask(&(pServer->thread_pool),
 							TestHandleClientInput, 1, msgcpy, tfree2)))
 		{
@@ -203,32 +219,21 @@ void Server_HandleUserInput(struct Server* pServer, struct Client* pClient)
 				"Failed to add threadpool task!");
 		}
 
-		if(strstr(pClient->input_buffer, "kill"))
+		if(strstr(msgcpy, "kill"))
 		{
 			//This is obviously just for debugging!
 			//TODO: Send a kill signal to the process
+
 			Server_WriteToCmdPipe(pServer, "kill", 5);
 		}
 		/* END DEMO CODE */
 	}
 	else
 	{
-		ServerLog(SERVERLOG_STATUS, "Client disconnected.");
-		size_t foundkey = 0;
-		if(FAILURE(Vector_Find(&(pServer->clients), &(pClient->sock), CompClientSock, &foundkey)))
-		{
-			ServerLog(SERVERLOG_DEBUG, "DEBUG: Couldn't find client in vector!");
-		}
-		else
-		{
-
-			close(pClient->sock);
-			//This should actually be done automatically, according to man epoll
-			epoll_ctl(pServer->epfd, EPOLL_CTL_DEL, pClient->sock, 0);
-			Vector_Remove(&(pServer->clients), foundkey);
-		}
-
+		Server_HandleClientDisconnect(pServer, pClient);
 	}
+
+	cv_destroy(&clientinput);
 
 }
 
