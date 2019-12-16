@@ -260,11 +260,16 @@ void Server_HandleUserInput(struct Server* pServer, struct Client* pClient)
 	printf("Dispatching task.\n");
 
 	struct timespec curtime;
-	clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &curtime);
-	float interval = (curtime.tv_nsec - pClient->last_input_time.tv_nsec) / 1000000000.0;
+
+	if(FAILURE(clock_gettime(CLOCK_BOOTTIME, &curtime)))
+	{
+		printf("CLOCK FAILED\n");
+	}
+	float interval = (curtime.tv_sec - pClient->last_input_time.tv_sec) + (curtime.tv_nsec - pClient->last_input_time.tv_nsec)/1000000000.0;
+
 	pClient->cmd_intervals[pClient->interval_idx % 3] = interval;
 	++pClient->interval_idx;
-
+	printf("%f s since user's last input.\n", interval);
 	memcpy(&(pClient->last_input_time), &curtime, sizeof(struct timespec));
 
 	unsigned char idx = 0;
@@ -274,7 +279,7 @@ void Server_HandleUserInput(struct Server* pServer, struct Client* pClient)
 		sum += pClient->cmd_intervals[idx];
 	}
 	float average_interval = sum / 3.f;
-	Client_SendMsg(pClient, "You are sending commands at an average rate of %f per second.\n", average_interval);
+	Client_SendMsg(pClient, "You are sending commands at an average rate of %f per second.\n", 1.0/average_interval);
 
 	struct HandleUserInputTaskPkg* pPkg = MemoryPool_Alloc(&(pServer->mem_pool),
 							sizeof(struct HandleUserInputTaskPkg));
@@ -307,8 +312,8 @@ int Server_AcceptClient(struct Server* server)
 		pConnectingClient->ev_pkg.sockfd = accepted_sock;
 		pConnectingClient->ev_pkg.pData = pConnectingClient;
 
-		clock_gettime(CLOCK_PROCESS_CPUTIME_ID,	&(pConnectingClient->connection_time));
-		clock_gettime(CLOCK_PROCESS_CPUTIME_ID,	&(pConnectingClient->last_input_time));
+		clock_gettime(CLOCK_BOOTTIME,	&(pConnectingClient->connection_time));
+		clock_gettime(CLOCK_BOOTTIME,	&(pConnectingClient->last_input_time));
 		pConnectingClient->interval_idx = 0;
 		memset(pConnectingClient->cmd_intervals, 0, sizeof(float) * 3);
 
