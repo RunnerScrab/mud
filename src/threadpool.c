@@ -47,7 +47,6 @@ static void* ThreadPool_WorkerThreadFunc(void* pArg)
 			if(pTask->releasefn)
 			{
 				//Release task arguments
-				printf("Release pargs\n");
 				pTask->releasefn(pTask->pArgs);
 
 			}
