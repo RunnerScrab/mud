@@ -18,6 +18,7 @@
 #include "threadpool.h"
 #include "charvector.h"
 #include "iohelper.h"
+#include "telnet.h"
 
 const char *g_ServerLogTypes[] = {"DEBUG", "STATUS", "ERROR"};
 const int SERVERLOG_DEBUG = 0;
@@ -241,11 +242,19 @@ void* HandleUserInputTask(void* pArg)
 	cv_t clientinput;
 	cv_init(&clientinput, CLIENT_MAXINPUTLEN);
 	size_t bytes_read = read_to_cv(pClient->sock, &clientinput, 0, CLIENT_MAXINPUTLEN);
+
+	size_t idx = 0, z = bytes_read;
+	for(; idx < z; ++idx)
+	{
+		ProcessByte(&(pClient->tel_stream), clientinput.data[idx]);
+	}
+
+
 	unsigned char inputcomplete = 0;
 	cv_t* cbuf = &(pClient->input_buffer);
 	cv_appendcv(cbuf, &clientinput);
 	printf("Received %lu bytes.\n", bytes_read);
-	DebugPrintCV(&clientinput);
+//	DebugPrintCV(&clientinput);
 	if(cbuf->length >= 2)
 	{
 		//Look for a crlf
@@ -270,6 +279,10 @@ void* HandleUserInputTask(void* pArg)
 	{
 		/* DEMO CODE */
 		printf("Received: %s\n", cbuf->data);
+
+		// TODO: Process data here
+
+
 		if(strstr(cbuf->data, "kill"))
 		{
 			//This is obviously just for debugging!

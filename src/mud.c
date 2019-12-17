@@ -38,7 +38,7 @@ int main(int argc, char** argv)
 	if(FAILURE(Server_Configure(&server, "127.0.0.1", SERVER_PORT))
 		|| FAILURE(Server_Initialize(&server, SERVER_LISTENQUEUELEN)))
 	{
-		Server_Teardown(&server);
+		//Server_Teardown(&server);
 		return -1;
 	}
 

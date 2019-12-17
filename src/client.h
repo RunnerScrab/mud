@@ -3,6 +3,7 @@
 #include <sys/socket.h>
 #include <stdarg.h>
 #include <time.h>
+#include "telnet.h"
 #include "constants.h"
 #include "charvector.h"
 
@@ -12,26 +13,19 @@ extern const int TEL_STREAM_STATE_SB;
 extern const int TEL_STREAM_STATE_SE;
 extern const int TEL_STREAM_STATE_CMD3; //Verbs
 
-struct TelOpts
-{
-
-};
-
 struct EvPkg
 {
 	int sockfd;
 	void* pData;
 };
 
-
 struct Client
 {
 	int sock;
 	struct EvPkg ev_pkg;
 	struct sockaddr addr;
-	int tel_stream_state;
-	struct TelOpts tel_opts;
-	unsigned char tel_cmd_buffer[CLIENT_MAXTELCMDLEN];
+
+	TelnetStream tel_stream;
 
 	struct timespec connection_time;
 	struct timespec last_input_time;
@@ -39,6 +33,7 @@ struct Client
 	unsigned char interval_idx;
 
 	cv_t input_buffer;
+
 };
 
 void Client_SendMsg(struct Client* pTarget, const char* fmt, ...);

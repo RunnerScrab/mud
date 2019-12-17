@@ -13,9 +13,10 @@ const int TEL_STREAM_STATE_CMD3 = 4; //Verbs
 struct Client* Client_Create(int sock)
 {
 	struct Client* pClient = talloc(sizeof(struct Client));
-	pClient->tel_stream_state = TEL_STREAM_STATE_USERINPUT;
-	memset(&(pClient->tel_cmd_buffer), 0, sizeof(char) * 64);
 
+	memset(&(pClient->tel_stream), 0, sizeof(TelnetStream));
+
+	pClient->tel_stream.sock = sock;
 	pClient->sock = sock;
 	pClient->ev_pkg.sockfd = sock;
 	pClient->ev_pkg.pData = pClient;

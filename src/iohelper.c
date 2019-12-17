@@ -10,7 +10,7 @@ size_t read_to_cv(int fd, cv_t* cv, size_t startidx, size_t max_read)
 	do
 	{
 		cv_resize(cv, min((total_read + read_size), max_read));
-		bytes_read = read(fd, &(cv->data[total_read]), min(max_read, read_size));
+		bytes_read = read(fd, &cv->data[total_read], min(max_read, read_size));
 
 		if(bytes_read <= 0)
 		{
@@ -41,12 +41,30 @@ int write_from_cv(int fd, cv_t* cv)
 	do
 	{
 		written = write(fd,
-				&(cv->data[total_written]), cv->length - total_written);
+				&cv->data[total_written], cv->length - total_written);
 
 		if(written < 0)
 			return written;
 		total_written += written;
 	}
 	while(total_written < bufsize);
+	return total_written;
+}
+
+int write_full(int fd, char* msg, size_t len)
+{
+	int written = 0;
+	int total_written = 0;
+
+	do
+	{
+		written = write(fd, &msg[total_written], len - total_written);
+
+		if(written < 0)
+			return written;
+		total_written += written;
+	}
+
+	while(total_written < len);
 	return total_written;
 }

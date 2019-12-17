@@ -9,7 +9,7 @@ TEST_DIR ?= ./
 
 MEMOBJ = talloc.o poolalloc.o
 ADTOBJ =  vector.o charvector.o heap.o
-SERVEROBJ = mud.o server.o client.o threadpool.o iohelper.o
+SERVEROBJ = mud.o server.o client.o threadpool.o iohelper.o telnet.o
 OBJ = $(MEMOBJ) $(ADTOBJ) $(SERVEROBJ)
 
 TESTSRC := $(shell find $(TEST_DIR) -regextype sed -regex ".*/test.*\.c")
