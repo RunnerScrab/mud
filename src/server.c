@@ -244,17 +244,27 @@ void* HandleUserInputTask(void* pArg)
 	size_t bytes_read = read_to_cv(pClient->sock, &clientinput, 0, CLIENT_MAXINPUTLEN);
 
 	size_t idx = 0, z = bytes_read;
-	for(; idx < z; ++idx)
+	char bHadIAC = 0;
+	if(memchr(clientinput.data, 255, clientinput.length))
 	{
-		ProcessByte(&(pClient->tel_stream), clientinput.data[idx]);
+		for(; idx < z; ++idx)
+		{
+			printf("Processing %d\n", 255 & clientinput.data[idx]);
+			bHadIAC |= ProcessByteForTelnetCmds(&pClient->tel_stream,
+							clientinput.data[idx]);
+		}
 	}
 
+	if(bHadIAC)
+	{
+		cv_clear(&clientinput);
+	}
 
 	unsigned char inputcomplete = 0;
 	cv_t* cbuf = &(pClient->input_buffer);
 	cv_appendcv(cbuf, &clientinput);
 	printf("Received %lu bytes.\n", bytes_read);
-//	DebugPrintCV(&clientinput);
+	//DebugPrintCV(&clientinput);
 	if(cbuf->length >= 2)
 	{
 		//Look for a crlf

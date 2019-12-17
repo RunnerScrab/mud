@@ -50,7 +50,7 @@ int main(int argc, char** argv)
 		if(ready == -1)
 		{
 			ServerLog(SERVERLOG_ERROR, "Ready -1\n");
-			break;
+			//break;
 		}
 
 		for(loop_ctr = 0; loop_ctr < ready; ++loop_ctr)
