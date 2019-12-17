@@ -4,8 +4,8 @@
 #include <assert.h>
 #include <check.h>
 
-#include "heap.h"
-#include "talloc.h"
+#include "../heap.h"
+#include "../talloc.h"
 
 int randint(int min, int max)
 {

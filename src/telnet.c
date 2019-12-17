@@ -121,7 +121,7 @@ void Run2ByteCmd(TelnetStream* stream, unsigned char x)
 
 void Run3ByteCmd(TelnetStream* stream, unsigned char x)
 {
-	unsigned char response[3] = {0};
+	char response[3] = {0};
 	switch(x)
 	{
 	case SGA:

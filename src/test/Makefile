@@ -6,14 +6,13 @@ OUTPUT_OPTION = -MMD -MP -o $@
 SOURCE =  $(wildcard *.c)
 OBJS = $(SOURCE:.c=.o)
 DEPS = $(SOURCE:.c=.d)
+TARGS = $(patsubst %.c,%, ${SOURCE})
 
-mud: ${OBJS}
-	${CC} -o mud ${OBJS} ${LDLIBS}
 
 -include ${DEPS}
 
-clean:
-	rm -f *.o mud
+#clean:
+#	rm -f *.o ${TARGS} *~ *.d
 
 etags:
 	etags *.c *.h

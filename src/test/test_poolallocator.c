@@ -1,8 +1,8 @@
-#include "talloc.h"
+#include "../talloc.h"
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include "poolalloc.h"
+#include "../poolalloc.h"
 
 struct TestData
 {

@@ -1,6 +1,6 @@
-#include "threadpool.h"
-#include "talloc.h"
-#include "poolalloc.h"
+#include "../threadpool.h"
+#include "../talloc.h"
+#include "../poolalloc.h"
 
 #include <sys/time.h>
 #include <time.h>
@@ -133,7 +133,7 @@ int main(void)
 
 	MemoryPool_Destroy(&mempool); //lazy; this joins all threads
 	tfree(threadinfo);
-	printf("%d outstanding allocations. %d allocs, %d frees.\n", toutstanding_allocs(), tget_allocs(),
+	printf("%d outstanding allocations. %lu allocs, %lu frees.\n", toutstanding_allocs(), tget_allocs(),
 		tget_frees());
 
 

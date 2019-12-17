@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <check.h>
-#include "charvector.h"
+#include "../charvector.h"
 
 START_TEST(cv_append_and_push)
 {

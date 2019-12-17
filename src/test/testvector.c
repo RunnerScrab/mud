@@ -1,5 +1,5 @@
-#include "vector.h"
-#include "talloc.h"
+#include "../vector.h"
+#include "../talloc.h"
 #include <stdio.h>
 #include <string.h>
 

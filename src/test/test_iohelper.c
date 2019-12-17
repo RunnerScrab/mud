@@ -1,5 +1,5 @@
-#include "charvector.h"
-#include "iohelper.h"
+#include "../charvector.h"
+#include "../iohelper.h"
 #include <unistd.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -24,7 +24,7 @@ START_TEST(iohelper_test_read)
 	printf("In read test.\n");
 	cv_t readbuf;
 	cv_init(&readbuf, 64);
-	size_t readbytes = read_to_cv(test_pipe[0], &readbuf, 256);
+	size_t readbytes = read_to_cv(test_pipe[0], &readbuf, 0, 256);
 
 	printf("Read %lu bytes.\n", readbytes);
 	ck_assert(readbytes == 256);
