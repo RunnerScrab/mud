@@ -1,0 +1,51 @@
+MUD
+	Scripting Engine
+	     Research language
+			   Research features
+		 	   Research requirements for embedding
+	     What will the scope of the scripting engine be?
+	     	  Rooms
+			Used to define rooms?
+			     Can define properties and behavior simultaneously
+			     	 Inherit from premade types
+			Alternatively, attached to rooms via hooks or events
+				       Less flexible
+				       More uniform, easier to create
+		Objects
+
+	Data Persistence
+	     Design data model
+	     	    What is your data?
+		    	 Accounts
+				Password
+				Email
+				Statistics
+				Characters
+					Statistics, skills, abilities, inventory
+					data/metadata storage
+			 Objects
+			 Craft
+				Rooms
+				Location
+	     	    How will you accomodate expandability?
+		    	Events
+				Allow creation of event types?
+		    	Hooks
+			Rooms/items/objects = functions?
+					    Depends somewhat on scripting engine
+	     Research LMDB
+	     	      How to organize data?
+		      	  Work out what your data will look like
+		      What are the limitations of simple kvps
+	     Research Sqlite / LightningSQL
+			Associated data is more naturally organized
+			Will I get locked into a data model
+	Network
+		Telnet
+			MCCP/MCCP2/MCCP3 support
+			What to do about clients in char mode
+
+		ANSI Escape Codes
+		     ANSI Colors
+		     Do I want to support terminal drawing
+		     	Most people don't use clients that support this
