@@ -33,7 +33,7 @@ size_t read_to_cv(int fd, cv_t* cv, size_t startidx, size_t max_read)
 	return total_read;
 }
 
-int write_from_cv(int fd, cv_t* cv)
+int write_from_cv_raw(int fd, cv_t* cv)
 {
 	int written = 0;
 	int total_written = 0;
@@ -51,7 +51,7 @@ int write_from_cv(int fd, cv_t* cv)
 	return total_written;
 }
 
-int write_full(int fd, char* msg, size_t len)
+int write_full_raw(int fd, char* msg, size_t len)
 {
 	int written = 0;
 	int total_written = 0;

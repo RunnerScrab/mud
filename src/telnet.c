@@ -83,8 +83,8 @@
 #define TELSTATE_INPUT 0 //No commands
 #define TELSTATE_IAC 1 //IAC received
 #define TELSTATE_SB 2 //Suboption negotiation received
-#define TELSTATE_CMD 3 //3 byte command likely used in major option negotiation
-#define TELSTATE_SE 4 //End of Suboption negotiation (following an IAC)
+#define TELSTATE_SE 3 //End of Suboption negotiation (following an IAC)
+#define TELSTATE_CMD 4 //3 byte command likely used in major option negotiation
 #define TELSTATE_ERROR 5 //Stream has entered invalid state and does not conform to any known telnet RFC
 
 const unsigned char supported_options[] =
@@ -121,6 +121,7 @@ void Run2ByteCmd(TelnetStream* stream, unsigned char x)
 
 void Run3ByteCmd(TelnetStream* stream, unsigned char x)
 {
+	unsigned char last_byte = stream->last_byte;
 	char response[3] = {0};
 	switch(x)
 	{
@@ -129,16 +130,23 @@ void Run3ByteCmd(TelnetStream* stream, unsigned char x)
 		response[1] = WILL;
 		response[2] = SGA;
 		//We don't send GAs anyway
+		printf("Sent %d %d %d\n",
+			255 & response[0], 255 & response[1], 255 & response[2]);
+		write_full_raw(stream->sock, response, 3);
 		break;
 	default:
-		response[0] = IAC;
-		response[1] = WONT;
-		response[2] = x;
+		if(last_byte == DO || last_byte == WILL)
+		{
+			response[0] = IAC;
+			response[1] = last_byte == DO ? WONT : DONT;
+			response[2] = x;
+			printf("Sent %d %d %d\n",
+				255 & response[0], 255 & response[1], 255 & response[2]);
+			write_full_raw(stream->sock, response, 3);
+
+		}
 		break;
 	}
-	printf("Sent %d %d %d\n",
-		255 & response[0], 255 & response[1], 255 & response[2]);
-	write_full(stream->sock, response, 3);
 }
 
 void RunSubnegotiationCmd(TelnetStream* stream)
@@ -218,5 +226,8 @@ int ProcessByteForTelnetCmds(TelnetStream* stream, unsigned char x)
 		break;
 
 	}
+
+	stream->last_byte = x;
+
 	return *curtelstate != TELSTATE_INPUT;
 }

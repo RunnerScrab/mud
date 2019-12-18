@@ -29,6 +29,7 @@ typedef struct
 	unsigned char input_buf[CLIENT_MAXTELCMDLEN]; //For gathering SB arguments
 	unsigned char state;
 	TelnetOptions opts;
+	unsigned char last_byte;
 
 } TelnetStream;
 
