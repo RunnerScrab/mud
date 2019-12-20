@@ -119,9 +119,11 @@ unsigned char Is3ByteCmd(unsigned char x)
 void Run2ByteCmd(TelnetStream* stream, unsigned char x)
 {
 	//TODO
+	printf("Received request to run %s\n",
+		Telnet_DBG_GetTelcodeName(x));
 }
 
-void MakeTelCmd(char* response, unsigned char a,
+static void MakeTelCmd(char* response, unsigned char a,
 		unsigned char b, unsigned char c)
 {
 	response[0] = a;
@@ -159,9 +161,7 @@ void Run3ByteCmd(TelnetStream* stream, unsigned char x)
 	case LM:
 		break;
 	case SGA:
-		response[0] = IAC;
-		response[1] = WILL;
-		response[2] = SGA;
+		MakeTelCmd(response, IAC, WILL, SGA);
 		if(last_byte == DO)
 		{
 			stream->opts.b_sga = 1;
@@ -170,9 +170,7 @@ void Run3ByteCmd(TelnetStream* stream, unsigned char x)
 	default:
 		if(last_byte == DO || last_byte == WILL)
 		{
-			response[0] = IAC;
-			response[1] = last_byte == DO ? WONT : DONT;
-			response[2] = x;
+			MakeTelCmd(response, IAC, last_byte == DO ? WONT : DONT, x);
 			printf("Sent %d %d %d\n",
 				255 & response[0], 255 & response[1], 255 & response[2]);
 			write_full_raw(stream->sock, response, 3);

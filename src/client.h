@@ -36,7 +36,7 @@ struct Client
 
 };
 
-void Client_SendMsg(struct Client* pTarget, const char* fmt, ...);
+//void Client_SendMsg(struct Client* pTarget, const char* fmt, ...);
 struct Client* Client_Create(int sock);
 void Client_Destroy(void* p);
 
