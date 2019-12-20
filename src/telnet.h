@@ -1,6 +1,6 @@
 #ifndef TELNET_H_
 #define TELNET_H_
-
+#include "charvector.h"
 #include <stdlib.h>
 #include <stdio.h>
 #include "constants.h"
@@ -26,7 +26,7 @@ typedef struct
 typedef struct
 {
 	int sock;
-	unsigned char input_buf[CLIENT_MAXTELCMDLEN]; //For gathering SB arguments
+	cv_t sb_args;
 	unsigned char state;
 	TelnetOptions opts;
 	unsigned char last_byte;

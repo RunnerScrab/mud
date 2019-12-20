@@ -249,7 +249,6 @@ void* HandleUserInputTask(void* pArg)
 	{
 		for(; idx < z; ++idx)
 		{
-			printf("Processing %d\n", 255 & clientinput.data[idx]);
 			bHadIAC |= TelnetStream_ProcessByte(&pClient->tel_stream,
 							clientinput.data[idx]);
 		}

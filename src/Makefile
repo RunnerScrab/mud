@@ -1,6 +1,6 @@
 CC = gcc
 CFLAGS = -Wall -DDEBUG -g
-LDLIBS = -pthread -lcheck
+LDLIBS = -pthread -lcheck -lz
 OUTPUT_OPTION = -MMD -MP -o $@
 
 SOURCE =  $(wildcard *.c)

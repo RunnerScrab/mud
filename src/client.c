@@ -16,6 +16,8 @@ struct Client* Client_Create(int sock)
 
 	memset(&(pClient->tel_stream), 0, sizeof(TelnetStream));
 
+	cv_init(&pClient->tel_stream.sb_args, 32);
+
 	pClient->tel_stream.sock = sock;
 	pClient->sock = sock;
 	pClient->ev_pkg.sockfd = sock;
@@ -35,6 +37,7 @@ void Client_Destroy(void* p)
 {
 	struct Client* pClient = (struct Client*) p;
 
+	cv_destroy(&pClient->tel_stream.sb_args);
 	cv_destroy(&(pClient->input_buffer));
 
 	tfree(pClient);

@@ -95,6 +95,11 @@ const unsigned char supported_options[] =
 	MCCP3
 };
 
+const char* Telnet_DBG_GetTelcodeName(unsigned char code)
+{
+	return telcodenames[code] ? telcodenames[code] : "UNKNOWN";
+}
+
 void SetTelnetState(unsigned char* curtelstate, unsigned char newval)
 {
 	printf("Switching to telnet state %u\n", newval);
@@ -136,18 +141,20 @@ void Run3ByteCmd(TelnetStream* stream, unsigned char x)
 			//DO MCCP2
 			printf("ENABLING MCCP2\n");
 			stream->opts.b_mccp2 = 1;
-			MakeTelCmd(response, IAC, WILL, MCCP2);
+			//MakeTelCmd(response, IAC, WILL, MCCP2);
 		}
 		break;
 	case MCCP3:
 		if(last_byte == DO)
 		{
-			printf("ENABLING MCCP3\n");
-			MakeTelCmd(response, IAC, WILL, MCCP3);
-			stream->opts.b_mccp3 = 1;
+			printf("Awaiting MCCP3 Suboption Negotiation\n");
 		}
 		break;
 	case ECHO:
+		if(last_byte == DO)
+		{
+			stream->opts.b_echo = 1;
+		}
 		break;
 	case LM:
 		break;
@@ -155,10 +162,10 @@ void Run3ByteCmd(TelnetStream* stream, unsigned char x)
 		response[0] = IAC;
 		response[1] = WILL;
 		response[2] = SGA;
-		//We don't send GAs anyway
-		printf("Sent %d %d %d\n",
-			255 & response[0], 255 & response[1], 255 & response[2]);
-		write_full_raw(stream->sock, response, 3);
+		if(last_byte == DO)
+		{
+			stream->opts.b_sga = 1;
+		}
 		break;
 	default:
 		if(last_byte == DO || last_byte == WILL)
@@ -177,23 +184,44 @@ void Run3ByteCmd(TelnetStream* stream, unsigned char x)
 
 void RunSubnegotiationCmd(TelnetStream* stream)
 {
-
+	size_t idx = 0, len = stream->sb_args.length;
+	printf("SUBOPTIONS:\n");
+	for(; idx < len; ++idx)
+		printf(idx < len - 1 ? "%d," : "%d\n",
+			stream->sb_args.data[idx]);
+	if(len > 0)
+	{
+		//HACK: Look at how suboption negotiation is actually done
+		//it may be more complex than MCCP3's use of it
+		switch(stream->sb_args.data[0])
+		{
+		case MCCP3:
+			printf("Enabling MCCP3 from subopt negotiation\n");
+			stream->opts.b_mccp3 = 1;
+			break;
+		default:
+			break;
+		}
+	}
+	//The SB buffer will be cleared upon the start of a new SB
+	//sequence. No need to clear it twice
 }
 
 //Tell a newly connecting client what the server supports
 int TelnetStream_SendPreamble(TelnetStream* stream)
 {
 	static const char preamble[] = {
-		IAC, DO, LM,
-		IAC, WILL, ECHO,
+		IAC, WONT, ECHO,
 		IAC, WILL, SGA,
 		IAC, WILL, MCCP2,
 		IAC, WILL, MCCP3};
-		return write_full_raw(stream->sock, preamble, 15);
+	return write_full_raw(stream->sock, preamble, 15);
 }
 
 int TelnetStream_ProcessByte(TelnetStream* stream, unsigned char x)
 {
+	printf("Received: %s (%u)\n", Telnet_DBG_GetTelcodeName(x),
+		255 & x);
 	unsigned char* curtelstate = &stream->state;
 	switch(*curtelstate)
 	{
@@ -213,6 +241,7 @@ int TelnetStream_ProcessByte(TelnetStream* stream, unsigned char x)
 		if(SB == x)
 		{
 			SetTelnetState(curtelstate, TELSTATE_SB);
+			cv_clear(&stream->sb_args);
 		}
 		else if(!GetIs2CmdByte(x))
 		{
@@ -234,6 +263,7 @@ int TelnetStream_ProcessByte(TelnetStream* stream, unsigned char x)
 		else
 		{
 			//TODO: Begin collecting subnegotiation arguments
+			cv_push(&stream->sb_args, x);
 		}
 		break;
 	case TELSTATE_SE:
