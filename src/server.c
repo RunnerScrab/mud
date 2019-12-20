@@ -250,7 +250,7 @@ void* HandleUserInputTask(void* pArg)
 		for(; idx < z; ++idx)
 		{
 			printf("Processing %d\n", 255 & clientinput.data[idx]);
-			bHadIAC |= ProcessByteForTelnetCmds(&pClient->tel_stream,
+			bHadIAC |= TelnetStream_ProcessByte(&pClient->tel_stream,
 							clientinput.data[idx]);
 		}
 	}
@@ -338,11 +338,12 @@ void Server_HandleUserInput(struct Server* pServer, struct Client* pClient)
 	float average_cps = ((float) CLIENT_STOREDCMDINTERVALS) / sum;
 	if(average_cps > CLIENT_MAXCMDRATE)
 	{
+		ServerLog(SERVERLOG_STATUS, "Client is being disconnected for exceeding command rate. (%f cmds/s)", average_cps);
 		Client_SendMsg(pClient,
 			"You are sending commands at an average rate of %f per second"
 			" and are being disconnected.\n", average_cps);
-		Server_DisconnectClient(pServer, pClient);
-		return;
+		//Server_DisconnectClient(pServer, pClient);
+		//return;
 	}
 	else if(average_cps > 5.f)
 	{
@@ -385,7 +386,7 @@ int Server_AcceptClient(struct Server* server)
 		clev.data.ptr = &(pConnectingClient->ev_pkg);
 
 		Vector_Push(&(server->clients), pConnectingClient);
-
+		TelnetStream_SendPreamble(&pConnectingClient->tel_stream);
 #ifdef DEBUG
 		Client_SendMsg(pConnectingClient, "*****The server is running as a DEBUG build*****\r\n");
 #endif

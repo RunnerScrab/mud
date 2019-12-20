@@ -51,7 +51,7 @@ int write_from_cv_raw(int fd, cv_t* cv)
 	return total_written;
 }
 
-int write_full_raw(int fd, char* msg, size_t len)
+int write_full_raw(int fd, const char* msg, size_t len)
 {
 	int written = 0;
 	int total_written = 0;

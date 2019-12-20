@@ -34,9 +34,6 @@
 #define NAOHT 11
 #define NAOHTD 12
 #define NAOFD 13
-#define NAOHT 11
-#define NAOHTD 12
-#define NAOFD 13
 #define NAVT 14
 #define NAOVTD 15
 #define NAOLD 16
@@ -119,12 +116,41 @@ void Run2ByteCmd(TelnetStream* stream, unsigned char x)
 	//TODO
 }
 
+void MakeTelCmd(char* response, unsigned char a,
+		unsigned char b, unsigned char c)
+{
+	response[0] = a;
+	response[1] = b;
+	response[2] = c;
+}
+
 void Run3ByteCmd(TelnetStream* stream, unsigned char x)
 {
 	unsigned char last_byte = stream->last_byte;
 	char response[3] = {0};
 	switch(x)
 	{
+	case MCCP2:
+		if(last_byte == DO)
+		{
+			//DO MCCP2
+			printf("ENABLING MCCP2\n");
+			stream->opts.b_mccp2 = 1;
+			MakeTelCmd(response, IAC, WILL, MCCP2);
+		}
+		break;
+	case MCCP3:
+		if(last_byte == DO)
+		{
+			printf("ENABLING MCCP3\n");
+			MakeTelCmd(response, IAC, WILL, MCCP3);
+			stream->opts.b_mccp3 = 1;
+		}
+		break;
+	case ECHO:
+		break;
+	case LM:
+		break;
 	case SGA:
 		response[0] = IAC;
 		response[1] = WILL;
@@ -154,7 +180,19 @@ void RunSubnegotiationCmd(TelnetStream* stream)
 
 }
 
-int ProcessByteForTelnetCmds(TelnetStream* stream, unsigned char x)
+//Tell a newly connecting client what the server supports
+int TelnetStream_SendPreamble(TelnetStream* stream)
+{
+	static const char preamble[] = {
+		IAC, DO, LM,
+		IAC, WILL, ECHO,
+		IAC, WILL, SGA,
+		IAC, WILL, MCCP2,
+		IAC, WILL, MCCP3};
+		return write_full_raw(stream->sock, preamble, 15);
+}
+
+int TelnetStream_ProcessByte(TelnetStream* stream, unsigned char x)
 {
 	unsigned char* curtelstate = &stream->state;
 	switch(*curtelstate)
@@ -231,3 +269,100 @@ int ProcessByteForTelnetCmds(TelnetStream* stream, unsigned char x)
 
 	return *curtelstate != TELSTATE_INPUT;
 }
+
+
+const char *telcodenames[256] =
+{
+	"TB", //0
+	"ECHO", //1
+	"RECON", //2
+	"SGA", //3
+	"AMSN", //4
+	"STAT", //5
+	"TM", //6
+	"RCTE", //7
+	"OLW", //8
+	"OPS", //9
+	"NAOCRD", //10
+	"NAOHT", //11
+	"NAOHTD", //12
+	"NAOFD", //13
+	"NAVT", //14
+	"NAOVTD", //15
+	"NAOLD", //16
+	"EA", // 17
+	"LOGOUT", //18
+	"BM", //19
+	"DET", //20
+	"SUPDUP", //21
+	"SUPDUPO", //22
+	"SL", //23
+	"TT", //24
+	"EOR", //25
+	"TACACSUI", //26
+	"OM", //27
+	"TTYLOC", //28
+	"T3270", //29
+	"X3", //30
+	"NAWS", //31
+	"TS", //32
+	"RFC", //33
+	"LM", //34
+	"XDL", //35
+	"ENV", //36
+	"AUTH", //37
+	"EO", //38
+	"NE", //39
+	"TN3270E", //40
+	"XAUTH", //41
+	"CHARSET", //42
+	"RSP", //43
+	"CPC", //44
+	"TSLE", //45
+	"TLS", //46
+	"KERMIT", //47
+	"SENDURL", //48
+	"FORWARDX", //49
+	0,0,0,0,0,0,0,0,0,0,
+	"TEST", //60
+	0,0,0,0,0, 0,0,0,0,0, //70
+	0,0,0,0,0, 0,0,0,0,0, //80
+	0,0,0,0,0,
+	"MCCP2", //86
+	"MCCP3", //87
+	0,0,
+	0,0,0,0,0, 0,0,0,0,0, //90-99
+	0,0,0,0,0, 0,0,0,0,0, //100-109
+	0,0,0,0,0, 0,0,0,0,0, //110-119
+	0,0,0,0,0, 0,0,0,0,0, //120-129
+	0,0,0,0,0, 0,0,0, //130-137
+	"PRAGMA", //138
+	"SSPI", //139
+	"PRAGMAHB", //140
+	0,0,0,0,0, 0,0,0,0,0,//141-150
+	0,0,0,0,0, 0,0,0,0,0,//151-160
+	0,0,0,0,0, 0,0,0,0,0,//170
+	0,0,0,0,0, 0,0,0,0,0,//180
+	0,0,0,0,0, 0,0,0,0,0,//190
+	0,0,0,0,0, 0,0,0,0,0,//200
+	0,0,0,0,0, 0,0,0,0,0,//210
+	0,0,0,0,0, 0,0,0,0,0,//220
+	0,0,0,0,0, 0,0,0,0,0,//230
+	0,0,0,0,0, 0,0,0,0, //239
+	"SE", //240
+	"NOP", //241
+	"DM", //242
+	"BRK", //243
+	"IP", //244
+	"AO", //245
+	"AYT", //246
+	"EC", //247
+	"EL", //248
+	"GA", //249
+	"SB", //250p
+	"WILL", //251
+	"WONT", //252
+	"DO", //253
+	"DONT", //254
+	"IAC" //255
+};

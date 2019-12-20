@@ -33,12 +33,9 @@ typedef struct
 
 } TelnetStream;
 
-void SetTelnetState(unsigned char* curtelstate, unsigned char newval);
-unsigned char GetIs2CmdByte(unsigned char x);
-unsigned char Is3ByteCmd(unsigned char x);
-void Run2ByteCmd(TelnetStream* stream, unsigned char x);
-void Run3ByteCmd(TelnetStream* stream, unsigned char x);
-void RunSubnegotiationCmd(TelnetStream* stream);
-int ProcessByteForTelnetCmds(TelnetStream* stream, unsigned char x);
+extern const char *telcodenames[256];
+
+int TelnetStream_SendPreamble(TelnetStream* stream);
+int TelnetStream_ProcessByte(TelnetStream* stream, unsigned char x);
 
 #endif
