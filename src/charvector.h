@@ -12,6 +12,8 @@ typedef struct
 	size_t length, capacity;
 } cv_t; // Short for "Char Vector Type"
 
+
+void cv_swap(cv_t* a, cv_t* b);
 void cv_cpy(cv_t* dest, cv_t* source);
 int cv_init(cv_t* cv, size_t startsize);
 void cv_destroy(cv_t* cv);

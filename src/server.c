@@ -19,6 +19,7 @@
 #include "charvector.h"
 #include "iohelper.h"
 #include "telnet.h"
+#include "zcompressor.h"
 
 const char *g_ServerLogTypes[] = {"DEBUG", "STATUS", "ERROR"};
 const int SERVERLOG_DEBUG = 0;
@@ -245,6 +246,23 @@ void* HandleUserInputTask(void* pArg)
 
 	size_t idx = 0, z = bytes_read;
 	char bHadIAC = 0;
+
+	if(pClient->tel_stream.opts.b_mccp3)
+	{
+		cv_t decompout;
+		cv_init(&decompout, CLIENT_MAXINPUTLEN);
+		if(FAILURE(ZCompressor_DecompressData(&pClient->zstreams, &clientinput, &decompout)))
+		{
+			printf("Decompression FAILED\n");
+		}
+		else
+		{
+			printf("Decompressed %lu bytes to %lu\n", clientinput.length, decompout.length);
+		}
+		cv_swap(&decompout, &clientinput);
+		cv_destroy(&decompout);
+	}
+
 	if(memchr(clientinput.data, 255, clientinput.length))
 	{
 		for(; idx < z; ++idx)

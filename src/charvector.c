@@ -99,6 +99,22 @@ int cv_resize(cv_t* cv, size_t newcap)
 	return cv->data ? 0 : -1;
 }
 
+void cv_swap(cv_t* a, cv_t* b)
+{
+	cv_t temp;
+	temp.data = a->data;
+	temp.length = a->length;
+	temp.capacity = a->capacity;
+
+	a->data = b->data;
+	a->length = b->length;
+	a->capacity= b->capacity;
+
+	b->data = temp.data;
+	b->length = temp.length;
+	b->capacity = temp.capacity;
+}
+
 void cv_cpy(cv_t* dest, cv_t* source)
 {
 	dest->length = source->length;

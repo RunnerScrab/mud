@@ -13,7 +13,7 @@ mud: ${OBJS}
 -include ${DEPS}
 
 clean:
-	rm -f *.o mud
+	rm -f *.o mud *.d *~
 
 etags:
 	etags *.c *.h
