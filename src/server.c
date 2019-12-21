@@ -174,7 +174,7 @@ void Server_SendAllClients(struct Server* pServer, const char* fmt, ...)
 	for(; idx < z; ++idx)
 	{
 		pClient = (struct Client*) Vector_At(&(pServer->clients), idx);
-		Client_SendMsg(pClient, fmt, arglist);
+		Client_Sendf(pClient, fmt, arglist);
 	}
 	va_end(arglist);
 }
@@ -306,7 +306,8 @@ void* HandleUserInputTask(void* pArg)
 	{
 		/* DEMO CODE */
 		printf("Received: %s\n", cbuf->data);
-
+		Client_Sendf(pClient, "You sent: %s\r\n\r\n",
+			cbuf->data);
 		// TODO: Process data here
 
 
@@ -331,6 +332,12 @@ void* HandleUserInputTask(void* pArg)
 	return 0;
 }
 
+float TimeDiffSecs(struct timespec* b, struct timespec* a)
+{
+	return (b->tv_sec - a->tv_sec) +
+		(b->tv_nsec - a->tv_nsec)/1000000000.0;
+}
+
 void Server_HandleUserInput(struct Server* pServer, struct Client* pClient)
 {
 	struct timespec curtime;
@@ -339,36 +346,39 @@ void Server_HandleUserInput(struct Server* pServer, struct Client* pClient)
 	{
 		ServerLog(SERVERLOG_DEBUG, "CLOCK FAILED\n");
 	}
-	float interval = (curtime.tv_sec - pClient->last_input_time.tv_sec) +
-		(curtime.tv_nsec - pClient->last_input_time.tv_nsec)/1000000000.0;
 
-	pClient->cmd_intervals[pClient->interval_idx] = interval;
-	pClient->interval_idx = (pClient->interval_idx + 1) % CLIENT_STOREDCMDINTERVALS;
-	memcpy(&(pClient->last_input_time), &curtime, sizeof(struct timespec));
+	if(TimeDiffSecs(&curtime, &pClient->connection_time) >= 5.f)
+	{
+		float interval = TimeDiffSecs(&curtime, &pClient->last_input_time);
 
-	unsigned char idx = 0;
-	float sum = 0.f;
-	for(; idx < CLIENT_STOREDCMDINTERVALS; ++idx)
-	{
-		sum += pClient->cmd_intervals[idx];
-	}
-	float average_cps = ((float) CLIENT_STOREDCMDINTERVALS) / sum;
-	if(average_cps > CLIENT_MAXCMDRATE)
-	{
-		ServerLog(SERVERLOG_STATUS, "Client is being disconnected for exceeding command rate. (%f cmds/s)", average_cps);
-		Client_SendMsg(pClient,
-			"You are sending commands at an average rate of %f per second"
-			" and are being disconnected.\n", average_cps);
-		//Server_DisconnectClient(pServer, pClient);
-		//return;
-	}
-	else if(average_cps > 5.f)
-	{
-		Client_SendMsg(pClient, "You are sending commands at an average rate of %f per second.\n", average_cps);
-		RearmClientSocket(pServer, pClient);
-		return;
-	}
+		pClient->cmd_intervals[pClient->interval_idx] = interval;
+		pClient->interval_idx = (pClient->interval_idx + 1) % CLIENT_STOREDCMDINTERVALS;
+		memcpy(&(pClient->last_input_time), &curtime, sizeof(struct timespec));
 
+		unsigned char idx = 0;
+		float sum = 0.f;
+		for(; idx < CLIENT_STOREDCMDINTERVALS; ++idx)
+		{
+			sum += pClient->cmd_intervals[idx];
+		}
+		float average_cps = ((float) CLIENT_STOREDCMDINTERVALS) / sum;
+
+		if(average_cps > CLIENT_MAXCMDRATE)
+		{
+			ServerLog(SERVERLOG_STATUS, "Client is being disconnected for exceeding command rate. (%f cmds/s)", average_cps);
+			Client_Sendf(pClient,
+				"You are sending commands at an average rate of %f per second"
+				" and are being disconnected.\n", average_cps);
+			Server_DisconnectClient(pServer, pClient);
+			return;
+		}
+		else if(average_cps > 5.f)
+		{
+			Client_Sendf(pClient, "You are sending commands at an average rate of %f per second.\n", average_cps);
+			RearmClientSocket(pServer, pClient);
+			return;
+		}
+	}
 	struct HandleUserInputTaskPkg* pPkg = MemoryPool_Alloc(&(pServer->mem_pool),
 							sizeof(struct HandleUserInputTaskPkg));
 
@@ -405,7 +415,7 @@ int Server_AcceptClient(struct Server* server)
 		Vector_Push(&(server->clients), pConnectingClient);
 		TelnetStream_SendPreamble(&pConnectingClient->tel_stream);
 #ifdef DEBUG
-		Client_SendMsg(pConnectingClient, "*****The server is running as a DEBUG build*****\r\n");
+		Client_Sendf(pConnectingClient, "*****The server is running as a DEBUG build*****\r\n");
 #endif
 
 		epoll_ctl(server->epfd, EPOLL_CTL_ADD, accepted_sock, &clev);

@@ -3,7 +3,8 @@
 #include <sys/socket.h>
 #include <string.h>
 #include <stdio.h>
-
+#include "zcompressor.h"
+#include "iohelper.h"
 
 struct Client* Client_Create(int sock)
 {
@@ -39,11 +40,46 @@ void Client_Destroy(void* p)
 	tfree(pClient);
 }
 
-
-void Client_SendMsg(struct Client* pTarget, const char* fmt, ...)
+//This should be used for all client writes, since it knows whether or not
+//to perform stream compression
+int Client_WriteTo(struct Client* pTarget, const char* buf, size_t len)
 {
-	va_list arglist;
+	switch(pTarget->tel_stream.opts.b_mccp2)
+	{
+	case 1:
+	{
+		cv_t compout;
+		cv_init(&compout, len);
+		if(ZCompressor_CompressRawData(&pTarget->zstreams,
+						buf, len, &compout) < 0)
+		{
+			return -1;
+		}
+
+		int result = write_from_cv_raw(pTarget->sock, &compout);
+		cv_destroy(&compout);
+		return result;
+	}
+	default:
+		return write_full_raw(pTarget->sock, buf, len);
+	}
+}
+
+void Client_Sendf(struct Client* pTarget, const char* fmt, ...)
+{
+	va_list arglist, argcpy;
 	va_start(arglist, fmt);
-	vdprintf(pTarget->sock, fmt, arglist);
+	va_copy(argcpy, arglist);
+	cv_t buf;
+	cv_init(&buf, 512);
+	size_t required = vsnprintf(buf.data, 512, fmt, arglist);
+	cv_resize(&buf, required);
+
+	required = vsnprintf(buf.data, required, fmt, argcpy);
+	buf.length = required;
+	Client_WriteTo(pTarget, buf.data, buf.length);
+
+	cv_destroy(&buf);
 	va_end(arglist);
+	va_end(argcpy);
 }

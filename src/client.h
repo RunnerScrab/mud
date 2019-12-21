@@ -32,7 +32,9 @@ struct Client
 
 };
 
-void Client_SendMsg(struct Client* pTarget, const char* fmt, ...);
+
+int Client_WriteTo(struct Client* pTarget, const char* buf, size_t len);
+void Client_Sendf(struct Client* pTarget, const char* fmt, ...);
 struct Client* Client_Create(int sock);
 void Client_Destroy(void* p);
 

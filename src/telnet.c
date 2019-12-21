@@ -143,6 +143,9 @@ void Run3ByteCmd(TelnetStream* stream, unsigned char x)
 			//DO MCCP2
 			printf("ENABLING MCCP2\n");
 			stream->opts.b_mccp2 = 1;
+			//﻿﻿﻿IAC SB MCCP2 IAC SE
+			char resp5[5] = {IAC, SB, MCCP2, IAC, SE};
+			write_full_raw(stream->sock, resp5, 5);
 			//MakeTelCmd(response, IAC, WILL, MCCP2);
 		}
 		break;

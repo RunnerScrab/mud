@@ -19,13 +19,42 @@ int ZCompressor_Init(ZCompressor* comp)
 			deflateInit(&comp->strm_out, Z_DEFAULT_COMPRESSION) == Z_OK) ? 0 : -1;
 }
 
+int ZCompressor_CompressRawData(ZCompressor* pComp,
+				const char* buf, size_t len, cv_t* out)
+{
+	cv_clear(out);
+	size_t bound = deflateBound(&pComp->strm_out, len);
+	cv_resize(out, bound);
+
+	z_stream* strm = &pComp->strm_out;
+	strm->avail_in = len;
+	strm->next_in = (Bytef*) buf;
+	strm->avail_out = bound;
+	strm->next_out = (Bytef*) out->data;
+	int result = 0;
+	for(;strm->avail_in > 0 || strm->avail_out == 0;)
+	{
+		switch(result = deflate(strm, Z_PARTIAL_FLUSH))
+		{
+		case Z_NEED_DICT:
+		case Z_DATA_ERROR:
+		case Z_MEM_ERROR:
+			deflateEnd(strm);
+			return -1;
+		}
+		out->length += bound - strm->avail_out;
+	}
+
+	return result == Z_OK || result == Z_STREAM_END ? 0 : -1;
+}
+
+
 int ZCompressor_CompressData(ZCompressor* pComp, cv_t* in, cv_t* out)
 {
 	cv_clear(out);
 	size_t bound = deflateBound(&pComp->strm_out, in->length);
 	cv_resize(out, bound);
-	//the compressed result will rarely ever be the same size as the source data
-	//
+
 	z_stream* strm = &pComp->strm_out;
 	strm->avail_in = in->length;
 	strm->next_in = (Bytef*) in->data;
@@ -34,7 +63,7 @@ int ZCompressor_CompressData(ZCompressor* pComp, cv_t* in, cv_t* out)
 	int result = 0;
 	for(;strm->avail_in > 0 || strm->avail_out == 0;)
 	{
-		switch(result = deflate(strm, Z_PARTIAL_FLUSH))
+		switch(result = deflate(strm, Z_SYNC_FLUSH))
 		{
 		case Z_NEED_DICT:
 		case Z_DATA_ERROR:
