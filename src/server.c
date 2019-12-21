@@ -253,29 +253,37 @@ void* HandleUserInputTask(void* pArg)
 		cv_init(&decompout, CLIENT_MAXINPUTLEN);
 		if(FAILURE(ZCompressor_DecompressData(&pClient->zstreams, &clientinput, &decompout)))
 		{
-			printf("Decompression FAILED\n");
-		}
-		else
-		{
-			printf("Decompressed %lu bytes to %lu\n", clientinput.length, decompout.length);
+			ServerLog(SERVERLOG_ERROR, "ZDecompression FAILED on client input.");
+			ZCompressor_Reset(&pClient->zstreams);
+			RearmClientSocket(pServer, pClient);
+			cv_destroy(&decompout);
+			cv_destroy(&clientinput);
+			return (void*) -1;
 		}
 		cv_swap(&decompout, &clientinput);
 		cv_destroy(&decompout);
 	}
 
+	//Scan for IAC bytes
 	if(memchr(clientinput.data, 255, clientinput.length))
 	{
+		cv_t normchars;
+		cv_init(&normchars, 64);
+		//Process IACs
 		for(; idx < z; ++idx)
 		{
 			bHadIAC |= TelnetStream_ProcessByte(&pClient->tel_stream,
-							clientinput.data[idx]);
+							clientinput.data[idx], &normchars);
 		}
+
+		if(bHadIAC)
+		{
+			cv_clear(&clientinput);
+			cv_appendcv(&clientinput, &normchars);
+		}
+		cv_destroy(&normchars);
 	}
 
-	if(bHadIAC)
-	{
-		cv_clear(&clientinput);
-	}
 
 	unsigned char inputcomplete = 0;
 	cv_t* cbuf = &(pClient->input_buffer);
@@ -304,12 +312,12 @@ void* HandleUserInputTask(void* pArg)
 
 	if(bytes_read > 0 && inputcomplete)
 	{
+		//At this point, we have a complete user command and can process it
 		/* DEMO CODE */
 		printf("Received: %s\n", cbuf->data);
 		Client_Sendf(pClient, "You sent: %s\r\n\r\n",
 			cbuf->data);
 		// TODO: Process data here
-
 
 		if(strstr(cbuf->data, "kill"))
 		{
@@ -349,6 +357,8 @@ void Server_HandleUserInput(struct Server* pServer, struct Client* pClient)
 
 	if(TimeDiffSecs(&curtime, &pClient->connection_time) >= 5.f)
 	{
+		//MUD clients are often if not always in character mode upon first connecting
+		//to perform negotiation
 		float interval = TimeDiffSecs(&curtime, &pClient->last_input_time);
 
 		pClient->cmd_intervals[pClient->interval_idx] = interval;
@@ -374,7 +384,8 @@ void Server_HandleUserInput(struct Server* pServer, struct Client* pClient)
 		}
 		else if(average_cps > 5.f)
 		{
-			Client_Sendf(pClient, "You are sending commands at an average rate of %f per second.\n", average_cps);
+			Client_Sendf(pClient,
+				"You are sending commands at an average rate of %f per second.\n", average_cps);
 			RearmClientSocket(pServer, pClient);
 			return;
 		}
@@ -407,6 +418,7 @@ int Server_AcceptClient(struct Server* server)
 	if(SUCCESS(accepted_sock))
 	{
 		ServerLog(SERVERLOG_STATUS, "Client connected.\n");
+
 		pConnectingClient = Client_Create(accepted_sock);
 		struct epoll_event clev;
 		clev.events = EPOLLIN | EPOLLONESHOT;
@@ -415,9 +427,9 @@ int Server_AcceptClient(struct Server* server)
 		Vector_Push(&(server->clients), pConnectingClient);
 		TelnetStream_SendPreamble(&pConnectingClient->tel_stream);
 #ifdef DEBUG
-		Client_Sendf(pConnectingClient, "*****The server is running as a DEBUG build*****\r\n");
+		Client_Sendf(pConnectingClient, "\r\n*****The server is running as a DEBUG build*****\r\n\r\n");
 #endif
-
+		Server_SendAllClients(server, "A user has connected.\r\n");
 		epoll_ctl(server->epfd, EPOLL_CTL_ADD, accepted_sock, &clev);
 		return accepted_sock;
 	}

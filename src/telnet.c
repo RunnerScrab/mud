@@ -164,10 +164,13 @@ void Run3ByteCmd(TelnetStream* stream, unsigned char x)
 	case LM:
 		break;
 	case SGA:
-		MakeTelCmd(response, IAC, WILL, SGA);
 		if(last_byte == DO)
 		{
 			stream->opts.b_sga = 1;
+		}
+		else if(last_byte == DONT)
+		{
+			stream->opts.b_sga = 0;
 		}
 		break;
 	default:
@@ -219,7 +222,7 @@ int TelnetStream_SendPreamble(TelnetStream* stream)
 	return write_full_raw(stream->sock, preamble, 15);
 }
 
-int TelnetStream_ProcessByte(TelnetStream* stream, unsigned char x)
+int TelnetStream_ProcessByte(TelnetStream* stream, unsigned char x, cv_t* normal_char_dump)
 {
 	printf("Received: %s (%u)\n", Telnet_DBG_GetTelcodeName(x),
 		255 & x);
@@ -235,6 +238,7 @@ int TelnetStream_ProcessByte(TelnetStream* stream, unsigned char x)
 		default:
 			//Character is not part of a telnet command and is just a
 			//normal input character
+			cv_push(normal_char_dump, x);
 			break;
 		}
 		break;

@@ -36,6 +36,6 @@ typedef struct
 extern const char *telcodenames[256];
 
 int TelnetStream_SendPreamble(TelnetStream* stream);
-int TelnetStream_ProcessByte(TelnetStream* stream, unsigned char x);
+int TelnetStream_ProcessByte(TelnetStream* stream, unsigned char x, cv_t* normal_char_dump);
 
 #endif

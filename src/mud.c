@@ -34,6 +34,7 @@ int main(int argc, char** argv)
 
 	int ready = 0;
 	int loop_ctr = 0;
+	volatile char mudloop_running = 1;
 	//TODO: Handle binding properly w/ ipv6 support
 	if(FAILURE(Server_Configure(&server, "127.0.0.1", SERVER_PORT))
 		|| FAILURE(Server_Initialize(&server, SERVER_LISTENQUEUELEN)))
@@ -42,7 +43,7 @@ int main(int argc, char** argv)
 		return -1;
 	}
 
-	for(;;)
+	for(;mudloop_running;)
 	{
 
 		ready = epoll_wait(server.epfd, server.evlist, server.evlist_len, -1);
@@ -70,7 +71,9 @@ int main(int argc, char** argv)
 				printf("Received on cmd pipe: %s\n", buf);
 				if(strstr(buf, "kill"))
 				{
-					goto lbl_servershutdown;
+					Server_SendAllClients(&server, "\r\nServer going down!\r\n");
+					mudloop_running = 0;
+					break;
 				}
 			}
 			else
@@ -83,9 +86,9 @@ int main(int argc, char** argv)
 
 	}
 
-lbl_servershutdown:
+
 	ServerLog(SERVERLOG_STATUS, "Server shutting down.");
-	Server_SendAllClients(&server, "Server going down!\r\n");
+
 
 	Server_Teardown(&server);
 	tprint_summary();
