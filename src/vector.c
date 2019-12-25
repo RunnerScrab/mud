@@ -93,12 +93,6 @@ int Vector_Find(struct Vector* pArray, void* key,
 
 int Vector_Remove(struct Vector* pArray, size_t idx)
 {
-	//Beats moving the whole chunk of memory,
-	//since we're going to be O(n) for search anyway
-	//int z = pArray->length;
-	//swapping fucks with our debug memory tracking, actually
-	//tswap_memory(&(pArray->pStorage[idx]), &(pArray->pStorage[z - 1]));
-
 	if(pArray->FreeNodeFn)
 	{
 		pArray->FreeNodeFn(pArray->pStorage[idx]);

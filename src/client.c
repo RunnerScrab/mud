@@ -65,6 +65,7 @@ int Client_WriteTo(struct Client* pTarget, const char* buf, size_t len)
 	}
 }
 
+//This uses Client_WriteTo for a printf style send
 void Client_Sendf(struct Client* pTarget, const char* fmt, ...)
 {
 	va_list arglist, argcpy;

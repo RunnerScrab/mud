@@ -2,7 +2,10 @@
 #define VECTOR_H_
 #include <stddef.h>
 
-//This does NOT preserve relative order of nodes
+//Don't use this class anymore - it's essentially what you need to do in C to replicate
+//C++ std::vector<CLASS> semantics, and it's awful. Just alloc capacity in advance with a normal
+//array - this is basically all this does
+
 struct Vector
 {
      void** pStorage;

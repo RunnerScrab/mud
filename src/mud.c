@@ -28,8 +28,6 @@ int main(int argc, char** argv)
 #endif
 	struct Server server;
 
-	//Temporary stuff for connecting client - should be put in struct Client
-
 	struct EvPkg* pEvPkg = 0;
 
 	int ready = 0;
@@ -62,6 +60,9 @@ int main(int argc, char** argv)
 				Server_AcceptClient(&server);
 			}
 			//HACK: ugh, I should make "EvPkg" both more general and descriptive
+			//Basically all it does is allow epoll to pass us back the socket
+			//experiencing activity and a pointer to a client IF AND ONLY IF
+			//it's actually a client.
 			else if(server.evlist[loop_ctr].data.ptr == server.cmd_pipe)
 			{
 				//Received something on cmd pipe

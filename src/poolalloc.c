@@ -41,6 +41,8 @@ void* MemoryPool_Alloc(struct MemoryPool* mp, ssize_t block_size)
 	}
 	else
 	{
+		//We could not find an existing pool with blocks of the requested size,
+		//so create one
 		returnvalue = MemoryPool_AddBlockSizePool(mp, block_size);
 		pthread_mutex_unlock(&(mp->mtx));
 		return AllocPool_Alloc(returnvalue);
@@ -62,6 +64,8 @@ struct AllocPool* MemoryPool_AddBlockSizePool(struct MemoryPool* mp, ssize_t blo
 {
 	//We are only reallocing the array which holds pointers to the memory blocks,
 	//so the pointers we've given out up to this point are not invalidated
+
+	//This function should only be called by alloc
 	if(mp->alloc_pool_count > 0)
 	{
 		mp->alloc_pools = trealloc(mp->alloc_pools, (1 + mp->alloc_pool_count) * sizeof(struct AllocPool*));
@@ -124,6 +128,8 @@ void AllocPool_AddBlock(struct AllocPool* pAllocPool)
 {
 	if(!pAllocPool->headnode)
 	{
+		//Only to be done if our free blocks in the pool are all already in use
+		//when the user makes a request for another
 		pAllocPool->pool_blocks = (struct PoolMemBlock*) trealloc(pAllocPool->pool_blocks,
 									(pAllocPool->block_count + 1) *
 									sizeof(struct PoolMemBlock));
@@ -138,6 +144,7 @@ void AllocPool_AddBlock(struct AllocPool* pAllocPool)
 
 void* AllocPool_Alloc(struct AllocPool* pAllocPool)
 {
+	//Main function to use to request preallocated memory block
 	pthread_mutex_lock(&(pAllocPool->pool_mutex));
 	struct InplaceFreeNode* returnval = pAllocPool->headnode;
 	pAllocPool->headnode = returnval->nextinplacenode;

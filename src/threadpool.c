@@ -31,32 +31,41 @@ static void* ThreadPool_WorkerThreadFunc(void* pArg)
 
 		// min is now a copy, and the original space on the queue is effectively released
 
+		//Retrieve the next task from the priority queue
 		struct ThreadTask* pTask = (struct ThreadTask*) Heap_ExtractMinimum(&(pPool->prio_queue));
 		pthread_mutex_unlock(&(pPool->prio_queue_mutex));
-
-
 
 
 		if(pTask)
 		{
 			if(pTask->taskfn)
 			{
+				//Run the task
 				pTask->taskfn(pTask->pArgs);
 			}
 
 			if(pTask->releasefn)
 			{
-				//Release task arguments
+				//Release task arguments using the free function
+				//passed to the task, if we've been provided one
 				pTask->releasefn(pTask->pArgs);
 
 			}
+
+			//Data about the task itself (not its args,
+			//necessarily) are always allocated from a
+			//preallocated pool to avoid context switching
+			//to ask the system for memory every time one
+			//is to be dispatched
+
 			AllocPool_Free(&(pPool->alloc_pool), pTask);
 			pTask = 0;
 		}
 
 
 	}
-
+	//This unlock is normally unnecessary and is for if we need to exit the
+	//worker thread loop suddenly
 	pthread_mutex_unlock(&(pPool->prio_queue_mutex));
 	return 0;
 }
@@ -79,6 +88,7 @@ void ThreadPool_Destroy(struct ThreadPool* tp)
 		//in a timely fashion
 	}
 
+	//Burn through the remaining tasks enqueued so that we release all resources
 	pthread_mutex_lock(&(tp->prio_queue_mutex));
 	struct ThreadTask* pTask = 0;
 	do
@@ -92,6 +102,7 @@ void ThreadPool_Destroy(struct ThreadPool* tp)
 		}
 	}
 	while(pTask);
+
 	Heap_Destroy(&(tp->prio_queue));
 	pthread_cond_destroy(&(tp->wakecond));
 	pthread_mutex_destroy(&(tp->prio_queue_mutex));

@@ -12,6 +12,8 @@ typedef struct
 	size_t length, capacity;
 } cv_t; // Short for "Char Vector Type"
 
+//cv_sprintf notwithstanding, cv_t has C++ std::vector<char>-like semantics and should be
+//used that way
 
 void cv_swap(cv_t* a, cv_t* b);
 void cv_cpy(cv_t* dest, cv_t* source);

@@ -174,6 +174,7 @@ void Run3ByteCmd(TelnetStream* stream, unsigned char x)
 		}
 		break;
 	default:
+		//Default response to options we do not recognize
 		if(last_byte == DO || last_byte == WILL)
 		{
 			MakeTelCmd(response, IAC, last_byte == DO ? WONT : DONT, x);
@@ -224,6 +225,9 @@ int TelnetStream_SendPreamble(TelnetStream* stream)
 
 int TelnetStream_ProcessByte(TelnetStream* stream, unsigned char x, cv_t* normal_char_dump)
 {
+	//This parser is models a finite state machine of valid telnet stream
+	//states. It is exhaustive, and additional options should all be able to be
+	//handled in the Run2Byte/Run3ByteCmd functions without modifying this
 	printf("Received: %s (%u)\n", Telnet_DBG_GetTelcodeName(x),
 		255 & x);
 	unsigned char* curtelstate = &stream->state;

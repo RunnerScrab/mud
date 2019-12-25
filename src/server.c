@@ -217,7 +217,10 @@ void ReleaseHandleUserInputTaskPkg(void* pArg)
 
 static void RearmClientSocket(struct Server* pServer, struct Client* pClient)
 {
-	//Rearm this socket in the epoll interest list
+	//Rearm this socket in the epoll interest list.
+	//We need to rearm the client socket after each time we respond to it.
+	//EPOLLONESHOT is set to prevent an infinite task-dispatching loop, whose exact mechanism
+	//I cannot presently remember; it was challenging to work out what was happening
 	struct epoll_event ev;
 	ev.events = EPOLLIN | EPOLLONESHOT;
 	ev.data.ptr = &(pClient->ev_pkg);
@@ -236,6 +239,9 @@ void DebugPrintCV(cv_t* buf)
 
 void* HandleUserInputTask(void* pArg)
 {
+	//This is the user input processor task dispatched to a worker thread by the threadpool.
+	//Handling of user commands should generally run from this point without dispatching another task
+	//(except for commands that add a timed event and the like)
 	struct HandleUserInputTaskPkg* pPkg = pArg;
 	struct Server* pServer = pPkg->pServer;
 	struct Client* pClient = pPkg->pClient;
@@ -253,6 +259,8 @@ void* HandleUserInputTask(void* pArg)
 		cv_init(&decompout, CLIENT_MAXINPUTLEN);
 		if(FAILURE(ZCompressor_DecompressData(&pClient->zstreams, &clientinput, &decompout)))
 		{
+			//I don't know why zdecompression would fail, or whether or not the
+			//following code actually does anything useful in the event that it does
 			ServerLog(SERVERLOG_ERROR, "ZDecompression FAILED on client input.");
 			ZCompressor_Reset(&pClient->zstreams);
 			RearmClientSocket(pServer, pClient);
@@ -278,6 +286,10 @@ void* HandleUserInputTask(void* pArg)
 
 		if(bHadIAC)
 		{
+			//The user can in principle send telnet IACs and regular input
+			//at the same time, which is why ProcessByte accumulates regular input
+			//into normchars. After we finish responding to telnet commands, we
+			//process the regular input as normal.
 			cv_clear(&clientinput);
 			cv_appendcv(&clientinput, &normchars);
 		}
@@ -292,6 +304,11 @@ void* HandleUserInputTask(void* pArg)
 	//DebugPrintCV(&clientinput);
 	if(cbuf->length >= 2)
 	{
+		//User commands end in a crlf if their client is in line mode,
+		//and just a 13 otherwise. We have to account for both possibilities,
+		//particularly since many clients are always in character mode before
+		//and during negotiation
+
 		//Look for a crlf
 		if(((cbuf->data[cbuf->length - 2] << 8 )
 				| cbuf->data[cbuf->length - 1])
@@ -359,8 +376,8 @@ void Server_HandleUserInput(struct Server* pServer, struct Client* pClient)
 	if(TimeDiffSecs(&curtime, &pClient->connection_time) >= 5.f)
 	{
 		//MUD clients are often in character mode upon first connecting
-		//to perform negotiation, which mean a very high command rate.
-		//We don't want to throttle a user because of or during negotiation.
+		//to perform negotiation, which means a very high command rate.
+		//We don't want to throttle/boot a user because of or during negotiation.
 
 		float interval = TimeDiffSecs(&curtime, &pClient->last_input_time);
 
@@ -425,7 +442,7 @@ int Server_AcceptClient(struct Server* server)
 		pConnectingClient = Client_Create(accepted_sock);
 		struct epoll_event clev;
 		clev.events = EPOLLIN | EPOLLONESHOT;
-		clev.data.ptr = &(pConnectingClient->ev_pkg);
+		clev.data.ptr = &(pConnectingClient->ev_pkg); //This is kind of convoluted, but it's EPOLL
 
 		Vector_Push(&(server->clients), pConnectingClient);
 		TelnetStream_SendPreamble(&pConnectingClient->tel_stream);
