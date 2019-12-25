@@ -217,7 +217,7 @@ int TelnetStream_SendPreamble(TelnetStream* stream)
 {
 	static const char preamble[] = {
 		IAC, WONT, ECHO,
-		IAC, WILL, SGA,
+		IAC, WONT, SGA,
 		IAC, WILL, MCCP2,
 		IAC, WILL, MCCP3};
 	return write_full_raw(stream->sock, preamble, 15);

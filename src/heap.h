@@ -8,7 +8,8 @@ struct HeapNode
   void* data;
 };
 
-
+//This is called "Heap", and it is, but it's only used as a priority queue
+//in this program
 struct Heap
 {
   struct HeapNode* array;
@@ -22,12 +23,15 @@ void Heap_Destroy(struct Heap* pHeap);
 
 void* Heap_ExtractMinimum(struct Heap* pHeap);
 void Heap_ExtractMinimumNode(struct Heap* pHeap, struct HeapNode* pOut);
+
+//Perhaps not the most apt name, MinInsert is the main function used to
+//enqueue new nodes
 int Heap_MinInsert(struct Heap* pHeap, int key, void* data);
 
 int Heap_GetSize(struct Heap* pHeap);
-int Heap_IsMinHeap(struct Heap* pHeap, int idx);
+
 void Heap_Print(struct Heap *pHeap);
-void Heap_BuildMinHeap(struct Heap* pHeap);
+
 int Heap_GetKeyAt(struct Heap* pHeap, int idx);
 
 #endif /* HEAP_H_ */
