@@ -348,6 +348,7 @@ float TimeDiffSecs(struct timespec* b, struct timespec* a)
 
 void Server_HandleUserInput(struct Server* pServer, struct Client* pClient)
 {
+	//This function dispatches a task to handle the user's input
 	struct timespec curtime;
 
 	if(FAILURE(clock_gettime(CLOCK_BOOTTIME, &curtime)))
@@ -357,8 +358,10 @@ void Server_HandleUserInput(struct Server* pServer, struct Client* pClient)
 
 	if(TimeDiffSecs(&curtime, &pClient->connection_time) >= 5.f)
 	{
-		//MUD clients are often if not always in character mode upon first connecting
-		//to perform negotiation
+		//MUD clients are often in character mode upon first connecting
+		//to perform negotiation, which mean a very high command rate.
+		//We don't want to throttle a user because of or during negotiation.
+
 		float interval = TimeDiffSecs(&curtime, &pClient->last_input_time);
 
 		pClient->cmd_intervals[pClient->interval_idx] = interval;
@@ -378,7 +381,7 @@ void Server_HandleUserInput(struct Server* pServer, struct Client* pClient)
 			ServerLog(SERVERLOG_STATUS, "Client is being disconnected for exceeding command rate. (%f cmds/s)", average_cps);
 			Client_Sendf(pClient,
 				"You are sending commands at an average rate of %f per second"
-				" and are being disconnected.\n", average_cps);
+				" and are being disconnected. Make sure your client is in line mode.\n", average_cps);
 			Server_DisconnectClient(pServer, pClient);
 			return;
 		}
@@ -429,7 +432,6 @@ int Server_AcceptClient(struct Server* server)
 #ifdef DEBUG
 		Client_Sendf(pConnectingClient, "\r\n*****The server is running as a DEBUG build*****\r\n\r\n");
 #endif
-		Server_SendAllClients(server, "A user has connected.\r\n");
 		epoll_ctl(server->epfd, EPOLL_CTL_ADD, accepted_sock, &clev);
 		return accepted_sock;
 	}
