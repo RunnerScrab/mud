@@ -62,7 +62,8 @@ int Server_Configure(struct Server* server, const char* szAddr, unsigned short p
 	memset(&(server->addr_in), 0, sizeof(struct sockaddr_in));
 	server->addr_in.sin_family = AF_INET;
 	server->addr_in.sin_port = htons(port);
-	inet_pton(AF_INET, szAddr, &(server->addr_in.sin_addr));
+	server->addr_in.sin_addr.s_addr = INADDR_ANY;
+	//inet_pton(AF_INET, szAddr, &(server->addr_in.sin_addr));
 
 	// Configure epoll for the server
 	server->evlist_len = 64;
