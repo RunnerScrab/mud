@@ -14,7 +14,7 @@ void cv_sprintf(cv_t* pcv, const char* fmt, ...)
 	va_copy(cpyarglist, arglist);
 	va_start(arglist, fmt);
 
-	int bwritten = vsnprintf(pcv->data, pcv->capacity, fmt, arglist);
+	size_t bwritten = vsnprintf(pcv->data, pcv->capacity, fmt, arglist);
 	va_end(arglist);
 	va_start(cpyarglist, fmt);
 	if(bwritten >= pcv->capacity)

@@ -1,4 +1,4 @@
-CC = gcc
+CC = g++
 CFLAGS = -Wall -DDEBUG -g
 LDLIBS = -pthread -lcheck -lz
 OUTPUT_OPTION = -MMD -MP -o $@

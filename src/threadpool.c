@@ -80,7 +80,7 @@ void ThreadPool_Destroy(struct ThreadPool* tp)
 {
 	ThreadPool_Stop(tp);
 
-	int idx = 0;
+	size_t idx = 0;
 	for(; idx < tp->thread_count; ++idx)
 	{
 	       	pthread_join(tp->pThreads[idx], 0);
@@ -93,7 +93,7 @@ void ThreadPool_Destroy(struct ThreadPool* tp)
 	struct ThreadTask* pTask = 0;
 	do
 	{
-		pTask = Heap_ExtractMinimum(&(tp->prio_queue));
+		pTask = (struct ThreadTask*) Heap_ExtractMinimum(&(tp->prio_queue));
 
 		if(pTask && pTask->releasefn)
 		{
@@ -115,7 +115,7 @@ void ThreadPool_Destroy(struct ThreadPool* tp)
 
 int ThreadPool_Init(struct ThreadPool* tp, unsigned int cores)
 {
-	int idx = 0;
+	size_t idx = 0;
 
 	AllocPool_Init(&(tp->alloc_pool), 64, sizeof(struct ThreadTask));
 

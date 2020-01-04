@@ -7,7 +7,8 @@
 
 size_t read_to_cv(int fd, cv_t* cv, size_t startidx, size_t max_read)
 {
-	int bytes_read = 0, total_read = startidx;
+	int bytes_read = 0;
+	size_t total_read = startidx;
 	static const unsigned int read_size = 512;
 	do
 	{
@@ -56,7 +57,7 @@ int write_from_cv_raw(int fd, cv_t* cv)
 int write_full_raw(int fd, const char* msg, size_t len)
 {
 	int written = 0;
-	int total_written = 0;
+	size_t total_written = 0;
 
 	do
 	{
