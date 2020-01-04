@@ -1,5 +1,5 @@
 CC = g++
-CFLAGS = -Wall -DDEBUG -g
+CFLAGS = -Wall -g
 LDLIBS = -pthread -lcheck -lz
 OUTPUT_OPTION = -MMD -MP -o $@
 

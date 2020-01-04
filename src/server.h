@@ -9,6 +9,7 @@
 #include "vector.h"
 #include "threadpool.h"
 #include "constants.h"
+#include "heap.h"
 
 #define SUCCESS(x) (x >= 0)
 #define FAILURE(x) (x < 0)
@@ -35,6 +36,9 @@ struct Server
 	unsigned int cpu_cores;
 
 	struct MemoryPool mem_pool;
+
+	struct Heap timed_queue;
+	pthread_mutex_t timed_queue_mtx;
 };
 
 void ServerLog(unsigned int code, const char* fmt, ...);
@@ -53,3 +57,7 @@ void Server_HandleUserInput(struct Server* pServer, struct Client* pClient);
 void Server_HandleClientDisconnect(struct Server* pServer, struct Client* pClient);
 void Server_SendAllClients(struct Server* pServer, const char* fmt, ...);
 #endif
+
+void Server_AddTimedTask(struct Server* pServer, void* (*taskfn) (void*),
+			time_t runtime, void* args,
+			void (*argreleaserfn) (void*));

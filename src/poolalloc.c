@@ -104,7 +104,7 @@ void PoolMemBlock_Init(struct PoolMemBlock* pMemBlock, ssize_t element_count, ss
 	struct InplaceFreeNode* pFreeNode = (struct InplaceFreeNode*) pMemBlock->datablock;
 	for(; idx < element_count - 1; ++idx)
 	{
-		pFreeNode->nextinplacenode = (pFreeNode + element_size);
+		pFreeNode->nextinplacenode = (struct InplaceFreeNode*) ((char*) pFreeNode + element_size);
 		pFreeNode = ((struct InplaceFreeNode*) pFreeNode->nextinplacenode);
 	}
 

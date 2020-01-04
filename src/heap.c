@@ -13,7 +13,7 @@
 
 #define min_heapify(heap, idx) min_heapify_it(heap, idx)
 
-void HeapNode_Init(struct HeapNode* pNode, int key, void* data)
+void HeapNode_Init(struct HeapNode* pNode, time_t key, void* data)
 {
 	pNode->key = key;
 	pNode->data = data;
@@ -26,12 +26,12 @@ static inline void swap_heap_node(struct HeapNode* a, struct HeapNode* b)
 	*b = t;
 }
 
-int Heap_GetSize(struct Heap* pHeap)
+size_t Heap_GetSize(struct Heap* pHeap)
 {
 	return pHeap->len;
 }
 
-int Heap_GetKeyAt(struct Heap* pHeap, int idx)
+time_t Heap_GetKeyAt(struct Heap* pHeap, int idx)
 {
 	return pHeap->array[idx].key;
 }
@@ -115,7 +115,7 @@ void Heap_Print(struct Heap *pHeap)
 	int i = 0, z = pHeap->len;
 	for(; i < z; ++i)
 	{
-		printf((i < z - 1) ? "%d," : "%d\n", Heap_GetKeyAt(pHeap, i));
+		printf((i < z - 1) ? "%lu," : "%lu\n", Heap_GetKeyAt(pHeap, i));
 	}
 }
 
@@ -245,7 +245,7 @@ const struct HeapNode* Heap_GetMinimum(struct Heap* pHeap)
 	return &pHeap->array[0];
 }
 
-int Heap_MinInsert(struct Heap* pHeap, int key, void* data)
+int Heap_MinInsert(struct Heap* pHeap, time_t key, void* data)
 {
 	if(pHeap->len == pHeap->capacity)
 	{

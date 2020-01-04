@@ -1,10 +1,11 @@
 #ifndef HEAP_H_
 #define HEAP_H_
 #include <stddef.h>
+#include <time.h>
 
 struct HeapNode
 {
-  int key;
+  time_t key;
   void* data;
 };
 
@@ -26,12 +27,12 @@ void Heap_ExtractMinimumNode(struct Heap* pHeap, struct HeapNode* pOut);
 
 //Perhaps not the most apt name, MinInsert is the main function used to
 //enqueue new nodes
-int Heap_MinInsert(struct Heap* pHeap, int key, void* data);
+int Heap_MinInsert(struct Heap* pHeap, time_t key, void* data);
 
-int Heap_GetSize(struct Heap* pHeap);
+size_t Heap_GetSize(struct Heap* pHeap);
 
 void Heap_Print(struct Heap *pHeap);
 
-int Heap_GetKeyAt(struct Heap* pHeap, int idx);
+time_t Heap_GetKeyAt(struct Heap* pHeap, int idx);
 
 #endif /* HEAP_H_ */

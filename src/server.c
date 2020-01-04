@@ -80,6 +80,9 @@ int Server_Configure(struct Server* server, const char* szAddr, unsigned short p
 	server->cmdpipe_event.events = EPOLLIN | EPOLLEXCLUSIVE;
 	server->cmdpipe_event.data.ptr = server->cmd_pipe;
 
+	pthread_mutex_init(&server->timed_queue_mtx, 0);
+	Heap_Create(&server->timed_queue, 32);
+
 	//Open a pipe for in-process server commands and have epoll watch the
 	//read end
 	if(FAILURE(pipe(server->cmd_pipe)) ||
@@ -114,7 +117,11 @@ int Server_Configure(struct Server* server, const char* szAddr, unsigned short p
 
 int Server_Teardown(struct Server* pServer)
 {
+	pthread_mutex_lock(&pServer->timed_queue_mtx);
 	MemoryPool_Destroy(&(pServer->mem_pool));
+	pthread_mutex_destroy(&pServer->timed_queue_mtx);
+	Heap_Destroy(&pServer->timed_queue);
+
 	tfree(pServer->evlist);
 	ThreadPool_Destroy(&(pServer->thread_pool));
 	Vector_Destroy(&(pServer->clients));
@@ -238,6 +245,15 @@ void DebugPrintCV(cv_t* buf)
 	}
 }
 
+void* TestTimedTask(void* pArgs)
+{
+	//TODO: Delete this
+	struct Server* pServer = (struct Server*) pArgs;
+	Server_SendAllClients(pServer, "HELLO TIMED TASK HERE\r\n\r\n");
+	return (void*) 0;
+}
+
+
 void* HandleUserInputTask(void* pArg)
 {
 	//This is the user input processor task dispatched to a worker thread by the threadpool.
@@ -343,6 +359,14 @@ void* HandleUserInputTask(void* pArg)
 			//TODO: Get rid of this or put it in an admin only command
 
 			Server_WriteToCmdPipe(pServer, "kill", 5);
+		}
+		else if(strstr(cbuf->data, "testtimer"))
+		{
+			//TODO: Delete this
+			Server_AddTimedTask(pServer, TestTimedTask,
+					time(0) + 5,
+					(void*) pServer,
+					0);
 		}
 		cv_clear(cbuf);
 		/* END DEMO CODE */

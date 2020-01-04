@@ -28,12 +28,52 @@ struct TickThreadPkg
 	size_t tick_delay;
 };
 
+void Server_AddTimedTask(struct Server* pServer, void* (*taskfn) (void*),
+			time_t runtime, void* args,
+			void (*argreleaserfn) (void*))
+{
+	struct ThreadTask* pTask = (struct ThreadTask*) MemoryPool_Alloc(&pServer->mem_pool, sizeof(struct ThreadTask));
+	pTask->taskfn = taskfn;
+	pTask->pArgs = args;
+	pTask->releasefn = argreleaserfn;
+	pthread_mutex_lock(&pServer->timed_queue_mtx);
+	Heap_MinInsert(&pServer->timed_queue, runtime, pTask);
+	pthread_mutex_unlock(&pServer->timed_queue_mtx);
+}
+
 void* TickThreadFn(void* pArgs)
 {
+	//The idea here is that timed events are allocated from the
+	//server's pool allocator and enqueued on their own priority
+	//queue keyed by the time they are to execute.
+
+	//In addition to conventional tick duties, this thread
+	//checks the queue of timed events and sees which are ready
+	//to execute. It dispatches those events which are ready to
+	//the server's threadpool and does not run them itself.
+
+	//The importance of this is that work to be done on a server
+	//tick may occur simultaneously.
+
 	struct TickThreadPkg* pPkg = (struct TickThreadPkg*) pArgs;
 	const size_t tick_delay = pPkg->tick_delay;
+	time_t curtime;
 	while(pPkg->bIsRunning)
 	{
+		Server_SendAllClients(pPkg->pServer, "Tick!\r\n\r\n");
+		curtime = time(0);
+		pthread_mutex_lock(&pPkg->pServer->timed_queue_mtx);
+		while(Heap_GetSize(&pPkg->pServer->timed_queue) > 0 &&
+			curtime >=
+			Heap_GetKeyAt(&pPkg->pServer->timed_queue, 0))
+		{
+			struct ThreadTask* pTask = (struct ThreadTask*) Heap_ExtractMinimum(&pPkg->pServer->timed_queue);
+			ThreadPool_AddTask(&pPkg->pServer->thread_pool,
+					pTask->taskfn, 0,
+					pTask->pArgs, pTask->releasefn);
+			MemoryPool_Free(&pPkg->pServer->mem_pool, sizeof(struct ThreadTask), pTask);
+		}
+		pthread_mutex_unlock(&pPkg->pServer->timed_queue_mtx);
 		usleep(tick_delay);
 	}
 	ServerLog(SERVERLOG_STATUS, "Tickthread terminating.\n");
@@ -64,7 +104,7 @@ int main(int argc, char** argv)
 	struct TickThreadPkg ttpkg;
 	ttpkg.pServer = &server;
 	ttpkg.bIsRunning = 1;
-	ttpkg.tick_delay = 1000;
+	ttpkg.tick_delay = 1000000;
 	pthread_create(&tickthread, 0, TickThreadFn, (void*) &ttpkg);
 
 	for(;mudloop_running;)
