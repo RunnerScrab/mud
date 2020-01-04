@@ -21,6 +21,25 @@
 #define SUCCESS(x) (x >= 0)
 #define FAILURE(x) (x < 0)
 
+struct TickThreadPkg
+{
+	struct Server* pServer;
+	volatile char bIsRunning;
+	size_t tick_delay;
+};
+
+void* TickThreadFn(void* pArgs)
+{
+	struct TickThreadPkg* pPkg = (struct TickThreadPkg*) pArgs;
+	const size_t tick_delay = pPkg->tick_delay;
+	while(pPkg->bIsRunning)
+	{
+		usleep(tick_delay);
+	}
+	ServerLog(SERVERLOG_STATUS, "Tickthread terminating.\n");
+	return (void*) 0;
+}
+
 int main(int argc, char** argv)
 {
 #ifdef DEBUG
@@ -40,6 +59,13 @@ int main(int argc, char** argv)
 		//Server_Teardown(&server);
 		return -1;
 	}
+
+	pthread_t tickthread;
+	struct TickThreadPkg ttpkg;
+	ttpkg.pServer = &server;
+	ttpkg.bIsRunning = 1;
+	ttpkg.tick_delay = 1000;
+	pthread_create(&tickthread, 0, TickThreadFn, (void*) &ttpkg);
 
 	for(;mudloop_running;)
 	{
@@ -90,7 +116,8 @@ int main(int argc, char** argv)
 
 	ServerLog(SERVERLOG_STATUS, "Server shutting down.");
 
-
+	ttpkg.bIsRunning = 0;
+	pthread_join(tickthread, 0);
 	Server_Teardown(&server);
 	tprint_summary();
 	printf("%d unfreed allocations.\n", toutstanding_allocs());

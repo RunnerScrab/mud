@@ -220,7 +220,7 @@ int TelnetStream_SendPreamble(TelnetStream* stream)
 		(char)IAC, (char)WONT, (char)SGA,
 		(char)IAC, (char)WILL, (char)MCCP2,
 		(char)IAC, (char)WILL, (char)MCCP3};
-	return write_full_raw(stream->sock, preamble, 15);
+	return write_full_raw(stream->sock, preamble, 12);
 }
 
 int TelnetStream_ProcessByte(TelnetStream* stream, unsigned char x, cv_t* normal_char_dump)
