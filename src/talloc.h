@@ -7,8 +7,8 @@
 #define tfree(p) tfree_(p, __FUNCTION__, __FILE__, __LINE__)
 #define trealloc(orig, size) trealloc_(orig, size, __FUNCTION__, __FILE__, __LINE__)
 
-void* trealloc_(void* origp, ssize_t size, const char* func, const char* file, const int line);
-void* talloc_(ssize_t size, const char* func, const char* file, const int line);
+void* trealloc_(void* origp, size_t size, const char* func, const char* file, const int line);
+void* talloc_(size_t size, const char* func, const char* file, const int line);
 void tfree_(void* p, const char* func, const char* file, const int line);
 
 void tswap_memory(void** a, void** b);

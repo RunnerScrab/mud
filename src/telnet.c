@@ -144,7 +144,7 @@ void Run3ByteCmd(TelnetStream* stream, unsigned char x)
 			printf("ENABLING MCCP2\n");
 			stream->opts.b_mccp2 = 1;
 			//﻿﻿﻿IAC SB MCCP2 IAC SE
-			char resp5[5] = {IAC, SB, MCCP2, IAC, SE};
+			char resp5[5] = {(char)IAC, (char)SB, (char)MCCP2, (char)IAC, (char)SE};
 			write_full_raw(stream->sock, resp5, 5);
 			//MakeTelCmd(response, IAC, WILL, MCCP2);
 		}
@@ -216,10 +216,10 @@ void RunSubnegotiationCmd(TelnetStream* stream)
 int TelnetStream_SendPreamble(TelnetStream* stream)
 {
 	static const char preamble[] = {
-		IAC, WONT, ECHO,
-		IAC, WONT, SGA,
-		IAC, WILL, MCCP2,
-		IAC, WILL, MCCP3};
+		(char)IAC, (char)WONT, (char)ECHO,
+		(char)IAC, (char)WONT, (char)SGA,
+		(char)IAC, (char)WILL, (char)MCCP2,
+		(char)IAC, (char)WILL, (char)MCCP3};
 	return write_full_raw(stream->sock, preamble, 15);
 }
 

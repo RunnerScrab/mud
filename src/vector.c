@@ -7,7 +7,7 @@
 
 int Vector_Create(struct Vector* pArray, size_t initial_size, void (*FreeNodeFunc) (void*))
 {
-	pArray->pStorage = talloc(sizeof(void*) * initial_size);
+	pArray->pStorage = (void**) talloc(sizeof(void*) * initial_size);
 
 	if(!pArray->pStorage)
 	{
@@ -22,7 +22,7 @@ int Vector_Create(struct Vector* pArray, size_t initial_size, void (*FreeNodeFun
 
 void Vector_Destroy(struct Vector* pArray)
 {
-	int i = 0;
+	size_t i = 0;
 	if(pArray->FreeNodeFn)
 	{
 		//We have been supplied a destructor for these nodes

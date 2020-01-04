@@ -8,7 +8,7 @@
 
 struct Client* Client_Create(int sock)
 {
-	struct Client* pClient = talloc(sizeof(struct Client));
+	struct Client* pClient = (struct Client*) talloc(sizeof(struct Client));
 
 	memset(&pClient->tel_stream, 0, sizeof(TelnetStream));
 

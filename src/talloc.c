@@ -30,12 +30,12 @@ struct allocblock* findmemintable(void* p)
 }
 #endif
 
-void* trealloc_(void* origp, ssize_t size, const char* func, const char* file, const int line)
+void* trealloc_(void* origp, size_t size, const char* func, const char* file, const int line)
 {
 	++g_reallocs;
 	void *newv = realloc(origp, size);
 #ifdef DEBUG
-	ssize_t idx = 0;
+	size_t idx = 0;
 	for(; idx < g_allocs; ++idx)
 	{
 		if(origp == g_allocations[idx].mem)
@@ -48,7 +48,7 @@ void* trealloc_(void* origp, ssize_t size, const char* func, const char* file, c
 	return newv;
 }
 
-void* talloc_(ssize_t size, const char* func, const char* file, const int line)
+void* talloc_(size_t size, const char* func, const char* file, const int line)
 {
 	void* returnval = malloc(size);
 #ifdef DEBUG
@@ -56,13 +56,13 @@ void* talloc_(ssize_t size, const char* func, const char* file, const int line)
 	if(!g_allocations)
 	{
 		g_alloccount = 256;
-		ssize_t blocksize = sizeof(struct allocblock) * g_alloccount;
+		size_t blocksize = sizeof(struct allocblock) * g_alloccount;
 		g_allocations = (struct allocblock*) malloc(blocksize);
 		memset(g_allocations, 0, blocksize);
 	}
 	else if (g_alloccount <= g_allocs && !pexistingtableentry)
 	{
-		ssize_t blocksize = (g_alloccount * 2) * sizeof(struct allocblock);
+		size_t blocksize = (g_alloccount * 2) * sizeof(struct allocblock);
 		g_allocations = (struct allocblock*) trealloc(g_allocations, blocksize);
 		g_alloccount *= 2;
 		memset(&(g_allocations[g_allocs]), 0,
@@ -159,7 +159,7 @@ void tprint_summary()
 #ifdef DEBUG
 	if(g_allocations)
 	{
-		ssize_t idx = 0;
+		size_t idx = 0;
 		for(; idx < g_allocs; ++idx)
 		{
 			printf("%p %s- freed %d times\n",

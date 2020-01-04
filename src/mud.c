@@ -54,7 +54,7 @@ int main(int argc, char** argv)
 
 		for(loop_ctr = 0; loop_ctr < ready; ++loop_ctr)
 		{
-			pEvPkg = (server.evlist[loop_ctr].data.ptr);
+			pEvPkg = (struct EvPkg*) (server.evlist[loop_ctr].data.ptr);
 			if(pEvPkg->sockfd == server.sockfd)
 			{
 				Server_AcceptClient(&server);
@@ -79,7 +79,7 @@ int main(int argc, char** argv)
 			}
 			else
 			{
-				Server_HandleUserInput(&server, pEvPkg->pData);
+				Server_HandleUserInput(&server, (struct Client*) pEvPkg->pData);
 			}
 
 		}

@@ -36,7 +36,7 @@ int Heap_GetKeyAt(struct Heap* pHeap, int idx)
 	return pHeap->array[idx].key;
 }
 
-int Heap_IsMinHeap(struct Heap* pHeap, int idx)
+int Heap_IsMinHeap(struct Heap* pHeap, size_t idx)
 {
 	//This function is really just for debugging
 	//and is not called at all by the algorithm itself
@@ -78,16 +78,16 @@ int Heap_IsMinHeap(struct Heap* pHeap, int idx)
 /*     } */
 /* } */
 
-static inline void min_heapify_it(struct Heap* pHeap, int idx)
+static inline void min_heapify_it(struct Heap* pHeap, size_t idx)
 {
 	size_t arraylen = pHeap->len;
 	register struct HeapNode* arr = pHeap->array;
 	char go = 0;
 	do
 	{
-		register int leftidx = left(idx);
-		register int rightidx = right(idx);
-		register int smallestidx = idx;
+		register size_t leftidx = left(idx);
+		register size_t rightidx = right(idx);
+		register size_t smallestidx = idx;
 
 		if(leftidx < arraylen && arr[idx].key > arr[leftidx].key)
 		{
