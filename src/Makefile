@@ -10,6 +10,11 @@ DEPS = $(SOURCE:.c=.d)
 mud: ${OBJS}
 	${CC} -o mud ${OBJS} ${LDLIBS}
 
+angelscript:
+	make -C angelscriptsdk/angelscript/projects/gnuc/
+	cp angelscriptsdk/angelscript/include/angelscript.h .
+	cp angelscriptsdk/angelscript/lib/libangelscript.a .
+
 -include ${DEPS}
 
 clean:
