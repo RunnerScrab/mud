@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include "zcompressor.h"
 #include "iohelper.h"
+#include "ansicolor.h"
 
 struct Client* Client_Create(int sock)
 {
@@ -44,6 +45,9 @@ void Client_Destroy(void* p)
 //to perform stream compression
 int Client_WriteTo(struct Client* pTarget, const char* buf, size_t len)
 {
+	cv_t color_buf;
+	cv_init(&color_buf, len);
+	ANSIColorizeString(buf, &color_buf);
 	switch(pTarget->tel_stream.opts.b_mccp2)
 	{
 	case 1:
@@ -51,17 +55,23 @@ int Client_WriteTo(struct Client* pTarget, const char* buf, size_t len)
 		cv_t compout;
 		cv_init(&compout, len);
 		if(ZCompressor_CompressRawData(&pTarget->zstreams,
-						buf, len, &compout) < 0)
+						color_buf.data, len, &compout) < 0)
 		{
 			return -1;
 		}
 
 		int result = write_from_cv_raw(pTarget->sock, &compout);
 		cv_destroy(&compout);
+		cv_destroy(&color_buf);
 		return result;
 	}
 	default:
-		return write_full_raw(pTarget->sock, buf, len);
+	{
+		size_t written = write_full_raw(pTarget->sock,
+						color_buf.data, len);
+		cv_destroy(&color_buf);
+		return written;
+	}
 	}
 }
 

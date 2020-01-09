@@ -20,6 +20,7 @@
 #include "iohelper.h"
 #include "telnet.h"
 #include "zcompressor.h"
+#include "ansicolor.h"
 
 const char *g_ServerLogTypes[] = {"DEBUG", "STATUS", "ERROR"};
 const int SERVERLOG_DEBUG = 0;
@@ -472,7 +473,7 @@ int Server_AcceptClient(struct Server* server)
 		Vector_Push(&(server->clients), pConnectingClient);
 		TelnetStream_SendPreamble(&pConnectingClient->tel_stream);
 #ifdef DEBUG
-		Client_Sendf(pConnectingClient, "\r\n*****The server is running as a DEBUG build*****\r\n\r\n");
+		Client_Sendf(pConnectingClient, "\r\n`#ff0000`*****The server is running as a DEBUG build*****`default`\r\n\r\n");
 #endif
 		epoll_ctl(server->epfd, EPOLL_CTL_ADD, accepted_sock, &clev);
 		return accepted_sock;
