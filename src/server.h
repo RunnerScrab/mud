@@ -10,6 +10,7 @@
 #include "threadpool.h"
 #include "constants.h"
 #include "heap.h"
+#include "angelscript_manager.h"
 
 #define SUCCESS(x) (x >= 0)
 #define FAILURE(x) (x < 0)
@@ -39,6 +40,8 @@ struct Server
 
 	struct Heap timed_queue;
 	pthread_mutex_t timed_queue_mtx;
+
+	AngelScriptManager as_manager; //angelscript engine manager
 };
 
 void ServerLog(unsigned int code, const char* fmt, ...);

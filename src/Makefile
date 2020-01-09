@@ -3,12 +3,13 @@ CFLAGS = -Wall -g -DDEBUG
 LDLIBS = -pthread -lcheck -lz
 OUTPUT_OPTION = -MMD -MP -o $@
 
-SOURCE =  $(wildcard *.c)
+SOURCE = $(wildcard *.c)
 OBJS = $(SOURCE:.c=.o)
 DEPS = $(SOURCE:.c=.d)
+LIBS = libangelscript.a
 
 mud: ${OBJS}
-	${CC} -o mud ${OBJS} ${LDLIBS}
+	${CC} -o mud ${OBJS} ${LIBS} ${LDLIBS}
 
 angelscript:
 	make -C angelscriptsdk/angelscript/projects/gnuc/
@@ -19,6 +20,7 @@ angelscript:
 
 clean:
 	rm -f *.o mud *.d *~
+	cd angelscriptsdk/angelscript/projects/gnuc/ && make clean
 
 etags:
 	etags *.c *.h

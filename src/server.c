@@ -37,7 +37,6 @@ void ServerLog(unsigned int code, const char* fmt, ...)
 	va_end(arglist);
 }
 
-
 int CompClientSock(void* key, void* p)
 {
 	return (*((int*) key) - ((struct Client*) p)->ev_pkg.sockfd);
@@ -118,6 +117,7 @@ int Server_Configure(struct Server* server, const char* szAddr, unsigned short p
 
 int Server_Teardown(struct Server* pServer)
 {
+	AngelScriptManager_ReleaseEngine(&pServer->as_manager);
 	pthread_mutex_lock(&pServer->timed_queue_mtx);
 	MemoryPool_Destroy(&(pServer->mem_pool));
 	pthread_mutex_destroy(&pServer->timed_queue_mtx);
@@ -170,6 +170,21 @@ int Server_Initialize(struct Server* server, unsigned int backlog)
 
 	ServerLog(SERVERLOG_STATUS, "Server listening on %s:%d.",
 		inet_ntoa(server->addr_in.sin_addr), ntohs(server->addr_in.sin_port));
+
+
+	result = AngelScriptManager_InitEngine(&server->as_manager);
+	if(FAILURE(result))
+	{
+		ServerLog(SERVERLOG_ERROR, "Failed to initialize AngelScript engine.\n");
+		return -1;
+	}
+
+	result = AngelScriptManager_LoadScripts(&server->as_manager, ".");
+	if(FAILURE(result))
+	{
+		ServerLog(SERVERLOG_ERROR, "Failed to load game scripts.\n");
+		return -1;
+	}
 
 	return 0;
 }
