@@ -42,6 +42,33 @@ int CompClientSock(void* key, void* p)
 	return (*((int*) key) - ((struct Client*) p)->ev_pkg.sockfd);
 }
 
+void Server_SendClientMotd(struct Server* pServer, struct Client* pClient)
+{
+	Client_WriteTo(pClient, pServer->MOTD, strlen(pServer->MOTD));
+}
+
+int Server_LoadMOTD(struct Server* server)
+{
+	FILE* fp = fopen("motd.txt", "rb");
+	if(!fp)
+	{
+		return -1;
+	}
+	fseek(fp, 0, SEEK_END);
+	size_t len = ftell(fp);
+	fseek(fp, 0, SEEK_SET);
+	server->MOTD = (char*) talloc(sizeof(char) * len);
+	fread(server->MOTD, sizeof(char), len, fp);
+	fclose(fp);
+	return 0;
+}
+
+void Server_FreeMOTD(struct Server* server)
+{
+	tfree(server->MOTD);
+	server->MOTD = 0;
+}
+
 int Server_Configure(struct Server* server, const char* szAddr, unsigned short port)
 {
 	int opts = 1;
@@ -117,6 +144,7 @@ int Server_Configure(struct Server* server, const char* szAddr, unsigned short p
 
 int Server_Teardown(struct Server* pServer)
 {
+	Server_FreeMOTD(pServer);
 	AngelScriptManager_ReleaseEngine(&pServer->as_manager);
 	pthread_mutex_lock(&pServer->timed_queue_mtx);
 	MemoryPool_Destroy(&(pServer->mem_pool));
@@ -185,6 +213,8 @@ int Server_Initialize(struct Server* server, unsigned int backlog)
 		ServerLog(SERVERLOG_ERROR, "Failed to load game scripts.\n");
 		return -1;
 	}
+
+	Server_LoadMOTD(server);
 
 	return 0;
 }
@@ -452,7 +482,7 @@ void Server_HandleUserInput(struct Server* pServer, struct Client* pClient)
 		}
 	}
 	struct HandleUserInputTaskPkg* pPkg = (struct HandleUserInputTaskPkg*) MemoryPool_Alloc(&(pServer->mem_pool),
-							sizeof(struct HandleUserInputTaskPkg));
+												sizeof(struct HandleUserInputTaskPkg));
 
 	pPkg->pServer = pServer;
 	pPkg->pClient = pClient;
@@ -487,6 +517,8 @@ int Server_AcceptClient(struct Server* server)
 
 		Vector_Push(&(server->clients), pConnectingClient);
 		TelnetStream_SendPreamble(&pConnectingClient->tel_stream);
+
+		Server_SendClientMotd(server, pConnectingClient);
 #ifdef DEBUG
 		Client_Sendf(pConnectingClient, "\r\n`#ff0000`*****The server is running as a DEBUG build*****`default`\r\n\r\n");
 #endif

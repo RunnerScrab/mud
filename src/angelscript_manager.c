@@ -4,6 +4,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include "server.h"
+#include <string>
 
 void as_MessageCallback(const asSMessageInfo* msg, void* param)
 {
@@ -15,7 +16,6 @@ void as_MessageCallback(const asSMessageInfo* msg, void* param)
 
 	ServerLog(SERVERLOG_ERROR, "%s (%d, %d) : %s : %s\n", msg->section, msg->row, msg->col, type, msg->message);
 }
-
 
 int AngelScriptManager_InitEngine(AngelScriptManager* manager)
 {
@@ -37,6 +37,7 @@ int AngelScriptManager_InitEngine(AngelScriptManager* manager)
 
 int AngelScriptManager_LoadScripts(AngelScriptManager* manager, const char* script_dir)
 {
+	//TODO: May want to impose some kind of directory structure on scripts
 	std::string script;
 	std::string scriptpath = std::string(script_dir) + "/test.as";
 	FILE* fp = fopen(scriptpath.c_str(), "rb");
@@ -86,6 +87,7 @@ void AngelScriptManager_RunWorldTick(AngelScriptManager* manager)
 void AngelScriptManager_ReleaseEngine(AngelScriptManager* manager)
 {
 	manager->world_tick_scriptcontext->Release();
-	delete manager->jit;
+
 	manager->engine->Release();
+	delete manager->jit;
 }

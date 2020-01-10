@@ -3,7 +3,7 @@
 #include "./angelscriptsdk/angelscript/include/angelscript.h"
 #include "./angelscriptsdk/angelscript/include/as_jit.h"
 
-typedef struct
+extern "C" typedef struct
 {
 	asIScriptEngine* engine;
 	asCJITCompiler* jit;
@@ -14,10 +14,10 @@ typedef struct
 }
 AngelScriptManager;
 
-int AngelScriptManager_InitEngine(AngelScriptManager* manager);
-int AngelScriptManager_LoadScripts(AngelScriptManager* manager, const char* script_dir);
-void AngelScriptManager_RunWorldTick(AngelScriptManager* manager);
-void AngelScriptManager_ReleaseEngine(AngelScriptManager* manager);
+extern "C" int AngelScriptManager_InitEngine(AngelScriptManager* manager);
+extern "C" int AngelScriptManager_LoadScripts(AngelScriptManager* manager, const char* script_dir);
+extern "C" void AngelScriptManager_RunWorldTick(AngelScriptManager* manager);
+extern "C" void AngelScriptManager_ReleaseEngine(AngelScriptManager* manager);
 
 
 #endif

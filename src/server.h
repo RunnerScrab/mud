@@ -42,6 +42,7 @@ struct Server
 	pthread_mutex_t timed_queue_mtx;
 
 	AngelScriptManager as_manager; //angelscript engine manager
+	char* MOTD;
 };
 
 void ServerLog(unsigned int code, const char* fmt, ...);
