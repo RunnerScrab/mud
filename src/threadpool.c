@@ -1,6 +1,7 @@
 #include "threadpool.h"
 #include "talloc.h"
 #include "heap.h"
+#include <angelscript.h>
 
 #include <sys/sysinfo.h>
 #include <stdio.h>
@@ -66,6 +67,7 @@ static void* ThreadPool_WorkerThreadFunc(void* pArg)
 	}
 	//This unlock is normally unnecessary and is for if we need to exit the
 	//worker thread loop suddenly
+	asThreadCleanup();
 	pthread_mutex_unlock(&(pPool->prio_queue_mutex));
 	return 0;
 }

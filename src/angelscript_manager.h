@@ -12,7 +12,6 @@ extern "C" typedef struct
 
 	asIScriptFunction* world_tick_func;
 	asIScriptContext* world_tick_scriptcontext;
-	unsigned char bContextReady;
 }
 AngelScriptManager;
 
@@ -21,6 +20,5 @@ extern "C" int AngelScriptManager_LoadScripts(AngelScriptManager* manager, const
 extern "C" int AngelScriptManager_InitAPI(AngelScriptManager* manager, struct Server* server);
 extern "C" void AngelScriptManager_RunWorldTick(AngelScriptManager* manager);
 extern "C" void AngelScriptManager_ReleaseEngine(AngelScriptManager* manager);
-
 
 #endif

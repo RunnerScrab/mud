@@ -145,6 +145,7 @@ int Server_Configure(struct Server* server, const char* szAddr, unsigned short p
 int Server_Teardown(struct Server* pServer)
 {
 	Server_FreeMOTD(pServer);
+	asThreadCleanup();
 	AngelScriptManager_ReleaseEngine(&pServer->as_manager);
 	pthread_mutex_lock(&pServer->timed_queue_mtx);
 	MemoryPool_Destroy(&(pServer->mem_pool));
