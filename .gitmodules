@@ -1,3 +1,3 @@
 [submodule "src/angelscriptsdk"]
 	path = src/angelscriptsdk
-	url = git@github.com:RunnerScrab/angelscript_2_34.git
+	url = https://github.com/codecat/angelscript-mirror.git

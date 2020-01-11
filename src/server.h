@@ -10,7 +10,7 @@
 #include "threadpool.h"
 #include "constants.h"
 #include "heap.h"
-#include "angelscript_manager.h"
+#include "as_manager.h"
 
 #define SUCCESS(x) (x >= 0)
 #define FAILURE(x) (x < 0)

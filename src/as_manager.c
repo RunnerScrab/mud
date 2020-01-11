@@ -1,6 +1,6 @@
-#include "angelscript_manager.h"
-#include "./angelscriptsdk/add_on/scriptstdstring/scriptstdstring.h"
-#include "./angelscriptsdk/add_on/scriptarray/scriptarray.h"
+#include "as_manager.h"
+#include "./angelscriptsdk/sdk/angelscript/source/scriptstdstring.h"
+#include "./angelscriptsdk/sdk/angelscript/source/scriptarray.h"
 #include <cstdio>
 #include <cstdlib>
 #include "server.h"

@@ -1,7 +1,7 @@
 #ifndef ANGELSCRIPT_MANAGER_H
 #define ANGELSCRIPT_MANAGER_H
-#include "./angelscriptsdk/angelscript/include/angelscript.h"
-#include "./angelscriptsdk/angelscript/include/as_jit.h"
+#include "./angelscriptsdk/sdk/angelscript/include/angelscript.h"
+#include "./angelscriptsdk/sdk/angelscript/source/as_jit.h"
 
 extern "C" typedef struct
 {
