@@ -168,8 +168,6 @@ int main(int argc, char** argv)
 	ttpkg.bIsRunning = 0;
 	pthread_join(tickthread, 0);
 	Server_Teardown(&server);
-	tprint_summary();
 	printf("%d unfreed allocations.\n", toutstanding_allocs());
-	talloc_subsys_release();
 	return 0;
 }
