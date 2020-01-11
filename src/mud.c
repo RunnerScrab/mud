@@ -17,6 +17,7 @@
 #include "threadpool.h"
 #include "server.h"
 #include "constants.h"
+#include "angelscript_manager.h"
 
 #define SUCCESS(x) (x >= 0)
 #define FAILURE(x) (x < 0)
@@ -62,7 +63,13 @@ void* TickThreadFn(void* pArgs)
 	{
 		Server_SendAllClients(pPkg->pServer, "Tick!\r\n\r\n");
 		curtime = time(0);
+
+
+		AngelScriptManager_RunWorldTick(&pPkg->pServer->as_manager);
+
 		pthread_mutex_lock(&pPkg->pServer->timed_queue_mtx);
+
+
 		while(Heap_GetSize(&pPkg->pServer->timed_queue) > 0 &&
 			curtime >=
 			Heap_GetKeyAt(&pPkg->pServer->timed_queue, 0))
@@ -74,6 +81,7 @@ void* TickThreadFn(void* pArgs)
 			MemoryPool_Free(&pPkg->pServer->mem_pool, sizeof(struct ThreadTask), pTask);
 		}
 		pthread_mutex_unlock(&pPkg->pServer->timed_queue_mtx);
+
 		usleep(tick_delay);
 	}
 	ServerLog(SERVERLOG_STATUS, "Tickthread terminating.\n");

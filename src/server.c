@@ -207,12 +207,20 @@ int Server_Initialize(struct Server* server, unsigned int backlog)
 		return -1;
 	}
 
+	result = AngelScriptManager_InitAPI(&server->as_manager, server);
+	if(FAILURE(result))
+	{
+		ServerLog(SERVERLOG_ERROR, "Failed to init AS API.\n");
+		return -1;
+	}
+
 	result = AngelScriptManager_LoadScripts(&server->as_manager, ".");
 	if(FAILURE(result))
 	{
 		ServerLog(SERVERLOG_ERROR, "Failed to load game scripts.\n");
 		return -1;
 	}
+
 
 	Server_LoadMOTD(server);
 
