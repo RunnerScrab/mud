@@ -9,7 +9,7 @@
 #include "vector.h"
 #include "threadpool.h"
 #include "constants.h"
-#include "heap.h"
+#include "prioq.h"
 #include "as_manager.h"
 
 #define SUCCESS(x) (x >= 0)
@@ -38,7 +38,7 @@ struct Server
 
 	struct MemoryPool mem_pool;
 
-	struct Heap timed_queue;
+	struct prioq timed_queue;
 	pthread_mutex_t timed_queue_mtx;
 
 	AngelScriptManager as_manager; //angelscript engine manager

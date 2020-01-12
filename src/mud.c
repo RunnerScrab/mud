@@ -38,7 +38,7 @@ void Server_AddTimedTask(struct Server* pServer, void* (*taskfn) (void*),
 	pTask->pArgs = args;
 	pTask->releasefn = argreleaserfn;
 	pthread_mutex_lock(&pServer->timed_queue_mtx);
-	Heap_MinInsert(&pServer->timed_queue, runtime, pTask);
+	prioq_min_insert(&pServer->timed_queue, runtime, pTask);
 	pthread_mutex_unlock(&pServer->timed_queue_mtx);
 }
 
@@ -70,11 +70,11 @@ void* TickThreadFn(void* pArgs)
 		pthread_mutex_lock(&pPkg->pServer->timed_queue_mtx);
 
 
-		while(Heap_GetSize(&pPkg->pServer->timed_queue) > 0 &&
+		while(prioq_get_size(&pPkg->pServer->timed_queue) > 0 &&
 			curtime >=
-			Heap_GetKeyAt(&pPkg->pServer->timed_queue, 0))
+			prioq_get_key_at(&pPkg->pServer->timed_queue, 0))
 		{
-			struct ThreadTask* pTask = (struct ThreadTask*) Heap_ExtractMinimum(&pPkg->pServer->timed_queue);
+			struct ThreadTask* pTask = (struct ThreadTask*) prioq_extract_min(&pPkg->pServer->timed_queue);
 			ThreadPool_AddTask(&pPkg->pServer->thread_pool,
 					pTask->taskfn, 0,
 					pTask->pArgs, pTask->releasefn);

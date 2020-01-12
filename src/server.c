@@ -108,7 +108,7 @@ int Server_Configure(struct Server* server, const char* szAddr, unsigned short p
 	server->cmdpipe_event.data.ptr = server->cmd_pipe;
 
 	pthread_mutex_init(&server->timed_queue_mtx, 0);
-	Heap_Create(&server->timed_queue, 32);
+	prioq_create(&server->timed_queue, 32);
 
 	//Open a pipe for in-process server commands and have epoll watch the
 	//read end
@@ -150,7 +150,7 @@ int Server_Teardown(struct Server* pServer)
 	pthread_mutex_lock(&pServer->timed_queue_mtx);
 	MemoryPool_Destroy(&(pServer->mem_pool));
 	pthread_mutex_destroy(&pServer->timed_queue_mtx);
-	Heap_Destroy(&pServer->timed_queue);
+	prioq_destroy(&pServer->timed_queue);
 
 	tfree(pServer->evlist);
 	ThreadPool_Destroy(&(pServer->thread_pool));

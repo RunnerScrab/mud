@@ -1,6 +1,6 @@
 #include "threadpool.h"
 #include "talloc.h"
-#include "heap.h"
+#include "prioq.h"
 #include <angelscript.h>
 
 #include <sys/sysinfo.h>
@@ -14,13 +14,13 @@ static void* ThreadPool_WorkerThreadFunc(void* pArg)
 
 	while(1)
 	{
-		for(pthread_mutex_lock(&(pPool->prio_queue_mutex));
-		    0 == Heap_GetSize(&(pPool->prio_queue)) && pPool->bIsRunning;)
+		for(pthread_mutex_lock(&pPool->prio_queue_mutex);
+		    0 == prioq_get_size(&pPool->prio_queue) && pPool->bIsRunning;)
 		{
-			if(0 != pthread_cond_wait(&(pPool->wakecond), &(pPool->prio_queue_mutex)))
+			if(0 != pthread_cond_wait(&pPool->wakecond, &pPool->prio_queue_mutex))
 			{
 				//Something screwed up
-				pthread_mutex_unlock(&(pPool->prio_queue_mutex));
+				pthread_mutex_unlock(&pPool->prio_queue_mutex);
 				return 0;
 			}
 		}
@@ -33,8 +33,8 @@ static void* ThreadPool_WorkerThreadFunc(void* pArg)
 		// min is now a copy, and the original space on the queue is effectively released
 
 		//Retrieve the next task from the priority queue
-		struct ThreadTask* pTask = (struct ThreadTask*) Heap_ExtractMinimum(&(pPool->prio_queue));
-		pthread_mutex_unlock(&(pPool->prio_queue_mutex));
+		struct ThreadTask* pTask = (struct ThreadTask*) prioq_extract_min(&pPool->prio_queue);
+		pthread_mutex_unlock(&pPool->prio_queue_mutex);
 
 
 		if(pTask)
@@ -59,7 +59,7 @@ static void* ThreadPool_WorkerThreadFunc(void* pArg)
 			//to ask the system for memory every time one
 			//is to be dispatched
 
-			AllocPool_Free(&(pPool->alloc_pool), pTask);
+			AllocPool_Free(&pPool->alloc_pool, pTask);
 			pTask = 0;
 		}
 
@@ -68,14 +68,14 @@ static void* ThreadPool_WorkerThreadFunc(void* pArg)
 	//This unlock is normally unnecessary and is for if we need to exit the
 	//worker thread loop suddenly
 	asThreadCleanup();
-	pthread_mutex_unlock(&(pPool->prio_queue_mutex));
+	pthread_mutex_unlock(&pPool->prio_queue_mutex);
 	return 0;
 }
 
 void ThreadPool_Stop(struct ThreadPool* tp)
 {
 	tp->bIsRunning = 0;
-	pthread_cond_broadcast(&(tp->wakecond));
+	pthread_cond_broadcast(&tp->wakecond);
 }
 
 void ThreadPool_Destroy(struct ThreadPool* tp)
@@ -91,11 +91,11 @@ void ThreadPool_Destroy(struct ThreadPool* tp)
 	}
 
 	//Burn through the remaining tasks enqueued so that we release all resources
-	pthread_mutex_lock(&(tp->prio_queue_mutex));
+	pthread_mutex_lock(&tp->prio_queue_mutex);
 	struct ThreadTask* pTask = 0;
 	do
 	{
-		pTask = (struct ThreadTask*) Heap_ExtractMinimum(&(tp->prio_queue));
+		pTask = (struct ThreadTask*) prioq_extract_min(&tp->prio_queue);
 
 		if(pTask && pTask->releasefn)
 		{
@@ -105,14 +105,14 @@ void ThreadPool_Destroy(struct ThreadPool* tp)
 	}
 	while(pTask);
 
-	Heap_Destroy(&(tp->prio_queue));
-	pthread_cond_destroy(&(tp->wakecond));
-	pthread_mutex_destroy(&(tp->prio_queue_mutex));
+	prioq_destroy(&tp->prio_queue);
+	pthread_cond_destroy(&tp->wakecond);
+	pthread_mutex_destroy(&tp->prio_queue_mutex);
 
 	tfree(tp->pThreads);
 	tp->pThreads = 0;
 
-	AllocPool_Destroy(&(tp->alloc_pool));
+	AllocPool_Destroy(&tp->alloc_pool);
 }
 
 int ThreadPool_Init(struct ThreadPool* tp, unsigned int cores)
@@ -134,7 +134,7 @@ int ThreadPool_Init(struct ThreadPool* tp, unsigned int cores)
 		return -1;
 	}
 
-	if(Heap_Create(&(tp->prio_queue), 256) < 0)
+	if(prioq_create(&(tp->prio_queue), 256) < 0)
 	{
 		return -1;
 	}
@@ -156,7 +156,7 @@ int ThreadPool_Init(struct ThreadPool* tp, unsigned int cores)
 struct ThreadTask* CreateTask(struct ThreadPool* tp, void* (*taskfn) (void*), int priority, void* args,
 			void (*argreleaserfn) (void*))
 {
-	struct ThreadTask* pTask = (struct ThreadTask*) AllocPool_Alloc(&(tp->alloc_pool));
+	struct ThreadTask* pTask = (struct ThreadTask*) AllocPool_Alloc(&tp->alloc_pool);
 	pTask->taskfn = taskfn;
 	pTask->pArgs = args;
 	pTask->releasefn = argreleaserfn;
@@ -170,12 +170,12 @@ int ThreadPool_AddTask(struct ThreadPool* tp, void* (*task) (void*), int priorit
 	struct ThreadTask* pTask = CreateTask(tp, task, priority, args, argreleaserfn);
 	int insresult = 0;
 
-	pthread_mutex_lock(&(tp->prio_queue_mutex));
+	pthread_mutex_lock(&tp->prio_queue_mutex);
 
-	insresult = Heap_MinInsert(&(tp->prio_queue), priority, pTask);
+	insresult = prioq_min_insert(&tp->prio_queue, priority, pTask);
 
-	pthread_mutex_unlock(&(tp->prio_queue_mutex));
-	pthread_cond_signal(&(tp->wakecond));
+	pthread_mutex_unlock(&tp->prio_queue_mutex);
+	pthread_cond_signal(&tp->wakecond);
 
 	return insresult;
 }

@@ -3,7 +3,7 @@
 #include <pthread.h>
 #include <sys/sysinfo.h>
 #include "poolalloc.h"
-#include "heap.h"
+#include "prioq.h"
 
 struct ThreadTask
 {
@@ -20,7 +20,7 @@ struct ThreadPool
 	pthread_t* pThreads;
 	unsigned int thread_count;
 
-	struct Heap prio_queue;
+	struct prioq prio_queue;
 	pthread_mutex_t prio_queue_mutex;
 	pthread_cond_t wakecond;
 
