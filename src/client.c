@@ -83,11 +83,11 @@ void Client_Sendf(struct Client* pTarget, const char* fmt, ...)
 	va_copy(argcpy, arglist);
 	cv_t buf;
 	cv_init(&buf, 512);
-	size_t required = vsnprintf(buf.data, 512, fmt, arglist);
+	size_t required = vsnprintf(buf.data, 512, fmt, arglist) + 1;
 	cv_resize(&buf, required);
 
-	required = vsnprintf(buf.data, required, fmt, argcpy);
 	buf.length = required;
+
 	Client_WriteTo(pTarget, buf.data, buf.length);
 
 	cv_destroy(&buf);
