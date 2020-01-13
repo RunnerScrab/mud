@@ -22,6 +22,8 @@
 #include "zcompressor.h"
 #include "ansicolor.h"
 
+#include "tickthread.h"
+
 const char *g_ServerLogTypes[] = {"DEBUG", "STATUS", "ERROR"};
 const int SERVERLOG_DEBUG = 0;
 const int SERVERLOG_STATUS = 1;
@@ -144,7 +146,9 @@ int Server_Configure(struct Server* server, const char* szAddr, unsigned short p
 		return -1;
 	}
 
-	MemoryPool_Init(&(server->mem_pool));
+	MemoryPool_Init(&server->mem_pool);
+
+
 	return 0;
 }
 
@@ -165,6 +169,7 @@ int Server_Teardown(struct Server* pServer)
 	close(pServer->sockfd);
 	close(pServer->cmd_pipe[0]);
 	close(pServer->cmd_pipe[1]);
+	TickThread_Stop(&pServer->game_tick_thread);
 	return 0;
 }
 
@@ -223,6 +228,7 @@ int Server_Initialize(struct Server* server, unsigned int backlog)
 		return -1;
 	}
 
+	TickThread_Init(&server->game_tick_thread, server, 1000000);
 
 	if(FAILURE(ThreadPool_Init(&server->thread_pool, &server->as_manager, max(server->cpu_cores - 2, 1))))
 	{

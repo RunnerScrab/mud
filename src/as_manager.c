@@ -136,7 +136,6 @@ void AngelScriptManager_RunWorldTick(AngelScriptManager* manager)
 
 	manager->world_tick_scriptcontext->Prepare(manager->world_tick_func);
 	manager->world_tick_scriptcontext->Execute();
-
 }
 
 void AngelScriptManager_ReleaseEngine(AngelScriptManager* manager)

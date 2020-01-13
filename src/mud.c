@@ -22,13 +22,6 @@
 #define SUCCESS(x) (x >= 0)
 #define FAILURE(x) (x < 0)
 
-struct TickThreadPkg
-{
-	struct Server* pServer;
-	volatile char bIsRunning;
-	size_t tick_delay;
-};
-
 struct CmdDispatchThreadPkg
 {
 	struct Server* pServer;
@@ -47,8 +40,6 @@ void CmdDispatchThreadPkg_Init(struct CmdDispatchThreadPkg* pkg, struct Server* 
 
 void CmdDispatchThreadPkg_Destroy(struct CmdDispatchThreadPkg* pkg)
 {
-	pkg->bIsRunning = 0;
-	pthread_mutex_lock(&pkg->wakecondmtx);
 	pthread_cond_destroy(&pkg->wakecond);
 	pthread_mutex_destroy(&pkg->wakecondmtx);
 }
@@ -122,52 +113,6 @@ void* UserCommandDispatchThreadFn(void* pArgs)
 	return (void*) 0;
 }
 
-void* TickThreadFn(void* pArgs)
-{
-	//The idea here is that timed events are allocated from the
-	//server's pool allocator and enqueued on their own priority
-	//queue keyed by the time they are to execute.
-
-	//In addition to conventional tick duties, this thread
-	//checks the queue of timed events and sees which are ready
-	//to execute. It dispatches those events which are ready to
-	//the server's threadpool and does not run them itself.
-
-	//The importance of this is that work to be done on a server
-	//tick may occur simultaneously.
-
-	struct TickThreadPkg* pPkg = (struct TickThreadPkg*) pArgs;
-	struct Server* pServer = pPkg->pServer;
-	const size_t tick_delay = pPkg->tick_delay;
-	time_t curtime;
-
-	while(pPkg->bIsRunning)
-	{
-		Server_SendAllClients(pServer, "Tick!\r\n\r\n");
-		curtime = time(0);
-
-		AngelScriptManager_RunWorldTick(&pServer->as_manager);
-
-		//Dispatch ready server events
-		pthread_mutex_lock(&pServer->timed_queue_mtx);
-		while(prioq_get_size(&pServer->timed_queue) > 0 &&
-			curtime >=
-			prioq_get_key_at(&pServer->timed_queue, 0))
-		{
-			struct ThreadTask* pTask = (struct ThreadTask*) prioq_extract_min(&pServer->timed_queue);
-			ThreadPool_AddTask(&pServer->thread_pool,
-					pTask->taskfn, 0,
-					pTask->pArgs, pTask->releasefn);
-			MemoryPool_Free(&pServer->mem_pool, sizeof(struct ThreadTask), pTask);
-		}
-		pthread_mutex_unlock(&pServer->timed_queue_mtx);
-
-		usleep(tick_delay);
-	}
-	ServerLog(SERVERLOG_STATUS, "Tickthread terminating.\n");
-	asThreadCleanup();
-	return (void*) 0;
-}
 
 int main(int argc, char** argv)
 {
@@ -188,13 +133,6 @@ int main(int argc, char** argv)
 		//Server_Teardown(&server);
 		return -1;
 	}
-
-	pthread_t tickthread;
-	struct TickThreadPkg ttpkg;
-	ttpkg.pServer = &server;
-	ttpkg.bIsRunning = 1;
-	ttpkg.tick_delay = 1000000;
-	pthread_create(&tickthread, 0, TickThreadFn, (void*) &ttpkg);
 
 	pthread_t cmddispatchthread;
 	struct CmdDispatchThreadPkg cdtpkg;
@@ -250,14 +188,12 @@ int main(int argc, char** argv)
 
 	ServerLog(SERVERLOG_STATUS, "Server shutting down.");
 
-	ttpkg.bIsRunning = 0;
-	pthread_join(tickthread, 0);
 	cdtpkg.bIsRunning = 0;
-
 	pthread_cond_broadcast(&cdtpkg.wakecond);
 	pthread_join(cmddispatchthread, 0);
 	CmdDispatchThreadPkg_Destroy(&cdtpkg);
 
+	ServerLog(SERVERLOG_STATUS, "Command Dispatch Thread stoppped.");
 	Server_Teardown(&server);
 	printf("%d unfreed allocations.\n", toutstanding_allocs());
 	return 0;
