@@ -61,8 +61,9 @@ int Server_LoadMOTD(struct Server* server)
 	fseek(fp, 0, SEEK_END);
 	size_t len = ftell(fp);
 	fseek(fp, 0, SEEK_SET);
-	server->MOTD = (char*) talloc(sizeof(char) * len);
+	server->MOTD = (char*) talloc(sizeof(char) * (len + 1));
 	fread(server->MOTD, sizeof(char), len, fp);
+	server->MOTD[len] = 0;
 	fclose(fp);
 	return 0;
 }
@@ -156,7 +157,7 @@ int Server_Teardown(struct Server* pServer)
 	MemoryPool_Destroy(&(pServer->mem_pool));
 	pthread_mutex_destroy(&pServer->timed_queue_mtx);
 	prioq_destroy(&pServer->timed_queue);
-
+	printf("Freeing server evlist.\n");
 	tfree(pServer->evlist);
 	ThreadPool_Destroy(&(pServer->thread_pool));
 	pthread_mutex_lock(&pServer->clients_mtx);

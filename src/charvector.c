@@ -71,6 +71,7 @@ int cv_init(cv_t* cv, size_t startsize)
 		cv->length = 0;
 		cv->capacity = startsize << 1;
 		cv->data = (el_t*) talloc(sizeof(el_t) * cv->capacity);
+		memset(cv->data, 0, sizeof(el_t) * cv->capacity);
 	}
 	return (startsize > 0 && cv->data) ? 0 : -1;
 }
