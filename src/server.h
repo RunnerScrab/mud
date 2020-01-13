@@ -32,6 +32,7 @@ struct Server
 	size_t evlist_len;
 	struct sockaddr_in addr_in;
 	struct Vector clients;
+	pthread_mutex_t clients_mtx;
 
 	struct ThreadPool thread_pool;
 	unsigned int cpu_cores;

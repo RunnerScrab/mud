@@ -3,6 +3,8 @@
 #include <sys/socket.h>
 #include <string.h>
 #include <stdio.h>
+#include <pthread.h>
+#include "threadpool.h"
 #include "zcompressor.h"
 #include "iohelper.h"
 #include "ansicolor.h"
@@ -26,8 +28,11 @@ struct Client* Client_Create(int sock)
 	pClient->interval_idx = 0;
 
 	cv_init(&pClient->input_buffer, CLIENT_MAXINPUTLEN);
-	memset(pClient->cmd_intervals, 0, sizeof(float) * 6);
+	memset(pClient->cmd_intervals, 0, sizeof(float) * 6); //This is for command rate stat tracking
 
+	prioq_create(&pClient->cmd_queue, 32);
+	pthread_mutex_init(&pClient->cmd_queue_mtx, 0);
+	MemoryPool_Init(&pClient->mem_pool);
 	return pClient;
 }
 
@@ -36,8 +41,13 @@ void Client_Destroy(void* p)
 	struct Client* pClient = (struct Client*) p;
 
 	cv_destroy(&pClient->tel_stream.sb_args);
-	cv_destroy(&(pClient->input_buffer));
+	cv_destroy(&pClient->input_buffer);
 	ZCompressor_StopAndRelease(&pClient->zstreams);
+
+	pthread_mutex_lock(&pClient->cmd_queue_mtx);
+	prioq_destroy(&pClient->cmd_queue);
+	pthread_mutex_destroy(&pClient->cmd_queue_mtx);
+	MemoryPool_Destroy(&pClient->mem_pool);
 	tfree(pClient);
 }
 
@@ -93,4 +103,17 @@ void Client_Sendf(struct Client* pTarget, const char* fmt, ...)
 	cv_destroy(&buf);
 	va_end(arglist);
 	va_end(argcpy);
+}
+
+void Client_QueueCommand(struct Client* pClient, void* (*taskfn) (void*),
+			time_t runtime, void* args, void (*argreleaserfn) (void*))
+{
+	struct ThreadTask* pTask = (struct ThreadTask*) MemoryPool_Alloc(&pClient->mem_pool, sizeof(struct ThreadTask));
+	pTask->taskfn = taskfn;
+	pTask->pArgs = args;
+	pTask->releasefn = argreleaserfn;
+
+	pthread_mutex_lock(&pClient->cmd_queue_mtx);
+	prioq_min_insert(&pClient->cmd_queue, runtime, pTask);
+	pthread_mutex_unlock(&pClient->cmd_queue_mtx);
 }

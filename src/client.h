@@ -7,6 +7,8 @@
 #include "constants.h"
 #include "charvector.h"
 #include "zcompressor.h"
+#include "prioq.h"
+#include "poolalloc.h"
 
 struct EvPkg
 {
@@ -25,11 +27,15 @@ struct Client
 
 	struct timespec connection_time;
 	struct timespec last_input_time;
+
 	float cmd_intervals[CLIENT_STOREDCMDINTERVALS]; // average commands per second sent
 	unsigned char interval_idx;
 
 	cv_t input_buffer;
 
+	struct prioq cmd_queue;
+	pthread_mutex_t cmd_queue_mtx;
+	struct MemoryPool mem_pool;
 };
 
 
