@@ -8,11 +8,12 @@
 #include "zcompressor.h"
 #include "iohelper.h"
 #include "ansicolor.h"
+#include "command_dispatch.h"
 
-struct Client* Client_Create(int sock, pthread_cond_t* wakecond)
+struct Client* Client_Create(int sock, struct CmdDispatchThread* pDispatcher)
 {
 	struct Client* pClient = (struct Client*) talloc(sizeof(struct Client));
-	pClient->pWakeCond = wakecond;
+	pClient->pCmdDispatcher = pDispatcher;
 	memset(&pClient->tel_stream, 0, sizeof(TelnetStream));
 
 	ZCompressor_Init(&pClient->zstreams);
@@ -116,4 +117,12 @@ void Client_QueueCommand(struct Client* pClient, void* (*taskfn) (void*),
 	pthread_mutex_lock(&pClient->cmd_queue_mtx);
 	prioq_min_insert(&pClient->cmd_queue, runtime, pTask);
 	pthread_mutex_unlock(&pClient->cmd_queue_mtx);
+
+	pthread_cond_signal(&pClient->pCmdDispatcher->wakecond);
+	//The command dispatch thread will wait on this condition variable
+	//if if ever wakes up and finds it has no commands at all (which is going to most of the time -
+	//users would be hard pressed to continuously saturate the queue without getting booted for command spam).
+	//When the command dispatch thread does have commands queued, it will instead calculate how
+	//long it is before the earliest command must be run, then sleep for the duration.
+	//We need to wake it up if it is sleeping here
 }

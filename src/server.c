@@ -154,14 +154,16 @@ int Server_Configure(struct Server* server, const char* szAddr, unsigned short p
 
 int Server_Teardown(struct Server* pServer)
 {
+	TickThread_Stop(&pServer->game_tick_thread);
+	CmdDispatchThread_Stop(&pServer->cmd_dispatch_thread);
+	CmdDispatchThread_Destroy(&pServer->cmd_dispatch_thread);
+
 	Server_FreeMOTD(pServer);
-	asThreadCleanup();
-	AngelScriptManager_ReleaseEngine(&pServer->as_manager);
+
 	pthread_mutex_lock(&pServer->timed_queue_mtx);
 	MemoryPool_Destroy(&(pServer->mem_pool));
 	pthread_mutex_destroy(&pServer->timed_queue_mtx);
 	prioq_destroy(&pServer->timed_queue);
-	printf("Freeing server evlist.\n");
 	tfree(pServer->evlist);
 	ThreadPool_Destroy(&(pServer->thread_pool));
 	pthread_mutex_lock(&pServer->clients_mtx);
@@ -169,9 +171,7 @@ int Server_Teardown(struct Server* pServer)
 	close(pServer->sockfd);
 	close(pServer->cmd_pipe[0]);
 	close(pServer->cmd_pipe[1]);
-	TickThread_Stop(&pServer->game_tick_thread);
-	CmdDispatchThread_Stop(&pServer->cmd_dispatch_thread);
-	CmdDispatchThread_Destroy(&pServer->cmd_dispatch_thread);
+	AngelScriptManager_ReleaseEngine(&pServer->as_manager);
 	asThreadCleanup();
 	return 0;
 }
@@ -445,6 +445,13 @@ void* HandleUserInputTask(void* pArg)
 					(void*) pServer,
 					0);
 		}
+		else if(strstr(cbuf->data, "testusercmd"))
+		{
+			ServerLog(SERVERLOG_STATUS, "Queueing user command.");
+			time_t curtime = time(0);
+			Client_QueueCommand(pClient, TestTimedTask, curtime + 6, (void*) pServer, 0);
+			Client_QueueCommand(pClient, TestTimedTask, curtime + 6, (void*) pServer, 0);
+		}
 		cv_clear(cbuf);
 		/* END DEMO CODE */
 	}
@@ -541,7 +548,7 @@ int Server_AcceptClient(struct Server* server)
 	{
 		ServerLog(SERVERLOG_STATUS, "Client connected.\n");
 
-		pConnectingClient = Client_Create(accepted_sock, &server->cmd_dispatch_thread.wakecond);
+		pConnectingClient = Client_Create(accepted_sock, &server->cmd_dispatch_thread);
 		struct epoll_event clev;
 		clev.events = EPOLLIN | EPOLLONESHOT;
 		clev.data.ptr = &(pConnectingClient->ev_pkg); //This is kind of convoluted, but it's EPOLL
