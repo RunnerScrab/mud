@@ -541,7 +541,7 @@ int Server_AcceptClient(struct Server* server)
 	{
 		ServerLog(SERVERLOG_STATUS, "Client connected.\n");
 
-		pConnectingClient = Client_Create(accepted_sock);
+		pConnectingClient = Client_Create(accepted_sock, &server->cmd_dispatch_thread.wakecond);
 		struct epoll_event clev;
 		clev.events = EPOLLIN | EPOLLONESHOT;
 		clev.data.ptr = &(pConnectingClient->ev_pkg); //This is kind of convoluted, but it's EPOLL

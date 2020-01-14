@@ -11,15 +11,15 @@ void* TickThreadFn(void* pArgs);
 
 void TickThread_Init(struct TickThread* tt, struct Server* server, size_t tickspeed)
 {
-	tt->thread_pkg.pServer = server;
-	tt->thread_pkg.bIsRunning = 1;
-	tt->thread_pkg.tick_delay = tickspeed;
-	pthread_create(&tt->thread, 0, TickThreadFn, (void*) &tt->thread_pkg);
+	tt->pServer = server;
+	tt->bIsRunning = 1;
+	tt->tick_delay = tickspeed;
+	pthread_create(&tt->thread, 0, TickThreadFn, (void*) tt);
 }
 
 void TickThread_Stop(struct TickThread* tt)
 {
-	tt->thread_pkg.bIsRunning = 0;
+	tt->bIsRunning = 0;
 	pthread_join(tt->thread, 0);
 }
 
@@ -37,12 +37,12 @@ void* TickThreadFn(void* pArgs)
 	//The importance of this is that work to be done on a server
 	//tick may occur simultaneously.
 
-	struct TickThreadPkg* pPkg = (struct TickThreadPkg*) pArgs;
-	struct Server* pServer = pPkg->pServer;
-	const size_t tick_delay = pPkg->tick_delay;
+	struct TickThread* pThreadData = (struct TickThread*) pArgs;
+	struct Server* pServer = pThreadData->pServer;
+	const size_t tick_delay = pThreadData->tick_delay;
 	time_t curtime;
 
-	while(pPkg->bIsRunning)
+	while(pThreadData->bIsRunning)
 	{
 		Server_SendAllClients(pServer, "Tick!\r\n\r\n");
 		curtime = time(0);

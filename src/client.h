@@ -35,13 +35,14 @@ struct Client
 
 	struct prioq cmd_queue;
 	pthread_mutex_t cmd_queue_mtx;
+	pthread_cond_t *pWakeCond;
 	struct MemoryPool mem_pool;
 };
 
 
 int Client_WriteTo(struct Client* pTarget, const char* buf, size_t len);
 void Client_Sendf(struct Client* pTarget, const char* fmt, ...);
-struct Client* Client_Create(int sock);
+struct Client* Client_Create(int sock, pthread_cond_t* wakecond);
 void Client_Destroy(void* p);
 
 #endif

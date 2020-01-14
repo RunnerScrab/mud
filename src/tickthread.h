@@ -4,17 +4,14 @@
 
 struct Server;
 
-struct TickThreadPkg
+struct TickThread
 {
+	pthread_t thread;
+
 	struct Server* pServer;
 	volatile char bIsRunning;
 	size_t tick_delay;
-};
 
-struct TickThread
-{
-	struct TickThreadPkg thread_pkg;
-	pthread_t thread;
 };
 
 void TickThread_Init(struct TickThread* tt, struct Server* server, size_t tickspeed);

@@ -1,38 +1,28 @@
 #include "command_dispatch.h"
 #include "server.h"
 
-void CmdDispatchThreadPkg_Init(struct CmdDispatchThreadPkg* pkg, struct Server* server)
-{
-	pkg->pServer = server;
-	pkg->bIsRunning = 1;
-	pthread_cond_init(&pkg->wakecond, 0);
-	pthread_mutex_init(&pkg->wakecondmtx, 0);
-}
-
-void CmdDispatchThreadPkg_Destroy(struct CmdDispatchThreadPkg* pkg)
-{
-	pthread_cond_destroy(&pkg->wakecond);
-	pthread_mutex_destroy(&pkg->wakecondmtx);
-}
-
 void CmdDispatchThread_Init(struct CmdDispatchThread* dispatchthread, struct Server* server)
 {
-	CmdDispatchThreadPkg_Init(&dispatchthread->thread_pkg, server);
-	pthread_create(&dispatchthread->thread, 0, UserCommandDispatchThreadFn,
-		(void*) &dispatchthread->thread_pkg);
+	dispatchthread->pServer = server;
+	dispatchthread->bIsRunning = 1;
+	pthread_cond_init(&dispatchthread->wakecond, 0);
+	pthread_mutex_init(&dispatchthread->wakecondmtx, 0);
 
+	pthread_create(&dispatchthread->thread, 0, UserCommandDispatchThreadFn,
+		(void*) dispatchthread);
 }
 
 void CmdDispatchThread_Stop(struct CmdDispatchThread* dispatchthread)
 {
-	dispatchthread->thread_pkg.bIsRunning = 0;
-	pthread_cond_broadcast(&dispatchthread->thread_pkg.wakecond);
+	dispatchthread->bIsRunning = 0;
+	pthread_cond_broadcast(&dispatchthread->wakecond);
 	pthread_join(dispatchthread->thread, 0);
 }
 
 void CmdDispatchThread_Destroy(struct CmdDispatchThread* dispatchthread)
 {
-	CmdDispatchThreadPkg_Destroy(&dispatchthread->thread_pkg);
+	pthread_cond_destroy(&dispatchthread->wakecond);
+	pthread_mutex_destroy(&dispatchthread->wakecondmtx);
 }
 
 
@@ -41,12 +31,12 @@ void* UserCommandDispatchThreadFn(void* pArgs)
 	//The reason user command dispatch shouldn't be in the tick
 	//thread is that command dispatch should not be limited to every server tick
 	ServerLog(SERVERLOG_STATUS, "Running user command dispatch thread\n");
-	struct CmdDispatchThreadPkg* pPkg = (struct CmdDispatchThreadPkg*) pArgs;
-	struct Server* pServer = pPkg->pServer;
+	struct CmdDispatchThread* pThreadData = (struct CmdDispatchThread*) pArgs;
+	struct Server* pServer = pThreadData->pServer;
 	time_t curtime;
 	size_t idx = 0, len = 0;
 	time_t min_delay = 0;
-	while(pPkg->bIsRunning)
+	while(pThreadData->bIsRunning)
 	{
 		curtime = time(0);
 		pthread_mutex_lock(&pServer->clients_mtx);
@@ -82,8 +72,8 @@ void* UserCommandDispatchThreadFn(void* pArgs)
 		}
 		else
 		{
-			pthread_cond_wait(&pPkg->wakecond, &pPkg->wakecondmtx);
-			pthread_mutex_unlock(&pPkg->wakecondmtx);
+			pthread_cond_wait(&pThreadData->wakecond, &pThreadData->wakecondmtx);
+			pthread_mutex_unlock(&pThreadData->wakecondmtx);
 		}
 
 	}

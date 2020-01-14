@@ -9,10 +9,10 @@
 #include "iohelper.h"
 #include "ansicolor.h"
 
-struct Client* Client_Create(int sock)
+struct Client* Client_Create(int sock, pthread_cond_t* wakecond)
 {
 	struct Client* pClient = (struct Client*) talloc(sizeof(struct Client));
-
+	pClient->pWakeCond = wakecond;
 	memset(&pClient->tel_stream, 0, sizeof(TelnetStream));
 
 	ZCompressor_Init(&pClient->zstreams);

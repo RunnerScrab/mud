@@ -4,18 +4,13 @@
 
 struct Server;
 
-struct CmdDispatchThreadPkg
+struct CmdDispatchThread
 {
+	pthread_t thread;
 	struct Server* pServer;
 	volatile char bIsRunning;
 	pthread_cond_t wakecond;
 	pthread_mutex_t wakecondmtx;
-};
-
-struct CmdDispatchThread
-{
-	struct CmdDispatchThreadPkg thread_pkg;
-	pthread_t thread;
 };
 
 void CmdDispatchThread_Init(struct CmdDispatchThread* thread, struct Server* server);
