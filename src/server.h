@@ -13,6 +13,7 @@
 #include "as_manager.h"
 
 #include "tickthread.h"
+#include "command_dispatch.h"
 
 #define SUCCESS(x) (x >= 0)
 #define FAILURE(x) (x < 0)
@@ -45,6 +46,7 @@ struct Server
 	pthread_mutex_t timed_queue_mtx;
 
 	struct TickThread game_tick_thread;
+	struct CmdDispatchThread cmd_dispatch_thread;
 
 	AngelScriptManager as_manager; //angelscript engine manager
 	char* MOTD;

@@ -170,6 +170,9 @@ int Server_Teardown(struct Server* pServer)
 	close(pServer->cmd_pipe[0]);
 	close(pServer->cmd_pipe[1]);
 	TickThread_Stop(&pServer->game_tick_thread);
+	CmdDispatchThread_Stop(&pServer->cmd_dispatch_thread);
+	CmdDispatchThread_Destroy(&pServer->cmd_dispatch_thread);
+	asThreadCleanup();
 	return 0;
 }
 
@@ -229,6 +232,7 @@ int Server_Initialize(struct Server* server, unsigned int backlog)
 	}
 
 	TickThread_Init(&server->game_tick_thread, server, 1000000);
+	CmdDispatchThread_Init(&server->cmd_dispatch_thread, server);
 
 	if(FAILURE(ThreadPool_Init(&server->thread_pool, &server->as_manager, max(server->cpu_cores - 2, 1))))
 	{
