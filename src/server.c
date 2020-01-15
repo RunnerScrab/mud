@@ -445,7 +445,7 @@ void* HandleUserInputTask(void* pArg)
 					(void*) pServer,
 					0);
 		}
-		else if(strstr(cbuf->data, "testusercmd"))
+		else if(strstr(cbuf->data, "tc"))
 		{
 			ServerLog(SERVERLOG_STATUS, "Queueing user command.");
 			time_t curtime = time(0);

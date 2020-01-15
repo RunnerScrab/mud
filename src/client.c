@@ -118,7 +118,9 @@ void Client_QueueCommand(struct Client* pClient, void* (*taskfn) (void*),
 	prioq_min_insert(&pClient->cmd_queue, runtime, pTask);
 	pthread_mutex_unlock(&pClient->cmd_queue_mtx);
 
+	pthread_mutex_lock(&pClient->pCmdDispatcher->wakecondmtx);
 	pthread_cond_signal(&pClient->pCmdDispatcher->wakecond);
+	pthread_mutex_unlock(&pClient->pCmdDispatcher->wakecondmtx);
 	//The command dispatch thread will wait on this condition variable
 	//if if ever wakes up and finds it has no commands at all (which is going to most of the time -
 	//users would be hard pressed to continuously saturate the queue without getting booted for command spam).

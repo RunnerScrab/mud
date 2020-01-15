@@ -39,11 +39,11 @@ void* UserCommandDispatchThreadFn(void* pArgs)
 	struct Server* pServer = pThreadData->pServer;
 	time_t curtime;
 	size_t idx = 0, len = 0;
-	time_t min_delay = 0;
+	time_t min_delay = 0, last_min_delay = 0;
 	struct timespec ts;
+
 	while(pThreadData->bIsRunning)
 	{
-		printf("Top of loop\n");
 		curtime = time(0);
 		pthread_mutex_lock(&pServer->clients_mtx);
 		min_delay = 0;
@@ -53,34 +53,40 @@ void* UserCommandDispatchThreadFn(void* pArgs)
 			struct Client* pClient = (struct Client*) Vector_At(&pServer->clients, idx);
 			pthread_mutex_lock(&pClient->cmd_queue_mtx);
 			time_t delay = 0;
-			while(prioq_get_size(&pClient->cmd_queue) > 0 &&
-				curtime >= (delay = prioq_get_key_at(&pClient->cmd_queue, 0)))
+			while(prioq_get_size(&pClient->cmd_queue) > 0)
 			{
-				ServerLog(SERVERLOG_DEBUG, "Found a user command which should have fired %lds from now.",
-					delay - curtime);
+				delay = prioq_get_key_at(&pClient->cmd_queue, 0);
+				if(curtime >= delay)
+				{
+					ServerLog(SERVERLOG_DEBUG, "Dispatching task with %lds time offset.\n",
+						curtime - delay);
+					struct ThreadTask* pTask = (struct ThreadTask*) prioq_extract_min(&pClient->cmd_queue);
+					ThreadPool_AddTask(&pServer->thread_pool, pTask->taskfn, 0,
+							pTask->pArgs, pTask->releasefn);
+					MemoryPool_Free(&pClient->mem_pool, sizeof(struct ThreadTask), pTask);
 
-
-				struct ThreadTask* pTask = (struct ThreadTask*) prioq_extract_min(&pClient->cmd_queue);
-				ThreadPool_AddTask(&pServer->thread_pool, pTask->taskfn, 0,
-						pTask->pArgs, pTask->releasefn);
-				MemoryPool_Free(&pClient->mem_pool, sizeof(struct ThreadTask), pTask);
+				}
+				else
+				{
+					min_delay = (!min_delay || (delay && min_delay > delay)) ? delay : min_delay;
+					break;
+				}
 			}
 
 			pthread_mutex_unlock(&pClient->cmd_queue_mtx);
 
-			min_delay = (!min_delay || min_delay > delay) ? delay : min_delay;
-
 		}
-
+		printf("min_delay now %ld\n", min_delay);
 		pthread_mutex_unlock(&pServer->clients_mtx);
-
-
-
-		ts.tv_sec = min_delay ? min_delay : (curtime + 1);
+		ts.tv_sec = (min_delay) ? min_delay : (curtime + 3600);
 		ts.tv_nsec = 0;
-		printf("Waiting at %ld\n", curtime);
+
+		pthread_mutex_lock(&pThreadData->wakecondmtx);
 		pthread_cond_timedwait(&pThreadData->wakecond, &pThreadData->wakecondmtx, &ts);
-		printf("Wait done at %ld\n", curtime);
+
+		pthread_mutex_unlock(&pThreadData->wakecondmtx);
+		printf("WAKING: Wait done at %ld\n", time(0));
+
 	}
 	printf("Leaving loop\n");
 	asThreadCleanup();
