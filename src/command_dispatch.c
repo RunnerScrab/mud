@@ -68,7 +68,8 @@ void* UserCommandDispatchThreadFn(void* pArgs)
 				}
 				else
 				{
-					min_delay = (!min_delay || (delay && min_delay > delay)) ? delay : min_delay;
+					printf("curtime: %ld delay: %ld\n", curtime, delay);
+					min_delay = (!min_delay || (delay && min_delay > delay)) ? (delay + 1) : min_delay;
 					break;
 				}
 			}
