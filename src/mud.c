@@ -10,6 +10,7 @@
 #include <string.h>
 #include <stdarg.h>
 #include <unistd.h>
+#include <signal.h>
 
 #include "talloc.h"
 #include "vector.h"
@@ -19,8 +20,11 @@
 #include "constants.h"
 #include "as_manager.h"
 
+
 #define SUCCESS(x) (x >= 0)
 #define FAILURE(x) (x < 0)
+
+static struct Server* g_pServer = 0;
 
 void Server_AddTimedTask(struct Server* pServer, void* (*taskfn) (void*),
 			time_t runtime, void* args,
@@ -35,12 +39,19 @@ void Server_AddTimedTask(struct Server* pServer, void* (*taskfn) (void*),
 	pthread_mutex_unlock(&pServer->timed_queue_mtx);
 }
 
+void HandleKillSig(int sig)
+{
+	ServerLog(SERVERLOG_STATUS, "Received SIGINT from terminal!");
+	Server_WriteToCmdPipe(g_pServer, "kill", 5);
+}
+
 int main(int argc, char** argv)
 {
 #ifdef DEBUG
 	ServerLog(SERVERLOG_STATUS, "*****DEBUG BUILD*****");
 #endif
 	struct Server server;
+	g_pServer = &server;
 
 	struct EvPkg* pEvPkg = 0;
 
@@ -54,6 +65,8 @@ int main(int argc, char** argv)
 		//Server_Teardown(&server);
 		return -1;
 	}
+
+	signal(SIGINT, HandleKillSig);
 
 	for(;mudloop_running;)
 	{

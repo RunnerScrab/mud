@@ -76,28 +76,11 @@ void* UserCommandDispatchThreadFn(void* pArgs)
 
 
 
-		ts.tv_sec = time(0) + 1;
+		ts.tv_sec = min_delay ? min_delay : (curtime + 1);
 		ts.tv_nsec = 0;
-		printf("Waiting\n");
+		printf("Waiting at %ld\n", curtime);
 		pthread_cond_timedwait(&pThreadData->wakecond, &pThreadData->wakecondmtx, &ts);
-		printf("Wait done\n");
-		/*
-		if((min_delay - curtime) > 0)
-		{
-			printf("Sleeping for %ld seconds\n", min_delay - curtime);
-			//sleep(min_delay - curtime);
-			struct timespec ts;
-			ts.tv_sec = min_delay;
-			ts.tv_nsec = 0;
-			pthread_cond_timedwait(&pThreadData->wakecond, &pThreadData->wakecondmtx, &ts);
-		}
-		else
-		{
-			printf("Waiting on cond var.\n");
-			pthread_cond_wait(&pThreadData->wakecond, &pThreadData->wakecondmtx);
-		}
-		*/
-
+		printf("Wait done at %ld\n", curtime);
 	}
 	printf("Leaving loop\n");
 	asThreadCleanup();
