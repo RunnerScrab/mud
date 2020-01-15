@@ -12,6 +12,9 @@
 #include "prioq.h"
 #include "as_manager.h"
 
+#include "tickthread.h"
+#include "command_dispatch.h"
+
 #define SUCCESS(x) (x >= 0)
 #define FAILURE(x) (x < 0)
 
@@ -32,6 +35,7 @@ struct Server
 	size_t evlist_len;
 	struct sockaddr_in addr_in;
 	struct Vector clients;
+	pthread_mutex_t clients_mtx;
 
 	struct ThreadPool thread_pool;
 	unsigned int cpu_cores;
@@ -40,6 +44,9 @@ struct Server
 
 	struct prioq timed_queue;
 	pthread_mutex_t timed_queue_mtx;
+
+	struct TickThread game_tick_thread;
+	struct CmdDispatchThread cmd_dispatch_thread;
 
 	AngelScriptManager as_manager; //angelscript engine manager
 	char* MOTD;

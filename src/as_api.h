@@ -4,5 +4,6 @@
 #include <string>
 
 void ASAPI_SendToAll(struct Server* server, std::string& message);
+void ASAPI_QueueScriptCommand(struct Server* server, asIScriptObject* obj, unsigned int delay);
 
 #endif

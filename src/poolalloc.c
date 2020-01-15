@@ -92,7 +92,10 @@ void MemoryPool_Destroy(struct MemoryPool* mp)
 		tfree(mp->alloc_pools[idx]);
 		mp->alloc_pools[idx] = 0;
 	}
-	tfree(mp->alloc_pools);
+	if(mp->alloc_pool_count > 0)
+	{
+		tfree(mp->alloc_pools);
+	}
 	pthread_mutex_destroy(&(mp->mtx));
 }
 

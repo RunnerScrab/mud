@@ -4,6 +4,7 @@
 #include <sys/sysinfo.h>
 #include "poolalloc.h"
 #include "prioq.h"
+#include "as_manager.h"
 
 struct ThreadTask
 {
@@ -27,12 +28,14 @@ struct ThreadPool
 	volatile unsigned char bIsRunning;
 
 	struct AllocPool alloc_pool;
+
+	AngelScriptManager* pAngelScriptManager;
 };
 
 
 void ThreadPool_Stop(struct ThreadPool* tp);
 void ThreadPool_Destroy(struct ThreadPool* tp);
-int ThreadPool_Init(struct ThreadPool* tp, unsigned int cores);
+int ThreadPool_Init(struct ThreadPool* tp, AngelScriptManager* as_manager, unsigned int cores);
 
 //args should be a pointer to allocated memory; the threadpool takes ownership
 int ThreadPool_AddTask(struct ThreadPool* tp, void* (*task) (void*), int priority, void* args,

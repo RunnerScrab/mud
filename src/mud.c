@@ -10,6 +10,7 @@
 #include <string.h>
 #include <stdarg.h>
 #include <unistd.h>
+#include <signal.h>
 
 #include "talloc.h"
 #include "vector.h"
@@ -19,15 +20,11 @@
 #include "constants.h"
 #include "as_manager.h"
 
+
 #define SUCCESS(x) (x >= 0)
 #define FAILURE(x) (x < 0)
 
-struct TickThreadPkg
-{
-	struct Server* pServer;
-	volatile char bIsRunning;
-	size_t tick_delay;
-};
+static struct Server* g_pServer = 0;
 
 void Server_AddTimedTask(struct Server* pServer, void* (*taskfn) (void*),
 			time_t runtime, void* args,
@@ -42,51 +39,10 @@ void Server_AddTimedTask(struct Server* pServer, void* (*taskfn) (void*),
 	pthread_mutex_unlock(&pServer->timed_queue_mtx);
 }
 
-void* TickThreadFn(void* pArgs)
+void HandleKillSig(int sig)
 {
-	//The idea here is that timed events are allocated from the
-	//server's pool allocator and enqueued on their own priority
-	//queue keyed by the time they are to execute.
-
-	//In addition to conventional tick duties, this thread
-	//checks the queue of timed events and sees which are ready
-	//to execute. It dispatches those events which are ready to
-	//the server's threadpool and does not run them itself.
-
-	//The importance of this is that work to be done on a server
-	//tick may occur simultaneously.
-
-	struct TickThreadPkg* pPkg = (struct TickThreadPkg*) pArgs;
-	const size_t tick_delay = pPkg->tick_delay;
-	time_t curtime;
-	while(pPkg->bIsRunning)
-	{
-		Server_SendAllClients(pPkg->pServer, "Tick!\r\n\r\n");
-		curtime = time(0);
-
-
-		AngelScriptManager_RunWorldTick(&pPkg->pServer->as_manager);
-
-		pthread_mutex_lock(&pPkg->pServer->timed_queue_mtx);
-
-
-		while(prioq_get_size(&pPkg->pServer->timed_queue) > 0 &&
-			curtime >=
-			prioq_get_key_at(&pPkg->pServer->timed_queue, 0))
-		{
-			struct ThreadTask* pTask = (struct ThreadTask*) prioq_extract_min(&pPkg->pServer->timed_queue);
-			ThreadPool_AddTask(&pPkg->pServer->thread_pool,
-					pTask->taskfn, 0,
-					pTask->pArgs, pTask->releasefn);
-			MemoryPool_Free(&pPkg->pServer->mem_pool, sizeof(struct ThreadTask), pTask);
-		}
-		pthread_mutex_unlock(&pPkg->pServer->timed_queue_mtx);
-
-		usleep(tick_delay);
-	}
-	ServerLog(SERVERLOG_STATUS, "Tickthread terminating.\n");
-	asThreadCleanup();
-	return (void*) 0;
+	ServerLog(SERVERLOG_STATUS, "Received SIGINT from terminal!");
+	Server_WriteToCmdPipe(g_pServer, "kill", 5);
 }
 
 int main(int argc, char** argv)
@@ -95,6 +51,7 @@ int main(int argc, char** argv)
 	ServerLog(SERVERLOG_STATUS, "*****DEBUG BUILD*****");
 #endif
 	struct Server server;
+	g_pServer = &server;
 
 	struct EvPkg* pEvPkg = 0;
 
@@ -109,12 +66,7 @@ int main(int argc, char** argv)
 		return -1;
 	}
 
-	pthread_t tickthread;
-	struct TickThreadPkg ttpkg;
-	ttpkg.pServer = &server;
-	ttpkg.bIsRunning = 1;
-	ttpkg.tick_delay = 1000000;
-	pthread_create(&tickthread, 0, TickThreadFn, (void*) &ttpkg);
+	signal(SIGINT, HandleKillSig);
 
 	for(;mudloop_running;)
 	{
@@ -164,9 +116,6 @@ int main(int argc, char** argv)
 
 
 	ServerLog(SERVERLOG_STATUS, "Server shutting down.");
-
-	ttpkg.bIsRunning = 0;
-	pthread_join(tickthread, 0);
 	Server_Teardown(&server);
 	printf("%d unfreed allocations.\n", toutstanding_allocs());
 	return 0;

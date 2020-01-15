@@ -40,25 +40,47 @@ int AngelScriptManager_InitEngine(AngelScriptManager* manager)
 int AngelScriptManager_InitAPI(AngelScriptManager* manager, struct Server* server)
 {
 	int result = 0;
-	result = manager->engine->RegisterObjectType("Server", 0, asOBJ_REF | asOBJ_NOCOUNT);
+	asIScriptEngine* pEngine = manager->engine;
+	result = pEngine->RegisterObjectType("Server", 0, asOBJ_REF | asOBJ_NOCOUNT);
 	if(result < 0)
 	{
 		return -1;
 	}
 
-	result = manager->engine->RegisterObjectMethod("Server", "void SendToAll(string& in)",
+	result = pEngine->RegisterObjectMethod("Server", "void SendToAll(string& in)",
 						asFUNCTION(ASAPI_SendToAll), asCALL_CDECL_OBJFIRST);
 	if(result < 0)
 	{
 		return -1;
 	}
 
-	result = manager->engine->RegisterGlobalProperty("Server game_server", server);
+	result = pEngine->RegisterInterface("ICommand");
+
 	if(result < 0)
 	{
 		return -1;
 	}
 
+	pEngine->RegisterInterfaceMethod("ICommand", "int opCall()");
+
+	if(result < 0)
+	{
+		return -1;
+	}
+
+	result = pEngine->RegisterObjectMethod("Server", "void QueueScriptCommand(ICommand@ cmd, uint32 delay)",
+					asFUNCTION(ASAPI_QueueScriptCommand), asCALL_CDECL_OBJFIRST);
+
+	if(result < 0)
+	{
+		return -1;
+	}
+
+	result = pEngine->RegisterGlobalProperty("Server game_server", server);
+	if(result < 0)
+	{
+		return -1;
+	}
 
 
 	return 0;
@@ -114,7 +136,6 @@ void AngelScriptManager_RunWorldTick(AngelScriptManager* manager)
 
 	manager->world_tick_scriptcontext->Prepare(manager->world_tick_func);
 	manager->world_tick_scriptcontext->Execute();
-
 }
 
 void AngelScriptManager_ReleaseEngine(AngelScriptManager* manager)

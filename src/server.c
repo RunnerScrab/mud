@@ -22,10 +22,16 @@
 #include "zcompressor.h"
 #include "ansicolor.h"
 
+#include "tickthread.h"
+
 const char *g_ServerLogTypes[] = {"DEBUG", "STATUS", "ERROR"};
 const int SERVERLOG_DEBUG = 0;
 const int SERVERLOG_STATUS = 1;
 const int SERVERLOG_ERROR = 2;
+
+#ifndef max
+#define max(a, b) (a > b ? a : b)
+#endif
 
 void ServerLog(unsigned int code, const char* fmt, ...)
 {
@@ -57,8 +63,9 @@ int Server_LoadMOTD(struct Server* server)
 	fseek(fp, 0, SEEK_END);
 	size_t len = ftell(fp);
 	fseek(fp, 0, SEEK_SET);
-	server->MOTD = (char*) talloc(sizeof(char) * len);
+	server->MOTD = (char*) talloc(sizeof(char) * (len + 1));
 	fread(server->MOTD, sizeof(char), len, fp);
+	server->MOTD[len] = 0;
 	fclose(fp);
 	return 0;
 }
@@ -131,6 +138,7 @@ int Server_Configure(struct Server* server, const char* szAddr, unsigned short p
 		return -1;
 	}
 
+	pthread_mutex_init(&server->clients_mtx, 0);
 	if(FAILURE(Vector_Create(&(server->clients), 64, Client_Destroy)))
 	{
 		ServerLog(SERVERLOG_ERROR, "FATAL: Failed to allocate memory for client list!");
@@ -138,26 +146,33 @@ int Server_Configure(struct Server* server, const char* szAddr, unsigned short p
 		return -1;
 	}
 
-	MemoryPool_Init(&(server->mem_pool));
+	MemoryPool_Init(&server->mem_pool);
+
+
 	return 0;
 }
 
 int Server_Teardown(struct Server* pServer)
 {
+	TickThread_Stop(&pServer->game_tick_thread);
+	CmdDispatchThread_Stop(&pServer->cmd_dispatch_thread);
+	CmdDispatchThread_Destroy(&pServer->cmd_dispatch_thread);
+
 	Server_FreeMOTD(pServer);
-	asThreadCleanup();
-	AngelScriptManager_ReleaseEngine(&pServer->as_manager);
+
 	pthread_mutex_lock(&pServer->timed_queue_mtx);
 	MemoryPool_Destroy(&(pServer->mem_pool));
 	pthread_mutex_destroy(&pServer->timed_queue_mtx);
 	prioq_destroy(&pServer->timed_queue);
-
 	tfree(pServer->evlist);
 	ThreadPool_Destroy(&(pServer->thread_pool));
-	Vector_Destroy(&(pServer->clients));
+	pthread_mutex_lock(&pServer->clients_mtx);
+	Vector_Destroy(&pServer->clients);
 	close(pServer->sockfd);
 	close(pServer->cmd_pipe[0]);
 	close(pServer->cmd_pipe[1]);
+	AngelScriptManager_ReleaseEngine(&pServer->as_manager);
+	asThreadCleanup();
 	return 0;
 }
 
@@ -170,15 +185,9 @@ int Server_Initialize(struct Server* server, unsigned int backlog)
 {
 	server->cpu_cores = get_nprocs();
 
-	if(FAILURE(ThreadPool_Init(&(server->thread_pool), server->cpu_cores)))
-	{
-		ServerLog(SERVERLOG_ERROR, "FAILED TO INIT THREAD POOL!");
-		return -1;
-	}
-
 	ServerLog(SERVERLOG_STATUS, "Server starting. %d cores detected.", server->cpu_cores);
 
-	int result = bind(server->sockfd, (struct sockaddr*) &(server->addr_in),
+	int result = bind(server->sockfd, (struct sockaddr*) &server->addr_in,
 			sizeof(struct sockaddr_in));
 
 	if(FAILURE(result))
@@ -222,6 +231,14 @@ int Server_Initialize(struct Server* server, unsigned int backlog)
 		return -1;
 	}
 
+	TickThread_Init(&server->game_tick_thread, server, 1000000);
+	CmdDispatchThread_Init(&server->cmd_dispatch_thread, server);
+
+	if(FAILURE(ThreadPool_Init(&server->thread_pool, &server->as_manager, max(server->cpu_cores - 2, 1))))
+	{
+		ServerLog(SERVERLOG_ERROR, "FAILED TO INIT THREAD POOL!");
+		return -1;
+	}
 
 	Server_LoadMOTD(server);
 
@@ -230,16 +247,18 @@ int Server_Initialize(struct Server* server, unsigned int backlog)
 
 void Server_SendAllClients(struct Server* pServer, const char* fmt, ...)
 {
-	size_t idx = 0, z = Vector_Count(&(pServer->clients));
+	pthread_mutex_lock(&pServer->clients_mtx);
+	size_t idx = 0, z = Vector_Count(&pServer->clients);
 	struct Client *pClient = 0;
 	va_list arglist;
 	va_start(arglist, fmt);
 	for(; idx < z; ++idx)
 	{
-		pClient = (struct Client*) Vector_At(&(pServer->clients), idx);
+		pClient = (struct Client*) Vector_At(&pServer->clients, idx);
 		Client_Sendf(pClient, fmt, arglist);
 	}
 	va_end(arglist);
+	pthread_mutex_unlock(&pServer->clients_mtx);
 }
 
 void Server_HandleClientDisconnect(struct Server* pServer,
@@ -247,7 +266,9 @@ void Server_HandleClientDisconnect(struct Server* pServer,
 {
 	ServerLog(SERVERLOG_STATUS, "Client disconnected.");
 	size_t foundkey = 0;
-	if(FAILURE(Vector_Find(&(pServer->clients), &(pClient->sock), CompClientSock, &foundkey)))
+
+	pthread_mutex_lock(&pServer->clients_mtx);
+	if(FAILURE(Vector_Find(&pServer->clients, &pClient->sock, CompClientSock, &foundkey)))
 	{
 		ServerLog(SERVERLOG_DEBUG, "DEBUG: Couldn't find client in vector!");
 	}
@@ -258,6 +279,7 @@ void Server_HandleClientDisconnect(struct Server* pServer,
 		epoll_ctl(pServer->epfd, EPOLL_CTL_DEL, pClient->sock, 0);
 		Vector_Remove(&(pServer->clients), foundkey);
 	}
+	pthread_mutex_unlock(&pServer->clients_mtx);
 
 }
 
@@ -423,6 +445,13 @@ void* HandleUserInputTask(void* pArg)
 					(void*) pServer,
 					0);
 		}
+		else if(strstr(cbuf->data, "tc"))
+		{
+			ServerLog(SERVERLOG_STATUS, "Queueing user command.");
+			time_t curtime = time(0);
+			Client_QueueCommand(pClient, TestTimedTask, curtime + 6, (void*) pServer, 0);
+			Client_QueueCommand(pClient, TestTimedTask, curtime + 6, (void*) pServer, 0);
+		}
 		cv_clear(cbuf);
 		/* END DEMO CODE */
 	}
@@ -519,12 +548,14 @@ int Server_AcceptClient(struct Server* server)
 	{
 		ServerLog(SERVERLOG_STATUS, "Client connected.\n");
 
-		pConnectingClient = Client_Create(accepted_sock);
+		pConnectingClient = Client_Create(accepted_sock, &server->cmd_dispatch_thread);
 		struct epoll_event clev;
 		clev.events = EPOLLIN | EPOLLONESHOT;
 		clev.data.ptr = &(pConnectingClient->ev_pkg); //This is kind of convoluted, but it's EPOLL
 
-		Vector_Push(&(server->clients), pConnectingClient);
+		pthread_mutex_lock(&server->clients_mtx);
+		Vector_Push(&server->clients, pConnectingClient);
+		pthread_mutex_unlock(&server->clients_mtx);
 		TelnetStream_SendPreamble(&pConnectingClient->tel_stream);
 
 		Server_SendClientMotd(server, pConnectingClient);
