@@ -2,15 +2,23 @@
 #include "server.h"
 #include <sys/time.h>
 
-void CmdDispatchThread_Init(struct CmdDispatchThread* dispatchthread, struct Server* server)
+int CmdDispatchThread_Init(struct CmdDispatchThread* dispatchthread, struct Server* server)
 {
 	dispatchthread->pServer = server;
 	dispatchthread->bIsRunning = 1;
-	pthread_cond_init(&dispatchthread->wakecond, 0);
+	pthread_condattr_init(&dispatchthread->wakecondattr);
+	if(pthread_condattr_setclock(&dispatchthread->wakecondattr, CLOCK_MONOTONIC) < 0)
+	{
+		ServerLog(SERVERLOG_ERROR, "Failed to set cond clock attribute!");
+		pthread_condattr_destroy(&dispatchthread->wakecondattr);
+		return -1;
+	}
+	pthread_cond_init(&dispatchthread->wakecond, &dispatchthread->wakecondattr);
 	pthread_mutex_init(&dispatchthread->wakecondmtx, 0);
 
 	pthread_create(&dispatchthread->thread, 0, UserCommandDispatchThreadFn,
 		(void*) dispatchthread);
+	return 0;
 }
 
 void CmdDispatchThread_Stop(struct CmdDispatchThread* dispatchthread)
@@ -26,6 +34,7 @@ void CmdDispatchThread_Stop(struct CmdDispatchThread* dispatchthread)
 void CmdDispatchThread_Destroy(struct CmdDispatchThread* dispatchthread)
 {
 	pthread_cond_destroy(&dispatchthread->wakecond);
+	pthread_condattr_destroy(&dispatchthread->wakecondattr);
 	pthread_mutex_destroy(&dispatchthread->wakecondmtx);
 }
 
@@ -53,7 +62,7 @@ void* UserCommandDispatchThreadFn(void* pArgs)
 
 	while(pThreadData->bIsRunning)
 	{
-		if(clock_gettime(CLOCK_REALTIME, &current_ts) < 0)
+		if(clock_gettime(CLOCK_MONOTONIC, &current_ts) < 0)
 		{
 			ServerLog(SERVERLOG_ERROR, "Failed to get current timestamp from system clock.");
 			continue;
@@ -113,10 +122,10 @@ void* UserCommandDispatchThreadFn(void* pArgs)
 			current_ts.tv_sec, current_ts.tv_nsec,
 			wait_ts.tv_sec, wait_ts.tv_nsec);
 
-		pthread_mutex_lock(&pThreadData->wakecondmtx);
+		//pthread_mutex_lock(&pThreadData->wakecondmtx);
 		pthread_cond_timedwait(&pThreadData->wakecond, &pThreadData->wakecondmtx, &wait_ts);
 
-		pthread_mutex_unlock(&pThreadData->wakecondmtx);
+		//pthread_mutex_unlock(&pThreadData->wakecondmtx);
 		printf("WAKING: Wait done at %ld ; %ld\n", wait_ts.tv_sec, wait_ts.tv_nsec);
 
 	}

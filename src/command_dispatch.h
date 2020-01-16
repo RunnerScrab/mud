@@ -10,10 +10,11 @@ struct CmdDispatchThread
 	struct Server* pServer;
 	volatile char bIsRunning;
 	pthread_cond_t wakecond;
+	pthread_condattr_t wakecondattr;
 	pthread_mutex_t wakecondmtx;
 };
 
-void CmdDispatchThread_Init(struct CmdDispatchThread* thread, struct Server* server);
+int CmdDispatchThread_Init(struct CmdDispatchThread* thread, struct Server* server);
 void CmdDispatchThread_Stop(struct CmdDispatchThread* dispatchthread);
 void CmdDispatchThread_Destroy(struct CmdDispatchThread* thread);
 

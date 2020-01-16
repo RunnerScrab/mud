@@ -232,7 +232,11 @@ int Server_Initialize(struct Server* server, unsigned int backlog)
 	}
 
 	TickThread_Init(&server->game_tick_thread, server, 1000000);
-	CmdDispatchThread_Init(&server->cmd_dispatch_thread, server);
+	if(FAILURE(CmdDispatchThread_Init(&server->cmd_dispatch_thread, server)))
+	{
+
+		return -1;
+	}
 
 	if(FAILURE(ThreadPool_Init(&server->thread_pool, &server->as_manager, max(server->cpu_cores - 2, 1))))
 	{
@@ -449,7 +453,7 @@ void* HandleUserInputTask(void* pArg)
 		{
 			ServerLog(SERVERLOG_STATUS, "Queueing user command.");
 			struct timespec current_ts;
-			clock_gettime(CLOCK_REALTIME, &current_ts);
+			clock_gettime(CLOCK_MONOTONIC, &current_ts);
 			current_ts.tv_sec += 6;
 			Client_QueueCommand(pClient, TestTimedTask, current_ts.tv_sec,
 					current_ts.tv_nsec, (void*) pServer, 0);
