@@ -7,7 +7,7 @@
 #include "constants.h"
 #include "charvector.h"
 #include "zcompressor.h"
-#include "prioq.h"
+#include "hrt_prioq.h"
 #include "poolalloc.h"
 
 struct EvPkg
@@ -35,7 +35,7 @@ struct Client
 
 	cv_t input_buffer;
 
-	struct prioq cmd_queue;
+	struct hrt_prioq cmd_queue;
 	pthread_mutex_t cmd_queue_mtx;
 
 	struct CmdDispatchThread* pCmdDispatcher;
@@ -49,7 +49,7 @@ struct Client* Client_Create(int sock, struct CmdDispatchThread*);
 void Client_Destroy(void* p);
 
 void Client_QueueCommand(struct Client* pClient, void* (*taskfn) (void*),
-			time_t runtime, void* args, void (*argreleaserfn) (void*));
+			time_t runtime_s, long runtime_ns, void* args, void (*argreleaserfn) (void*));
 
 
 #endif

@@ -29,6 +29,16 @@ void CmdDispatchThread_Destroy(struct CmdDispatchThread* dispatchthread)
 	pthread_mutex_destroy(&dispatchthread->wakecondmtx);
 }
 
+inline void ZeroTs(struct timespec* ts)
+{
+	ts->tv_sec = 0;
+	ts->tv_nsec = 0;
+}
+
+inline int IsTsNonZero(struct timespec* ts)
+{
+	return ts->tv_sec && ts->tv_nsec;
+}
 
 void* UserCommandDispatchThreadFn(void* pArgs)
 {
@@ -37,30 +47,34 @@ void* UserCommandDispatchThreadFn(void* pArgs)
 	ServerLog(SERVERLOG_STATUS, "Running user command dispatch thread");
 	struct CmdDispatchThread* pThreadData = (struct CmdDispatchThread*) pArgs;
 	struct Server* pServer = pThreadData->pServer;
-	time_t curtime;
 	size_t idx = 0, len = 0;
-	time_t min_delay = 0, last_min_delay = 0;
-	struct timespec ts;
+
+	struct timespec current_ts, delay_ts, min_delay_ts;
 
 	while(pThreadData->bIsRunning)
 	{
-		curtime = time(0);
+		if(clock_gettime(CLOCK_REALTIME, &current_ts) < 0)
+		{
+			ServerLog(SERVERLOG_ERROR, "Failed to get current timestamp from system clock.");
+			continue;
+		}
+
 		pthread_mutex_lock(&pServer->clients_mtx);
-		min_delay = 0;
+
+		ZeroTs(&min_delay_ts);
+
 		for(idx = 0, len = Vector_Count(&pServer->clients);
 		    idx < len; ++idx)
 		{
 			struct Client* pClient = (struct Client*) Vector_At(&pServer->clients, idx);
 			pthread_mutex_lock(&pClient->cmd_queue_mtx);
-			time_t delay = 0;
-			while(prioq_get_size(&pClient->cmd_queue) > 0)
+			ZeroTs(&delay_ts);
+			while(hrt_prioq_get_size(&pClient->cmd_queue) > 0)
 			{
-				delay = prioq_get_key_at(&pClient->cmd_queue, 0);
-				if(curtime >= delay)
+				hrt_prioq_get_key_at(&pClient->cmd_queue, 0, &delay_ts);
+				if(CmpTs(&current_ts, &delay_ts) >= 0)
 				{
-					ServerLog(SERVERLOG_DEBUG, "Dispatching task with %lds time offset.\n",
-						curtime - delay);
-					struct ThreadTask* pTask = (struct ThreadTask*) prioq_extract_min(&pClient->cmd_queue);
+					struct ThreadTask* pTask = (struct ThreadTask*) hrt_prioq_extract_min(&pClient->cmd_queue);
 					ThreadPool_AddTask(&pServer->thread_pool, pTask->taskfn, 0,
 							pTask->pArgs, pTask->releasefn);
 					MemoryPool_Free(&pClient->mem_pool, sizeof(struct ThreadTask), pTask);
@@ -68,8 +82,12 @@ void* UserCommandDispatchThreadFn(void* pArgs)
 				}
 				else
 				{
-					printf("curtime: %ld delay: %ld\n", curtime, delay);
-					min_delay = (!min_delay || (delay && min_delay > delay)) ? (delay + 1) : min_delay;
+					if(!IsTsNonZero(&min_delay_ts) ||
+						(IsTsNonZero(&delay_ts) && CmpTs(&min_delay_ts, &delay_ts) == 1))
+					{
+						min_delay_ts.tv_sec = delay_ts.tv_sec + 1;
+						min_delay_ts.tv_nsec = delay_ts.tv_nsec;
+					}
 					break;
 				}
 			}
@@ -77,16 +95,29 @@ void* UserCommandDispatchThreadFn(void* pArgs)
 			pthread_mutex_unlock(&pClient->cmd_queue_mtx);
 
 		}
-		printf("min_delay now %ld\n", min_delay);
+
 		pthread_mutex_unlock(&pServer->clients_mtx);
-		ts.tv_sec = (min_delay) ? min_delay : (curtime + 3600);
-		ts.tv_nsec = 0;
+		struct timespec wait_ts;
+		if(IsTsNonZero(&min_delay_ts))
+		{
+			printf("min_delay_ts is nonzero\n");
+			wait_ts = min_delay_ts;
+		}
+		else
+		{
+			printf("min_delay_ts is zero\n");
+			wait_ts.tv_sec = (current_ts.tv_sec + 3600);
+			wait_ts.tv_nsec = current_ts.tv_nsec;
+		}
+		printf("current_ts: %ld ; %ld - wait_ts: %ld; %ld\n",
+			current_ts.tv_sec, current_ts.tv_nsec,
+			wait_ts.tv_sec, wait_ts.tv_nsec);
 
 		pthread_mutex_lock(&pThreadData->wakecondmtx);
-		pthread_cond_timedwait(&pThreadData->wakecond, &pThreadData->wakecondmtx, &ts);
+		pthread_cond_timedwait(&pThreadData->wakecond, &pThreadData->wakecondmtx, &wait_ts);
 
 		pthread_mutex_unlock(&pThreadData->wakecondmtx);
-		printf("WAKING: Wait done at %ld\n", time(0));
+		printf("WAKING: Wait done at %ld ; %ld\n", wait_ts.tv_sec, wait_ts.tv_nsec);
 
 	}
 	printf("Leaving loop\n");

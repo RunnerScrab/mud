@@ -49,7 +49,7 @@ int prioq_IsMinHeap(struct prioq* pHeap, size_t idx)
 	size_t leftidx = left(idx);
 	struct prioqnode* arr = pHeap->array;
 	size_t len = pHeap->len;
-	int topkey = arr[idx].key;
+	time_t topkey = arr[idx].key;
 
 	return (rightidx >= len || (topkey < arr[rightidx].key && prioq_IsMinHeap(pHeap, rightidx)))
 		|| (leftidx >= len || (topkey < arr[leftidx].key && prioq_IsMinHeap(pHeap, leftidx)));

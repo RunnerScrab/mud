@@ -448,9 +448,11 @@ void* HandleUserInputTask(void* pArg)
 		else if(strstr(cbuf->data, "tc"))
 		{
 			ServerLog(SERVERLOG_STATUS, "Queueing user command.");
-			time_t curtime = time(0);
-			Client_QueueCommand(pClient, TestTimedTask, curtime + 6, (void*) pServer, 0);
-			Client_QueueCommand(pClient, TestTimedTask, curtime + 6, (void*) pServer, 0);
+			struct timespec current_ts;
+			clock_gettime(CLOCK_REALTIME, &current_ts);
+			current_ts.tv_sec += 6;
+			Client_QueueCommand(pClient, TestTimedTask, current_ts.tv_sec,
+					current_ts.tv_nsec, (void*) pServer, 0);
 		}
 		cv_clear(cbuf);
 		/* END DEMO CODE */
