@@ -152,11 +152,6 @@ void AngelScriptManager_RunWorldTick(AngelScriptManager* manager)
 void AngelScriptManager_ReleaseEngine(AngelScriptManager* manager)
 {
 	manager->world_tick_scriptcontext->Release();
-	size_t idx = 0, len = manager->main_module->GetGlobalVarCount();
-	for(; idx < len; ++idx)
-	{
-		manager->main_module->RemoveGlobalVar(idx);
-	}
 
 	manager->engine->Release();
 	delete manager->jit;
