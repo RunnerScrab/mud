@@ -153,6 +153,7 @@ void* AllocPool_Alloc(struct AllocPool* pAllocPool)
 	pAllocPool->headnode = returnval->nextinplacenode;
 	if(!pAllocPool->headnode)
 	{
+		//Expand memory pool if we have run out of space
 		AllocPool_AddBlock(pAllocPool);
 	}
 	pthread_mutex_unlock(&(pAllocPool->pool_mutex));

@@ -42,6 +42,8 @@ struct MemoryPool
 };
 
 void MemoryPool_Init(struct MemoryPool* mp);
+
+//Uses internal mutex
 void* MemoryPool_Alloc(struct MemoryPool* mp, ssize_t block_size);
 
 //Free releases pooled memory for later reuse

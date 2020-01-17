@@ -7,6 +7,8 @@
 #include "as_api.h"
 #include <string>
 #include <functional>
+#include <pthread.h>
+#include <memory>
 
 void as_MessageCallback(const asSMessageInfo* msg, void* param)
 {
@@ -21,6 +23,7 @@ void as_MessageCallback(const asSMessageInfo* msg, void* param)
 
 int AngelScriptManager_InitEngine(AngelScriptManager* manager)
 {
+	MemoryPool_Init(&manager->mem_pool);
 	manager->engine = asCreateScriptEngine();
 	manager->jit = new asCJITCompiler(0);
 
@@ -41,6 +44,7 @@ int AngelScriptManager_InitAPI(AngelScriptManager* manager, struct Server* serve
 {
 	int result = 0;
 	asIScriptEngine* pEngine = manager->engine;
+
 	result = pEngine->RegisterObjectType("Server", 0, asOBJ_REF | asOBJ_NOCOUNT);
 	if(result < 0)
 	{
@@ -68,8 +72,15 @@ int AngelScriptManager_InitAPI(AngelScriptManager* manager, struct Server* serve
 		return -1;
 	}
 
-	result = pEngine->RegisterObjectMethod("Server", "void QueueScriptCommand(ICommand@ cmd, uint32 delay)",
+	result = pEngine->RegisterObjectMethod("Server", "void QueueScriptCommand(ICommand@+ cmd, uint32 delay)",
 					asFUNCTION(ASAPI_QueueScriptCommand), asCALL_CDECL_OBJFIRST);
+
+	if(result < 0)
+	{
+		return -1;
+	}
+
+	result = pEngine->RegisterGlobalFunction("void Log(string& in)", asFUNCTION(ASAPI_Log), asCALL_CDECL);
 
 	if(result < 0)
 	{
@@ -141,6 +152,14 @@ void AngelScriptManager_RunWorldTick(AngelScriptManager* manager)
 void AngelScriptManager_ReleaseEngine(AngelScriptManager* manager)
 {
 	manager->world_tick_scriptcontext->Release();
+	size_t idx = 0, len = manager->main_module->GetGlobalVarCount();
+	for(; idx < len; ++idx)
+	{
+		manager->main_module->RemoveGlobalVar(idx);
+	}
+
 	manager->engine->Release();
 	delete manager->jit;
+
+	MemoryPool_Destroy(&manager->mem_pool);
 }

@@ -41,7 +41,7 @@ void* TickThreadFn(void* pArgs)
 	struct Server* pServer = pThreadData->pServer;
 	const size_t tick_delay = pThreadData->tick_delay;
 	time_t curtime;
-
+	ServerLog(SERVERLOG_STATUS, "Tick thread running.");
 	while(pThreadData->bIsRunning)
 	{
 		Server_SendAllClients(pServer, "Tick!\r\n\r\n");

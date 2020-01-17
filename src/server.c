@@ -458,6 +458,7 @@ void* HandleUserInputTask(void* pArg)
 			Client_QueueCommand(pClient, TestTimedTask, current_ts.tv_sec,
 					current_ts.tv_nsec, (void*) pServer, 0);
 		}
+
 		cv_clear(cbuf);
 		/* END DEMO CODE */
 	}
