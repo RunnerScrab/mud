@@ -39,7 +39,7 @@ int AngelScriptManager_InitEngine(AngelScriptManager* manager)
 	RegisterStdString(manager->engine);
 	RegisterScriptArray(manager->engine, true);
 	manager->engine->SetMessageCallback(asFUNCTION(as_MessageCallback), 0, asCALL_CDECL);
-	ASContextPool_Init(&manager->ctx_pool, manager->engine, 32);
+	ASContextPool_Init(&manager->ctx_pool, manager->engine, 1);
 	return 0;
 }
 
@@ -147,7 +147,6 @@ int AngelScriptManager_LoadScripts(AngelScriptManager* manager, const char* scri
 
 void AngelScriptManager_RunWorldTick(AngelScriptManager* manager)
 {
-
 	manager->world_tick_scriptcontext->Prepare(manager->world_tick_func);
 	manager->world_tick_scriptcontext->Execute();
 }
@@ -160,7 +159,6 @@ void AngelScriptManager_ReleaseEngine(AngelScriptManager* manager)
 	delete manager->jit;
 
 	MemoryPool_Destroy(&manager->mem_pool);
-
 }
 
 int ASContextPool_Init(ASContextPool* pPool, asIScriptEngine* pEngine, size_t initial_size)
@@ -174,7 +172,7 @@ int ASContextPool_Init(ASContextPool* pPool, asIScriptEngine* pEngine, size_t in
 	{
 		return -1;
 	}
-
+	memset(pPool->pContextArray, 0, sizeof(asIScriptContext*) * initial_size);
 	memset(pPool->pInUseArray, 0, sizeof(unsigned char) * initial_size);
 
 
@@ -209,11 +207,11 @@ size_t ASContextPool_GetFreeContextIndex(ASContextPool* pPool)
 	{
 		size_t oldsize = pPool->ctx_count;
 		size_t newsize = oldsize << 1;
-		pPool->pContextArray = (asIScriptContext**) trealloc(pPool->pContextArray, newsize);
-		pPool->pInUseArray = (unsigned char*) trealloc(pPool->pInUseArray, newsize);
+		pPool->pContextArray = (asIScriptContext**) trealloc(pPool->pContextArray, newsize * sizeof(asIScriptContext*));
+		pPool->pInUseArray = (unsigned char*) trealloc(pPool->pInUseArray, newsize * sizeof(unsigned char));
 
-		memset(&pPool->pInUseArray[oldsize - 1], 0, sizeof(unsigned char) * (newsize - oldsize));
-		size_t idx = 0;
+		memset(&pPool->pInUseArray[oldsize], 0, sizeof(unsigned char) * (newsize - oldsize));
+		size_t idx = oldsize;
 		for(; idx < newsize; ++idx)
 		{
 			pPool->pContextArray[idx] = pPool->pEngine->CreateContext();
@@ -221,8 +219,9 @@ size_t ASContextPool_GetFreeContextIndex(ASContextPool* pPool)
 
 		pPool->ctx_count = newsize;
 
-		pPool->pInUseArray[oldsize + 1] = (unsigned char) 1;
-		return oldsize + 1;
+		pPool->pInUseArray[oldsize] = (unsigned char) 1;
+		pthread_mutex_unlock(&pPool->mtx);
+		return oldsize;
 	}
 	size_t offset = pLoc - pPool->pInUseArray;
 	*pLoc = 1;

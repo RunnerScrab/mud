@@ -23,4 +23,5 @@ void GameTick()
 
 	game_server.SendToAll("`red`Hello!`default`");
 	game_server.QueueScriptCommand(tc, 4);
+	game_server.QueueScriptCommand(tc, 2);
 }
