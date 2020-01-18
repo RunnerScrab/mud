@@ -1,9 +1,6 @@
 #include "threadpool.h"
 #include "talloc.h"
 #include "prioq.h"
-#include <angelscript.h>
-#include "as_manager.h"
-
 #include <sys/sysinfo.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -12,7 +9,6 @@
 static void* ThreadPool_WorkerThreadFunc(void* pArg)
 {
 	struct ThreadPool* pPool = (struct ThreadPool*) pArg;
-	//asIScriptEngine* pScriptEngine = pPool->pAngelScriptManager->engine;
 
 	while(1)
 	{
@@ -117,7 +113,7 @@ void ThreadPool_Destroy(struct ThreadPool* tp)
 	AllocPool_Destroy(&tp->alloc_pool);
 }
 
-int ThreadPool_Init(struct ThreadPool* tp, AngelScriptManager* as_manager, unsigned int cores)
+int ThreadPool_Init(struct ThreadPool* tp, unsigned int cores)
 {
 	size_t idx = 0;
 
@@ -142,8 +138,6 @@ int ThreadPool_Init(struct ThreadPool* tp, AngelScriptManager* as_manager, unsig
 	}
 
 	tp->bIsRunning = 1;
-
-	tp->pAngelScriptManager = as_manager;
 
 	for(; idx < tp->thread_count; ++idx)
 	{

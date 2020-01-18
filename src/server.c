@@ -238,7 +238,7 @@ int Server_Initialize(struct Server* server, unsigned int backlog)
 		return -1;
 	}
 
-	if(FAILURE(ThreadPool_Init(&server->thread_pool, &server->as_manager, max(server->cpu_cores - 2, 1))))
+	if(FAILURE(ThreadPool_Init(&server->thread_pool, max(server->cpu_cores - 2, 1))))
 	{
 		ServerLog(SERVERLOG_ERROR, "FAILED TO INIT THREAD POOL!");
 		return -1;
