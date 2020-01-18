@@ -138,13 +138,16 @@ int Server_Configure(struct Server* server, const char* szAddr, unsigned short p
 		return -1;
 	}
 
-	pthread_mutex_init(&server->clients_mtx, 0);
+	pthread_rwlock_init(&server->clients_rwlock, 0);
+
+	pthread_rwlock_wrlock(&server->clients_rwlock);
 	if(FAILURE(Vector_Create(&(server->clients), 64, Client_Destroy)))
 	{
 		ServerLog(SERVERLOG_ERROR, "FATAL: Failed to allocate memory for client list!");
 		Server_Teardown(server);
 		return -1;
 	}
+	pthread_rwlock_unlock(&server->clients_rwlock);
 
 	MemoryPool_Init(&server->mem_pool);
 
@@ -161,13 +164,16 @@ int Server_Teardown(struct Server* pServer)
 	Server_FreeMOTD(pServer);
 
 	pthread_mutex_lock(&pServer->timed_queue_mtx);
-	MemoryPool_Destroy(&(pServer->mem_pool));
+	MemoryPool_Destroy(&pServer->mem_pool);
 	pthread_mutex_destroy(&pServer->timed_queue_mtx);
 	prioq_destroy(&pServer->timed_queue);
 	tfree(pServer->evlist);
-	ThreadPool_Destroy(&(pServer->thread_pool));
-	pthread_mutex_lock(&pServer->clients_mtx);
+	ThreadPool_Destroy(&pServer->thread_pool);
+
+	pthread_rwlock_wrlock(&pServer->clients_rwlock);
 	Vector_Destroy(&pServer->clients);
+	pthread_rwlock_destroy(&pServer->clients_rwlock);
+
 	close(pServer->sockfd);
 	close(pServer->cmd_pipe[0]);
 	close(pServer->cmd_pipe[1]);
@@ -251,7 +257,7 @@ int Server_Initialize(struct Server* server, unsigned int backlog)
 
 void Server_SendAllClients(struct Server* pServer, const char* fmt, ...)
 {
-	pthread_mutex_lock(&pServer->clients_mtx);
+	pthread_rwlock_rdlock(&pServer->clients_rwlock);
 	size_t idx = 0, z = Vector_Count(&pServer->clients);
 	struct Client *pClient = 0;
 	va_list arglist;
@@ -262,7 +268,7 @@ void Server_SendAllClients(struct Server* pServer, const char* fmt, ...)
 		Client_Sendf(pClient, fmt, arglist);
 	}
 	va_end(arglist);
-	pthread_mutex_unlock(&pServer->clients_mtx);
+	pthread_rwlock_unlock(&pServer->clients_rwlock);
 }
 
 void Server_HandleClientDisconnect(struct Server* pServer,
@@ -271,7 +277,7 @@ void Server_HandleClientDisconnect(struct Server* pServer,
 	ServerLog(SERVERLOG_STATUS, "Client disconnected.");
 	size_t foundkey = 0;
 
-	pthread_mutex_lock(&pServer->clients_mtx);
+	pthread_rwlock_wrlock(&pServer->clients_rwlock);
 	if(FAILURE(Vector_Find(&pServer->clients, &pClient->sock, CompClientSock, &foundkey)))
 	{
 		ServerLog(SERVERLOG_DEBUG, "DEBUG: Couldn't find client in vector!");
@@ -283,8 +289,7 @@ void Server_HandleClientDisconnect(struct Server* pServer,
 		epoll_ctl(pServer->epfd, EPOLL_CTL_DEL, pClient->sock, 0);
 		Vector_Remove(&(pServer->clients), foundkey);
 	}
-	pthread_mutex_unlock(&pServer->clients_mtx);
-
+	pthread_rwlock_unlock(&pServer->clients_rwlock);
 }
 
 void Server_DisconnectClient(struct Server* pServer, struct Client* pClient)
@@ -568,9 +573,11 @@ int Server_AcceptClient(struct Server* server)
 		clev.events = EPOLLIN | EPOLLONESHOT;
 		clev.data.ptr = &(pConnectingClient->ev_pkg); //This is kind of convoluted, but it's EPOLL
 
-		pthread_mutex_lock(&server->clients_mtx);
+
+		pthread_rwlock_wrlock(&server->clients_rwlock);
 		Vector_Push(&server->clients, pConnectingClient);
-		pthread_mutex_unlock(&server->clients_mtx);
+		pthread_rwlock_unlock(&server->clients_rwlock);
+
 		TelnetStream_SendPreamble(&pConnectingClient->tel_stream);
 
 		Server_SendClientMotd(server, pConnectingClient);

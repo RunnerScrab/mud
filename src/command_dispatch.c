@@ -68,8 +68,8 @@ void* UserCommandDispatchThreadFn(void* pArgs)
 			continue;
 		}
 
-		pthread_mutex_lock(&pServer->clients_mtx);
 
+		pthread_rwlock_rdlock(&pServer->clients_rwlock);
 		ZeroTs(&min_delay_ts);
 
 		for(idx = 0, len = Vector_Count(&pServer->clients);
@@ -104,8 +104,8 @@ void* UserCommandDispatchThreadFn(void* pArgs)
 			pthread_mutex_unlock(&pClient->cmd_queue_mtx);
 
 		}
+		pthread_rwlock_unlock(&pServer->clients_rwlock);
 
-		pthread_mutex_unlock(&pServer->clients_mtx);
 		struct timespec wait_ts;
 		if(IsTsNonZero(&min_delay_ts))
 		{
@@ -122,10 +122,9 @@ void* UserCommandDispatchThreadFn(void* pArgs)
 			current_ts.tv_sec, current_ts.tv_nsec,
 			wait_ts.tv_sec, wait_ts.tv_nsec);
 
-		//pthread_mutex_lock(&pThreadData->wakecondmtx);
+
 		pthread_cond_timedwait(&pThreadData->wakecond, &pThreadData->wakecondmtx, &wait_ts);
 
-		//pthread_mutex_unlock(&pThreadData->wakecondmtx);
 		printf("WAKING: Wait done at %ld ; %ld\n", wait_ts.tv_sec, wait_ts.tv_nsec);
 
 	}
