@@ -574,9 +574,10 @@ int Server_AcceptClient(struct Server* server)
 		TelnetStream_SendPreamble(&pConnectingClient->tel_stream);
 
 		Server_SendClientMotd(server, pConnectingClient);
-		AngelScriptManager_CallOnPlayerConnect(&server->as_manager, 0);
+		AngelScriptManager_CallOnPlayerConnect(&server->as_manager, pConnectingClient);
 #ifdef DEBUG
-		Client_Sendf(pConnectingClient, "\r\n`#ff0000`*****The server is running as a DEBUG build*****`default`\r\n\r\n");
+		Client_Sendf(pConnectingClient,
+			"\r\n`#ff0000`*****The server is running as a DEBUG build*****`default`\r\n\r\n");
 #endif
 		epoll_ctl(server->epfd, EPOLL_CTL_ADD, accepted_sock, &clev);
 		return accepted_sock;

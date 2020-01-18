@@ -122,7 +122,10 @@ void AngelScriptManager_CallOnPlayerConnect(AngelScriptManager* manager, struct 
 	size_t idx = ASContextPool_GetFreeContextIndex(&manager->ctx_pool);
 	asIScriptContext* ctx = ASContextPool_GetContextAt(&manager->ctx_pool, idx);
 	ctx->Prepare(manager->on_player_connect_func);
+	asIScriptObject* playerobj = CreatePlayerProxy(manager, pClient);
+	ctx->SetArgObject(0, playerobj);
 	ctx->Execute();
+	playerobj->Release();
 	ASContextPool_ReturnContextByIndex(&manager->ctx_pool, idx);
 }
 

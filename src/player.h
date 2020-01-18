@@ -1,6 +1,8 @@
 #ifndef PLAYER_H_
 #define PLAYER_H_
 #include "client.h"
+#include "as_manager.h"
+#include <string>
 
 class asIScriptObject;
 class asILockableSharedBool;
@@ -10,9 +12,10 @@ class asIScriptModule;
 class Player
 {
 public:
-  struct Client* pClient;
+  struct Client* m_pClient;
   void AddRef();
   void Release();
+  void Send(std::string& str);
   static Player* Factory();
 protected:
   Player(asIScriptObject* obj);
@@ -26,4 +29,5 @@ protected:
 
 int LoadPlayerScript(asIScriptEngine* engine, asIScriptModule* module);
 int RegisterPlayerProxyClass(asIScriptEngine* engine, asIScriptModule* module);
+asIScriptObject* CreatePlayerProxy(AngelScriptManager* manager, struct Client* pClient);
 #endif

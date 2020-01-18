@@ -18,15 +18,29 @@ class TestCommand : ICommand
 };
 
 TestCommand tc(1, 2);
+Player@ hPlayer = null;
+
 void GameTick()
 {
 
 	game_server.SendToAll("`red`Hello!`default`");
 	game_server.QueueScriptCommand(tc, 4);
 	game_server.QueueScriptCommand(tc, 2);
+	if(hPlayer !is null)
+	{
+		hPlayer.Send("Ticking for player\r\n");
+	}
 }
+
+
 
 void OnPlayerConnect(Player@ player)
 {
 	Log("OnPlayerConnect()");
+	player.Send("WELCOME!\r\n");
+	@hPlayer = @player;
+	if(hPlayer !is null)
+	{
+		hPlayer.Send("Handle assigned.\r\n");
+	}
 }
