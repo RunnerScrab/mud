@@ -1,10 +1,12 @@
 #include "as_manager.h"
-#include "./angelscriptsdk/sdk/angelscript/source/scriptstdstring.h"
-#include "./angelscriptsdk/sdk/angelscript/source/scriptarray.h"
-#include <cstdio>
-#include <cstdlib>
 #include "server.h"
 #include "as_api.h"
+#include "talloc.h"
+#include "./angelscriptsdk/sdk/angelscript/source/scriptstdstring.h"
+#include "./angelscriptsdk/sdk/angelscript/source/scriptarray.h"
+
+#include <cstdio>
+#include <cstdlib>
 #include <string>
 #include <functional>
 #include <pthread.h>
@@ -37,6 +39,7 @@ int AngelScriptManager_InitEngine(AngelScriptManager* manager)
 	RegisterStdString(manager->engine);
 	RegisterScriptArray(manager->engine, true);
 	manager->engine->SetMessageCallback(asFUNCTION(as_MessageCallback), 0, asCALL_CDECL);
+	ASContextPool_Init(&manager->ctx_pool, manager->engine, 32);
 	return 0;
 }
 
@@ -152,9 +155,90 @@ void AngelScriptManager_RunWorldTick(AngelScriptManager* manager)
 void AngelScriptManager_ReleaseEngine(AngelScriptManager* manager)
 {
 	manager->world_tick_scriptcontext->Release();
-
+	ASContextPool_Destroy(&manager->ctx_pool);
 	manager->engine->Release();
 	delete manager->jit;
 
 	MemoryPool_Destroy(&manager->mem_pool);
+
+}
+
+int ASContextPool_Init(ASContextPool* pPool, asIScriptEngine* pEngine, size_t initial_size)
+{
+	pthread_mutex_init(&pPool->mtx, 0);
+	pPool->pEngine = pEngine;
+	pPool->pContextArray = (asIScriptContext**) talloc(sizeof(asIScriptContext*) * initial_size);
+	pPool->pInUseArray = (unsigned char*) talloc(sizeof(unsigned char) * initial_size);
+
+	if(!pPool->pContextArray || !pPool->pInUseArray)
+	{
+		return -1;
+	}
+
+	memset(pPool->pInUseArray, 0, sizeof(unsigned char) * initial_size);
+
+
+	pPool->ctx_count = initial_size;
+	size_t idx = 0;
+	for(; idx < initial_size; ++idx)
+	{
+		pPool->pContextArray[idx] = pEngine->CreateContext();
+	}
+
+	return 0;
+}
+
+asIScriptContext* ASContextPool_GetContextAt(ASContextPool* pPool, size_t idx)
+{
+	if(idx > pPool->ctx_count)
+		return 0;
+
+	return pPool->pContextArray[idx];
+}
+
+void ASContextPool_ReturnContextByIndex(ASContextPool* pPool, size_t idx)
+{
+	pPool->pInUseArray[idx] = (unsigned char) 0;
+}
+
+size_t ASContextPool_GetFreeContextIndex(ASContextPool* pPool)
+{
+	pthread_mutex_lock(&pPool->mtx);
+	unsigned char* pLoc = (unsigned char*) memchr(pPool->pInUseArray, 0, pPool->ctx_count);
+	if(!pLoc)
+	{
+		size_t oldsize = pPool->ctx_count;
+		size_t newsize = oldsize << 1;
+		pPool->pContextArray = (asIScriptContext**) trealloc(pPool->pContextArray, newsize);
+		pPool->pInUseArray = (unsigned char*) trealloc(pPool->pInUseArray, newsize);
+
+		memset(&pPool->pInUseArray[oldsize - 1], 0, sizeof(unsigned char) * (newsize - oldsize));
+		size_t idx = 0;
+		for(; idx < newsize; ++idx)
+		{
+			pPool->pContextArray[idx] = pPool->pEngine->CreateContext();
+		}
+
+		pPool->ctx_count = newsize;
+
+		pPool->pInUseArray[oldsize + 1] = (unsigned char) 1;
+		return oldsize + 1;
+	}
+	size_t offset = pLoc - pPool->pInUseArray;
+	*pLoc = 1;
+	pthread_mutex_unlock(&pPool->mtx);
+	return offset;
+}
+
+void ASContextPool_Destroy(ASContextPool* pPool)
+{
+	pthread_mutex_lock(&pPool->mtx);
+	size_t idx = 0, len = pPool->ctx_count;
+	for(; idx < len; ++idx)
+	{
+		pPool->pContextArray[idx]->Release();
+	}
+	tfree(pPool->pContextArray);
+	tfree(pPool->pInUseArray);
+	pthread_mutex_destroy(&pPool->mtx);
 }

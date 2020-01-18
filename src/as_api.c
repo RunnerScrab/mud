@@ -11,8 +11,9 @@ struct RunScriptCmdPkg
 {
 	asITypeInfo* cmdtype;
 	asIScriptObject* cmd;
-	asIScriptContext* context;
+	size_t context_handle;
 	asIScriptEngine* engine;
+	ASContextPool* context_pool;
 	MemoryPool* pMemPool; //Memory pool space for this struct was allocated on
 };
 
@@ -20,11 +21,12 @@ void* ASAPI_RunScriptCommand(void* pArgs)
 {
 	struct RunScriptCmdPkg* pPkg = (struct RunScriptCmdPkg*) pArgs;
 	asIScriptFunction* func = pPkg->cmdtype->GetMethodByDecl("int opCall()");
-	pPkg->context = pPkg->engine->CreateContext();
-	pPkg->context->Prepare(func);
-	pPkg->context->SetObject(pPkg->cmd);
-	pPkg->context->Execute();
-	pPkg->context->Release();
+	ASContextPool* pctx_pool = pPkg->context_pool;
+	asIScriptContext* context = ASContextPool_GetContextAt(pctx_pool, pPkg->context_handle);
+	context->Prepare(func);
+	context->SetObject(pPkg->cmd);
+	context->Execute();
+	ASContextPool_ReturnContextByIndex(pctx_pool, pPkg->context_handle);
 	printf("Running script function\n");
 	MemoryPool_Free(pPkg->pMemPool, sizeof(struct RunScriptCmdPkg), pArgs);
 
@@ -44,6 +46,9 @@ void ASAPI_QueueScriptCommand(struct Server* server, asIScriptObject* obj, unsig
 		pkg->pMemPool = &server->as_manager.mem_pool;
 		//	pkg->context = server->as_manager.engine->CreateContext();//Need to find a way to manage contexts, in a pool
 		pkg->engine = server->as_manager.engine;
+		size_t hfreectx = ASContextPool_GetFreeContextIndex(&server->as_manager.ctx_pool);
+		pkg->context_pool = &server->as_manager.ctx_pool;
+		pkg->context_handle = hfreectx;
 		Server_AddTimedTask(server, ASAPI_RunScriptCommand,
 				time(0) + delay, pkg, 0);
 	}

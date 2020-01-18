@@ -8,6 +8,18 @@
 
 extern "C" typedef struct
 {
+	asIScriptContext** pContextArray;
+	unsigned char* pInUseArray;
+
+	size_t ctx_count;
+
+	asIScriptEngine* pEngine;
+
+	pthread_mutex_t mtx;
+} ASContextPool;
+
+extern "C" typedef struct
+{
 	asIScriptEngine* engine;
 	asCJITCompiler* jit;
 
@@ -17,6 +29,7 @@ extern "C" typedef struct
 	asIScriptContext* world_tick_scriptcontext;
 
 	MemoryPool mem_pool;
+	ASContextPool ctx_pool;
 }
 AngelScriptManager;
 
@@ -26,6 +39,10 @@ extern "C" int AngelScriptManager_InitAPI(AngelScriptManager* manager, struct Se
 extern "C" void AngelScriptManager_RunWorldTick(AngelScriptManager* manager);
 extern "C" void AngelScriptManager_ReleaseEngine(AngelScriptManager* manager);
 
-asIScriptContext *RequestContextCallback(asIScriptEngine *engine, void *param);
-void ReturnContextToPool(asIScriptEngine *engine, asIScriptContext *ctx, void *param);
+int ASContextPool_Init(ASContextPool* pPool, asIScriptEngine* pEngine, size_t initial_size);
+asIScriptContext* ASContextPool_GetContextAt(ASContextPool* pPool, size_t idx);
+void ASContextPool_ReturnContextByIndex(ASContextPool* pPool, size_t idx);
+size_t ASContextPool_GetFreeContextIndex(ASContextPool* pPool);
+void ASContextPool_Destroy(ASContextPool* pPool);
+
 #endif
