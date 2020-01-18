@@ -22,6 +22,14 @@ void* ASAPI_RunScriptCommand(void* pArgs)
 	struct RunScriptCmdPkg* pPkg = (struct RunScriptCmdPkg*) pArgs;
 	asIScriptFunction* func = pPkg->cmdtype->GetMethodByDecl("int opCall()");
 	ASContextPool* pctx_pool = pPkg->context_pool;
+
+	//The faster alternative to a context pool would be giving the
+	//threadpool workers each their own context they would reuse
+	//for every task they ran which required it. This would
+	//require differentiating between a script task and an
+	//internally generated task everywhere tasks are handled,
+	//however, resulting in a slightly less flexible design.
+
 	asIScriptContext* context = ASContextPool_GetContextAt(pctx_pool, pPkg->context_handle);
 	context->Prepare(func);
 	context->SetObject(pPkg->cmd);

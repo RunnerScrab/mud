@@ -39,7 +39,11 @@ int AngelScriptManager_InitEngine(AngelScriptManager* manager)
 	RegisterStdString(manager->engine);
 	RegisterScriptArray(manager->engine, true);
 	manager->engine->SetMessageCallback(asFUNCTION(as_MessageCallback), 0, asCALL_CDECL);
+	#ifdef DEBUG
 	ASContextPool_Init(&manager->ctx_pool, manager->engine, 1);
+	#else
+	ASContextPool_Init(&manager->ctx_pool, manager->engine, 32);
+	#endif
 	return 0;
 }
 
