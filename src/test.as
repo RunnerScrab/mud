@@ -25,3 +25,8 @@ void GameTick()
 	game_server.QueueScriptCommand(tc, 4);
 	game_server.QueueScriptCommand(tc, 2);
 }
+
+void OnPlayerConnect(Player@ player)
+{
+	Log("OnPlayerConnect()");
+}

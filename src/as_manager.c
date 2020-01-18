@@ -2,6 +2,7 @@
 #include "server.h"
 #include "as_api.h"
 #include "talloc.h"
+#include "player.h"
 #include "./angelscriptsdk/sdk/angelscript/source/scriptstdstring.h"
 #include "./angelscriptsdk/sdk/angelscript/source/scriptarray.h"
 
@@ -13,6 +14,8 @@
 #include <memory>
 
 #define RETURNFAIL_IF(x) if(x){return -1;}
+
+
 
 void as_MessageCallback(const asSMessageInfo* msg, void* param)
 {
@@ -38,11 +41,11 @@ int AngelScriptManager_InitEngine(AngelScriptManager* manager)
 	RegisterStdString(manager->engine);
 	RegisterScriptArray(manager->engine, true);
 	manager->engine->SetMessageCallback(asFUNCTION(as_MessageCallback), 0, asCALL_CDECL);
-	#ifdef DEBUG
+#ifdef DEBUG
 	ASContextPool_Init(&manager->ctx_pool, manager->engine, 1);
-	#else
+#else
 	ASContextPool_Init(&manager->ctx_pool, manager->engine, 32);
-	#endif
+#endif
 	return 0;
 }
 
@@ -50,12 +53,14 @@ int AngelScriptManager_InitAPI(AngelScriptManager* manager, struct Server* serve
 {
 	int result = 0;
 	asIScriptEngine* pEngine = manager->engine;
+	result = RegisterPlayerProxyClass(pEngine, manager->main_module);
+	RETURNFAIL_IF(result < 0);
 
 	result = pEngine->RegisterObjectType("Server", 0, asOBJ_REF | asOBJ_NOCOUNT);
 	RETURNFAIL_IF(result < 0);
 
 	result = pEngine->RegisterObjectMethod("Server", "void SendToAll(string& in)",
-						asFUNCTION(ASAPI_SendToAll), asCALL_CDECL_OBJFIRST);
+					asFUNCTION(ASAPI_SendToAll), asCALL_CDECL_OBJFIRST);
 	RETURNFAIL_IF(result < 0);
 
 	result = pEngine->RegisterInterface("ICommand");
@@ -96,7 +101,7 @@ int AngelScriptManager_LoadScripts(AngelScriptManager* manager, const char* scri
 
 	manager->main_module = manager->engine->GetModule(0, asGM_ALWAYS_CREATE);
 	RETURNFAIL_IF(manager->main_module->AddScriptSection("game", &script[0], len) < 0);
-
+	RETURNFAIL_IF(LoadPlayerScript(manager->engine, manager->main_module));
 	RETURNFAIL_IF(manager->main_module->Build() < 0);
 
 	manager->jit->finalizePages();
@@ -104,9 +109,21 @@ int AngelScriptManager_LoadScripts(AngelScriptManager* manager, const char* scri
 	manager->world_tick_func = manager->engine->GetModule(0)->GetFunctionByDecl("void GameTick()");
 	RETURNFAIL_IF(0 == manager->world_tick_func);
 
+	manager->on_player_connect_func = manager->engine->GetModule(0)->GetFunctionByDecl("void OnPlayerConnect(Player@ player)");
+	RETURNFAIL_IF(0 == manager->on_player_connect_func);
+
 	manager->world_tick_scriptcontext = manager->engine->CreateContext();
 
 	return 0;
+}
+
+void AngelScriptManager_CallOnPlayerConnect(AngelScriptManager* manager, struct Client* pClient)
+{
+	size_t idx = ASContextPool_GetFreeContextIndex(&manager->ctx_pool);
+	asIScriptContext* ctx = ASContextPool_GetContextAt(&manager->ctx_pool, idx);
+	ctx->Prepare(manager->on_player_connect_func);
+	ctx->Execute();
+	ASContextPool_ReturnContextByIndex(&manager->ctx_pool, idx);
 }
 
 void AngelScriptManager_RunWorldTick(AngelScriptManager* manager)

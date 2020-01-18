@@ -418,7 +418,7 @@ void* HandleUserInputTask(void* pArg)
 		}
 		else if(cbuf->data[cbuf->length - 2] == 13)
 		{
-			//in CHAR mode - do we really want to support this
+			//in CHAR mode
 			--cbuf->length;
 			cv_push(cbuf, 0);
 			inputcomplete = 1;
@@ -574,6 +574,7 @@ int Server_AcceptClient(struct Server* server)
 		TelnetStream_SendPreamble(&pConnectingClient->tel_stream);
 
 		Server_SendClientMotd(server, pConnectingClient);
+		AngelScriptManager_CallOnPlayerConnect(&server->as_manager, 0);
 #ifdef DEBUG
 		Client_Sendf(pConnectingClient, "\r\n`#ff0000`*****The server is running as a DEBUG build*****`default`\r\n\r\n");
 #endif
