@@ -1,6 +1,7 @@
 #ifndef CLIENT_H_
 #define CLIENT_H_
 #include <sys/socket.h>
+#include <arpa/inet.h>
 #include <stdarg.h>
 #include <time.h>
 #include "telnet.h"
@@ -22,7 +23,7 @@ struct Client
 {
 	int sock;
 	struct EvPkg ev_pkg;
-	struct sockaddr addr;
+	struct sockaddr_in addr;
 
 	TelnetStream tel_stream;
 	ZCompressor zstreams;

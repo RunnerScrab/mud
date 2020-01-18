@@ -12,6 +12,8 @@
 #include <pthread.h>
 #include <memory>
 
+#define RETURNFAIL_IF(x) if(x){return -1;}
+
 void as_MessageCallback(const asSMessageInfo* msg, void* param)
 {
 	const char *type = "ERR ";
@@ -31,10 +33,7 @@ int AngelScriptManager_InitEngine(AngelScriptManager* manager)
 
 	manager->engine->SetEngineProperty(asEP_INCLUDE_JIT_INSTRUCTIONS, 1);
 	manager->engine->SetJITCompiler(manager->jit);
-	if(!manager->engine)
-	{
-		return -1;
-	}
+	RETURNFAIL_IF(!manager->engine);
 
 	RegisterStdString(manager->engine);
 	RegisterScriptArray(manager->engine, true);
@@ -53,53 +52,27 @@ int AngelScriptManager_InitAPI(AngelScriptManager* manager, struct Server* serve
 	asIScriptEngine* pEngine = manager->engine;
 
 	result = pEngine->RegisterObjectType("Server", 0, asOBJ_REF | asOBJ_NOCOUNT);
-	if(result < 0)
-	{
-		return -1;
-	}
+	RETURNFAIL_IF(result < 0);
 
 	result = pEngine->RegisterObjectMethod("Server", "void SendToAll(string& in)",
 						asFUNCTION(ASAPI_SendToAll), asCALL_CDECL_OBJFIRST);
-	if(result < 0)
-	{
-		return -1;
-	}
+	RETURNFAIL_IF(result < 0);
 
 	result = pEngine->RegisterInterface("ICommand");
+	RETURNFAIL_IF(result < 0);
 
-	if(result < 0)
-	{
-		return -1;
-	}
-
-	pEngine->RegisterInterfaceMethod("ICommand", "int opCall()");
-
-	if(result < 0)
-	{
-		return -1;
-	}
+	result = pEngine->RegisterInterfaceMethod("ICommand", "int opCall()");
+	RETURNFAIL_IF(result < 0);
 
 	result = pEngine->RegisterObjectMethod("Server", "void QueueScriptCommand(ICommand@+ cmd, uint32 delay)",
 					asFUNCTION(ASAPI_QueueScriptCommand), asCALL_CDECL_OBJFIRST);
-
-	if(result < 0)
-	{
-		return -1;
-	}
+	RETURNFAIL_IF(result < 0);
 
 	result = pEngine->RegisterGlobalFunction("void Log(string& in)", asFUNCTION(ASAPI_Log), asCALL_CDECL);
-
-	if(result < 0)
-	{
-		return -1;
-	}
+	RETURNFAIL_IF(result < 0);
 
 	result = pEngine->RegisterGlobalProperty("Server game_server", server);
-	if(result < 0)
-	{
-		return -1;
-	}
-
+	RETURNFAIL_IF(result < 0);
 
 	return 0;
 }
@@ -110,39 +83,26 @@ int AngelScriptManager_LoadScripts(AngelScriptManager* manager, const char* scri
 	std::string script;
 	std::string scriptpath = std::string(script_dir) + "/test.as";
 	FILE* fp = fopen(scriptpath.c_str(), "rb");
-	if(!fp)
-	{
-		return -1;
-	}
+	RETURNFAIL_IF(!fp);
+
 	fseek(fp, 0, SEEK_END);
 	size_t len = ftell(fp);
 	fseek(fp, 0, SEEK_SET);
 	script.resize(len);
 
-	if(fread(&script[0], len, 1, fp) <= 0)
-	{
-		return -1;
-	}
+	RETURNFAIL_IF(fread(&script[0], len, 1, fp) <= 0);
+
 	fclose(fp);
 
 	manager->main_module = manager->engine->GetModule(0, asGM_ALWAYS_CREATE);
-	if(manager->main_module->AddScriptSection("game", &script[0], len) < 0)
-	{
-		return -1;
-	}
+	RETURNFAIL_IF(manager->main_module->AddScriptSection("game", &script[0], len) < 0);
 
-	if(manager->main_module->Build() < 0)
-	{
-		return -1;
-	}
+	RETURNFAIL_IF(manager->main_module->Build() < 0);
 
 	manager->jit->finalizePages();
 
 	manager->world_tick_func = manager->engine->GetModule(0)->GetFunctionByDecl("void GameTick()");
-	if(0 == manager->world_tick_func)
-	{
-		return -1;
-	}
+	RETURNFAIL_IF(0 == manager->world_tick_func);
 
 	manager->world_tick_scriptcontext = manager->engine->CreateContext();
 
@@ -172,10 +132,8 @@ int ASContextPool_Init(ASContextPool* pPool, asIScriptEngine* pEngine, size_t in
 	pPool->pContextArray = (asIScriptContext**) talloc(sizeof(asIScriptContext*) * initial_size);
 	pPool->pInUseArray = (unsigned char*) talloc(sizeof(unsigned char) * initial_size);
 
-	if(!pPool->pContextArray || !pPool->pInUseArray)
-	{
-		return -1;
-	}
+	RETURNFAIL_IF(!pPool->pContextArray || !pPool->pInUseArray);
+
 	memset(pPool->pContextArray, 0, sizeof(asIScriptContext*) * initial_size);
 	memset(pPool->pInUseArray, 0, sizeof(unsigned char) * initial_size);
 
@@ -200,6 +158,7 @@ asIScriptContext* ASContextPool_GetContextAt(ASContextPool* pPool, size_t idx)
 
 void ASContextPool_ReturnContextByIndex(ASContextPool* pPool, size_t idx)
 {
+	//Mark context as usable again.
 	pPool->pInUseArray[idx] = (unsigned char) 0;
 }
 

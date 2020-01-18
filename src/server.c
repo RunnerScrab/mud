@@ -430,8 +430,14 @@ void* HandleUserInputTask(void* pArg)
 		//At this point, we have a complete user command and can process it
 		/* DEMO CODE */
 		printf("Received: %s\n", cbuf->data);
-		Client_Sendf(pClient, "You sent: %s\r\n\r\n",
-			cbuf->data);
+		char out[64] = {0};
+		if(!inet_ntop(pClient->addr.sin_family, (void*) &pClient->addr.sin_addr, out, sizeof(char) * 64))
+		{
+			ServerLog(SERVERLOG_ERROR, "Couldn't convert client address.");
+		}
+		Client_Sendf(pClient, "You (%s) sent: %s\r\n\r\n",
+			out, cbuf->data);
+
 		// TODO: Process data here
 
 		if(strstr(cbuf->data, "kill"))
@@ -545,17 +551,19 @@ void Server_HandleUserInput(struct Server* pServer, struct Client* pClient)
 
 int Server_AcceptClient(struct Server* server)
 {
-	unsigned int addrlen = 0;
+	unsigned int addrlen = sizeof(struct sockaddr);
 	struct Client* pConnectingClient = 0;
 
+	struct sockaddr connaddr;
 
 	int accepted_sock = accept(server->sockfd,
-				&(pConnectingClient->addr), &addrlen);
+				&connaddr, &addrlen);
 	if(SUCCESS(accepted_sock))
 	{
 		ServerLog(SERVERLOG_STATUS, "Client connected.\n");
 
 		pConnectingClient = Client_Create(accepted_sock, &server->cmd_dispatch_thread);
+		memcpy(&pConnectingClient->addr, &connaddr, sizeof(struct sockaddr_in));
 		struct epoll_event clev;
 		clev.events = EPOLLIN | EPOLLONESHOT;
 		clev.data.ptr = &(pConnectingClient->ev_pkg); //This is kind of convoluted, but it's EPOLL
