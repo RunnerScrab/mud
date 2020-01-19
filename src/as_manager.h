@@ -26,25 +26,29 @@ extern "C" typedef struct
 	asIScriptModule* main_module;
 
 	asIScriptFunction* world_tick_func, *on_player_connect_func;
+	asIScriptFunction* on_player_disconnect_func;
 	asIScriptContext* world_tick_scriptcontext;
 
 	MemoryPool mem_pool;
 	ASContextPool ctx_pool;
 }
-AngelScriptManager;
+	AngelScriptManager;
 
-extern "C" int AngelScriptManager_InitEngine(AngelScriptManager* manager);
-extern "C" int AngelScriptManager_LoadScripts(AngelScriptManager* manager, const char* script_dir);
-extern "C" int AngelScriptManager_InitAPI(AngelScriptManager* manager, struct Server* server);
-extern "C" void AngelScriptManager_RunWorldTick(AngelScriptManager* manager);
-extern "C" void AngelScriptManager_ReleaseEngine(AngelScriptManager* manager);
+extern "C"
+{
+	int AngelScriptManager_InitEngine(AngelScriptManager* manager);
+	int AngelScriptManager_LoadScripts(AngelScriptManager* manager, const char* script_dir);
+	int AngelScriptManager_InitAPI(AngelScriptManager* manager, struct Server* server);
+	void AngelScriptManager_RunWorldTick(AngelScriptManager* manager);
+	void AngelScriptManager_ReleaseEngine(AngelScriptManager* manager);
 
-void AngelScriptManager_CallOnPlayerConnect(AngelScriptManager* manager, struct Client* pClient);
+	void AngelScriptManager_CallOnPlayerConnect(AngelScriptManager* manager, struct Client* pClient);
+	void AngelScriptManager_CallOnPlayerDisconnect(AngelScriptManager* manager, struct Client* pClient);
 
-int ASContextPool_Init(ASContextPool* pPool, asIScriptEngine* pEngine, size_t initial_size);
-asIScriptContext* ASContextPool_GetContextAt(ASContextPool* pPool, size_t idx);
-void ASContextPool_ReturnContextByIndex(ASContextPool* pPool, size_t idx);
-size_t ASContextPool_GetFreeContextIndex(ASContextPool* pPool);
-void ASContextPool_Destroy(ASContextPool* pPool);
-
+	int ASContextPool_Init(ASContextPool* pPool, asIScriptEngine* pEngine, size_t initial_size);
+	asIScriptContext* ASContextPool_GetContextAt(ASContextPool* pPool, size_t idx);
+	void ASContextPool_ReturnContextByIndex(ASContextPool* pPool, size_t idx);
+	size_t ASContextPool_GetFreeContextIndex(ASContextPool* pPool);
+	void ASContextPool_Destroy(ASContextPool* pPool);
+}
 #endif

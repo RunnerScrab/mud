@@ -14,6 +14,7 @@
 struct Client* Client_Create(int sock, struct CmdDispatchThread* pDispatcher)
 {
 	struct Client* pClient = (struct Client*) talloc(sizeof(struct Client));
+	pClient->player_obj = 0;
 	pClient->pCmdDispatcher = pDispatcher;
 	memset(&pClient->tel_stream, 0, sizeof(TelnetStream));
 
@@ -38,6 +39,11 @@ struct Client* Client_Create(int sock, struct CmdDispatchThread* pDispatcher)
 	return pClient;
 }
 
+void Client_Disconnect(struct Client* pClient)
+{
+	close(pClient->sock);
+}
+
 void Client_Destroy(void* p)
 {
 	struct Client* pClient = (struct Client*) p;
@@ -50,6 +56,12 @@ void Client_Destroy(void* p)
 	hrt_prioq_destroy(&pClient->cmd_queue);
 	pthread_mutex_destroy(&pClient->cmd_queue_mtx);
 	MemoryPool_Destroy(&pClient->mem_pool);
+
+	if(pClient->player_obj)
+	{
+		pClient->player_obj->Release();
+		pClient->player_obj = 0;
+	}
 	tfree(pClient);
 }
 

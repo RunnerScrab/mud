@@ -169,15 +169,18 @@ int Server_Teardown(struct Server* pServer)
 	prioq_destroy(&pServer->timed_queue);
 	tfree(pServer->evlist);
 	ThreadPool_Destroy(&pServer->thread_pool);
+	ServerLog(SERVERLOG_STATUS, "Destroying client vector.");
 
-	pthread_rwlock_wrlock(&pServer->clients_rwlock);
+
 	Vector_Destroy(&pServer->clients);
 	pthread_rwlock_destroy(&pServer->clients_rwlock);
-
+	ServerLog(SERVERLOG_STATUS, "Client vector destroyed.");
 	close(pServer->sockfd);
 	close(pServer->cmd_pipe[0]);
 	close(pServer->cmd_pipe[1]);
+	ServerLog(SERVERLOG_STATUS, "Releasing Angelscript Engine.");
 	AngelScriptManager_ReleaseEngine(&pServer->as_manager);
+	ServerLog(SERVERLOG_STATUS, "Released Angelscript Engine.");
 	asThreadCleanup();
 	return 0;
 }
@@ -275,6 +278,7 @@ void Server_HandleClientDisconnect(struct Server* pServer,
 				struct Client* pClient)
 {
 	ServerLog(SERVERLOG_STATUS, "Client disconnected.");
+	AngelScriptManager_CallOnPlayerDisconnect(&pServer->as_manager, pClient);
 	size_t foundkey = 0;
 
 	pthread_rwlock_wrlock(&pServer->clients_rwlock);
@@ -287,7 +291,9 @@ void Server_HandleClientDisconnect(struct Server* pServer,
 		close(pClient->sock);
 		//This should actually be done automatically, according to man epoll
 		epoll_ctl(pServer->epfd, EPOLL_CTL_DEL, pClient->sock, 0);
-		Vector_Remove(&(pServer->clients), foundkey);
+		printf("Client vec size: %lu\n", Vector_Count(&pServer->clients));
+		Vector_Remove(&pServer->clients, foundkey);
+		printf("Client vec size after remove: %lu\n", Vector_Count(&pServer->clients));
 	}
 	pthread_rwlock_unlock(&pServer->clients_rwlock);
 }
@@ -349,6 +355,7 @@ void* HandleUserInputTask(void* pArg)
 	struct Server* pServer = pPkg->pServer;
 	struct Client* pClient = pPkg->pClient;
 
+	unsigned char bClientDisconnected = 0;
 	cv_t clientinput;
 	cv_init(&clientinput, CLIENT_MAXINPUTLEN);
 	size_t bytes_read = read_to_cv(pClient->sock, &clientinput, 0, CLIENT_MAXINPUTLEN);
@@ -452,6 +459,11 @@ void* HandleUserInputTask(void* pArg)
 
 			Server_WriteToCmdPipe(pServer, "kill", 5);
 		}
+		else if(strstr(cbuf->data, "quit"))
+		{
+			Server_DisconnectClient(pServer, pClient);
+			bClientDisconnected = 1;
+		}
 		else if(strstr(cbuf->data, "testtimer"))
 		{
 			//TODO: Delete this
@@ -470,16 +482,23 @@ void* HandleUserInputTask(void* pArg)
 					current_ts.tv_nsec, (void*) pServer, 0);
 		}
 
-		cv_clear(cbuf);
+		if(!bClientDisconnected)
+		{
+			cv_clear(cbuf);
+		}
 		/* END DEMO CODE */
 	}
 	else if(!bytes_read)
 	{
 		Server_HandleClientDisconnect(pServer, pClient);
+		bClientDisconnected = 1;
 	}
 
-	//Need to rearm the socket in the epoll interest list
-	RearmClientSocket(pServer, pClient);
+	if(!bClientDisconnected)
+	{
+		//Need to rearm the socket in the epoll interest list
+		RearmClientSocket(pServer, pClient);
+	}
 	cv_destroy(&clientinput);
 	return 0;
 }
@@ -506,6 +525,7 @@ void Server_HandleUserInput(struct Server* pServer, struct Client* pClient)
 		//to perform negotiation, which means a very high command rate.
 		//We don't want to throttle/boot a user because of or during negotiation.
 
+		//TODO: Change this to a bitrate limit
 		float interval = TimeDiffSecs(&curtime, &pClient->last_input_time);
 
 		pClient->cmd_intervals[pClient->interval_idx] = interval;

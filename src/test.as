@@ -44,3 +44,8 @@ void OnPlayerConnect(Player@ player)
 		hPlayer.Send("Handle assigned.\r\n");
 	}
 }
+
+void OnPlayerDisconnect(Player@ player)
+{
+	Log("Someone disconnected.\r\n");
+}

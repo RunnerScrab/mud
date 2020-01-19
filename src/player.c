@@ -66,7 +66,7 @@ Player* Player::Factory()
 	}
 
 	// Get the this pointer from the calling function so the Player C++
-	// class can be linked with the FooScript script class
+	// class can be linked with the Player script class
 	asIScriptObject *obj = reinterpret_cast<asIScriptObject*>(ctx->GetThisPointer(0));
 
 	return new Player(obj);

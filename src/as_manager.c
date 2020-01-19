@@ -15,8 +15,6 @@
 
 #define RETURNFAIL_IF(x) if(x){return -1;}
 
-
-
 void as_MessageCallback(const asSMessageInfo* msg, void* param)
 {
 	const char *type = "ERR ";
@@ -112,17 +110,36 @@ int AngelScriptManager_LoadScripts(AngelScriptManager* manager, const char* scri
 	manager->on_player_connect_func = manager->engine->GetModule(0)->GetFunctionByDecl("void OnPlayerConnect(Player@ player)");
 	RETURNFAIL_IF(0 == manager->on_player_connect_func);
 
+	manager->on_player_disconnect_func = manager->engine->GetModule(0)->GetFunctionByDecl("void OnPlayerDisconnect(Player@ player)");
+	RETURNFAIL_IF(0 == manager->on_player_disconnect_func);
+
 	manager->world_tick_scriptcontext = manager->engine->CreateContext();
 
 	return 0;
 }
 
+void AngelScriptManager_CallOnPlayerDisconnect(AngelScriptManager* manager, struct Client* pClient)
+{
+	size_t idx = ASContextPool_GetFreeContextIndex(&manager->ctx_pool);
+	asIScriptContext* ctx = ASContextPool_GetContextAt(&manager->ctx_pool, idx);
+	ctx->Prepare(manager->on_player_disconnect_func);
+
+	ctx->SetArgObject(0, pClient->player_obj);
+	ctx->Execute();
+
+	ASContextPool_ReturnContextByIndex(&manager->ctx_pool, idx);
+}
+
 void AngelScriptManager_CallOnPlayerConnect(AngelScriptManager* manager, struct Client* pClient)
 {
+	return;
 	size_t idx = ASContextPool_GetFreeContextIndex(&manager->ctx_pool);
 	asIScriptContext* ctx = ASContextPool_GetContextAt(&manager->ctx_pool, idx);
 	ctx->Prepare(manager->on_player_connect_func);
 	asIScriptObject* playerobj = CreatePlayerProxy(manager, pClient);
+
+	pClient->player_obj = playerobj;
+
 	ctx->SetArgObject(0, playerobj);
 	ctx->Execute();
 	playerobj->Release();

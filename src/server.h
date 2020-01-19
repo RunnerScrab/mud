@@ -14,6 +14,7 @@
 
 #include "tickthread.h"
 #include "command_dispatch.h"
+#include <unordered_map>
 
 #define SUCCESS(x) (x >= 0)
 #define FAILURE(x) (x < 0)

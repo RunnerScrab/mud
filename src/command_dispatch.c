@@ -68,7 +68,6 @@ void* UserCommandDispatchThreadFn(void* pArgs)
 			continue;
 		}
 
-
 		pthread_rwlock_rdlock(&pServer->clients_rwlock);
 		ZeroTs(&min_delay_ts);
 
@@ -115,6 +114,8 @@ void* UserCommandDispatchThreadFn(void* pArgs)
 		else
 		{
 			printf("min_delay_ts is zero\n");
+			//We should wait indefinitely if there are no user commands queued,
+			//but an hour is just as good in CPU thread time
 			wait_ts.tv_sec = (current_ts.tv_sec + 3600);
 			wait_ts.tv_nsec = current_ts.tv_nsec;
 		}
@@ -128,7 +129,7 @@ void* UserCommandDispatchThreadFn(void* pArgs)
 		printf("WAKING: Wait done at %ld ; %ld\n", wait_ts.tv_sec, wait_ts.tv_nsec);
 
 	}
-	printf("Leaving loop\n");
+	ServerLog(SERVERLOG_STATUS, "Command Dispatch thread exiting.");
 	asThreadCleanup();
 	return (void*) 0;
 }

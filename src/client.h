@@ -10,6 +10,7 @@
 #include "zcompressor.h"
 #include "hrt_prioq.h"
 #include "poolalloc.h"
+#include <angelscript.h>
 
 struct EvPkg
 {
@@ -41,9 +42,11 @@ struct Client
 
 	struct CmdDispatchThread* pCmdDispatcher;
 	struct MemoryPool mem_pool;
+
+	asIScriptObject* player_obj;
 };
 
-
+void Client_Disconnect(struct Client* pTarget);
 int Client_WriteTo(struct Client* pTarget, const char* buf, size_t len);
 void Client_Sendf(struct Client* pTarget, const char* fmt, ...);
 struct Client* Client_Create(int sock, struct CmdDispatchThread*);
