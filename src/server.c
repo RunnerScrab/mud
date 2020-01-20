@@ -451,6 +451,7 @@ void* HandleUserInputTask(void* pArg)
 			out, cbuf->data);
 
 		// TODO: Process data here
+		AngelScriptManager_CallOnPlayerInput(&pServer->as_manager, pClient, cbuf->data);
 
 		if(strstr(cbuf->data, "kill"))
 		{

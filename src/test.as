@@ -30,6 +30,10 @@ void GameTick()
 	{
 		hPlayer.Send("Ticking for player\r\n");
 	}
+	else
+	{
+		Log("There are no players connected.\r\n");
+	}
 }
 
 
@@ -48,4 +52,14 @@ void OnPlayerConnect(Player@ player)
 void OnPlayerDisconnect(Player@ player)
 {
 	Log("Someone disconnected.\r\n");
+	if(@hPlayer is @player)
+	{
+		@hPlayer = null;
+	}
+}
+
+void OnPlayerInput(Player@ player, string msg)
+{
+	Log("Received player input.\r\n");
+	player.Send("You sent: " + msg + "\r\n");
 }

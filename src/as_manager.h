@@ -26,7 +26,7 @@ extern "C" typedef struct
 	asIScriptModule* main_module;
 
 	asIScriptFunction* world_tick_func, *on_player_connect_func;
-	asIScriptFunction* on_player_disconnect_func;
+	asIScriptFunction* on_player_disconnect_func, *on_player_input_func;
 	asIScriptContext* world_tick_scriptcontext;
 
 	MemoryPool mem_pool;
@@ -44,6 +44,9 @@ extern "C"
 
 	void AngelScriptManager_CallOnPlayerConnect(AngelScriptManager* manager, struct Client* pClient);
 	void AngelScriptManager_CallOnPlayerDisconnect(AngelScriptManager* manager, struct Client* pClient);
+	void AngelScriptManager_CallOnPlayerInput(AngelScriptManager* manager, struct Client* pClient,
+						const char* input);
+
 
 	int ASContextPool_Init(ASContextPool* pPool, asIScriptEngine* pEngine, size_t initial_size);
 	asIScriptContext* ASContextPool_GetContextAt(ASContextPool* pPool, size_t idx);
