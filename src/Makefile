@@ -3,9 +3,18 @@ CFLAGS = -Wall -g
 LDLIBS = -pthread -lcheck -lz
 OUTPUT_OPTION = -MMD -MP -o $@
 
-SOURCE = $(wildcard *.c)
-OBJS = $(SOURCE:.c=.o)
-DEPS = $(SOURCE:.c=.d)
+CSOURCE := $(wildcard *.c)
+CXXSOURCE := $(wildcard *.cpp)
+
+COBJS := $(CSOURCE:.c=.o)
+CXXOBJS := $(CXXSOURCE:.cpp=.o)
+
+CDEPS := $(CSOURCE:.c=.d)
+CXXDEPS := $(CXXSOURCE:.cpp=.d)
+
+
+OBJS := $(COBJS) $(CXXOBJS)
+DEPS := $(CDEPS) $(CXXDEPS)
 LIBS = libangelscript.a
 
 mud: ${OBJS}
