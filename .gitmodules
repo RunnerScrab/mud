@@ -1,3 +1,6 @@
 [submodule "src/angelscriptsdk"]
 	path = src/angelscriptsdk
 	url = https://github.com/RunnerScrab/angelscript-mirror.git
+[submodule "src/libsodium"]
+	path = src/libsodium
+	url = https://github.com/jedisct1/libsodium.git

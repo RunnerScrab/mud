@@ -28,7 +28,7 @@ void cv_clear(cv_t* cv);
 int cv_remove(cv_t* cv, el_t targ); //Deprecated for char sequences
 
 el_t cv_at(cv_t* cv, size_t idx);
-int cv_len(cv_t* cv);
+size_t cv_len(cv_t* cv);
 
 void cv_sprintf(cv_t* pcv, const char* fmt, ...);
 

@@ -21,6 +21,7 @@
 #include "telnet.h"
 #include "zcompressor.h"
 #include "ansicolor.h"
+#include "crypto.h"
 
 #include "tickthread.h"
 
@@ -149,6 +150,13 @@ int Server_Configure(struct Server* server, const char* szAddr, unsigned short p
 	}
 	pthread_rwlock_unlock(&server->clients_rwlock);
 
+	if(FAILURE(CryptoManager_Init(&server->crypto_manager)))
+	{
+		ServerLog(SERVERLOG_ERROR, "FATAL: Failed to initialize cryptographic module!");
+		Server_Teardown(server);
+		return -1;
+	}
+
 	MemoryPool_Init(&server->mem_pool);
 
 
@@ -157,6 +165,7 @@ int Server_Configure(struct Server* server, const char* szAddr, unsigned short p
 
 int Server_Teardown(struct Server* pServer)
 {
+	CryptoManager_Destroy(&pServer->crypto_manager);
 	TickThread_Stop(&pServer->game_tick_thread);
 	CmdDispatchThread_Stop(&pServer->cmd_dispatch_thread);
 	CmdDispatchThread_Destroy(&pServer->cmd_dispatch_thread);

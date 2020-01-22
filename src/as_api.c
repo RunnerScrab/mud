@@ -1,5 +1,7 @@
 #include "as_api.h"
 #include "poolalloc.h"
+#include "crypto.h"
+#include "charvector.h"
 #include <ctype.h>
 
 void ASAPI_SendToAll(struct Server* server, std::string& message)
@@ -72,4 +74,21 @@ void ASAPI_TrimString(const std::string& in, std::string& out)
 	size_t idx = in.length() - 1;
 	for(; idx > 0 && isspace(in[idx]); --idx);
 	out = in.substr(0, idx + 1);
+}
+
+void ASAPI_HashPassword(const std::string& password, std::string& out)
+{
+	cv_t buf;
+	cv_init(&buf, 256);
+	printf("Received '%s' to hash.\n", password.c_str());
+	if(CryptoManager_HashPassword(password.c_str(), password.length(), &buf) >= 0)
+	{
+		printf("Hash successful. Result: '%s'\n", buf.data);
+		out.assign(buf.data);
+	}
+	else
+	{
+		printf("Hashing FAILED!\n");
+	}
+	cv_destroy(&buf);
 }

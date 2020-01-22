@@ -17,14 +17,14 @@ class TestCommand : ICommand
 	}
 };
 
-enum PlayerGameState {ACCOUNT_ENTRY = 0, INPUT };
+enum PlayerGameState {ACCOUNT_NAME_ENTRY = 0, ACCOUNT_PASSWORD_ENTRY };
 class Player : PlayerConnection
 {
 
 	Player()
 	{
 		super();
-		m_gamestate = PlayerGameState::ACCOUNT_ENTRY;
+		m_gamestate = PlayerGameState::ACCOUNT_NAME_ENTRY;
 	}
 
 	PlayerGameState GetPlayerGameState()
@@ -57,17 +57,17 @@ Player@ hPlayer = null;
 void GameTick()
 {
 /*
-	game_server.SendToAll("`red`Hello!`default`");
-	game_server.QueueScriptCommand(tc, 4);
-	game_server.QueueScriptCommand(tc, 2);
-	if(hPlayer !is null)
-	{
-		hPlayer.Send("Ticking for player\r\n");
-	}
-	else
-	{
-		Log("There are no players connected.\r\n");
-	}
+  game_server.SendToAll("`red`Hello!`default`");
+  game_server.QueueScriptCommand(tc, 4);
+  game_server.QueueScriptCommand(tc, 2);
+  if(hPlayer !is null)
+  {
+  hPlayer.Send("Ticking for player\r\n");
+  }
+  else
+  {
+  Log("There are no players connected.\r\n");
+  }
 */
 }
 
@@ -76,26 +76,26 @@ void GameTick()
 void OnPlayerConnect(Player@ player)
 {
 	player.Send("Account: ");
-	/*
-	Log("OnPlayerConnect()");
-	player.Send("WELCOME!\r\n");
-	@hPlayer = @player;
-	if(hPlayer !is null)
-	{
-		hPlayer.Send("Handle assigned.\r\n");
-	}
-	*/
+/*
+  Log("OnPlayerConnect()");
+  player.Send("WELCOME!\r\n");
+  @hPlayer = @player;
+  if(hPlayer !is null)
+  {
+  hPlayer.Send("Handle assigned.\r\n");
+  }
+*/
 }
 
 void OnPlayerDisconnect(Player@ player)
 {
-	/*
-	Log("Someone disconnected.\r\n");
-	if(@hPlayer is @player)
-	{
-		@hPlayer = null;
-	}
-	*/
+/*
+  Log("Someone disconnected.\r\n");
+  if(@hPlayer is @player)
+  {
+  @hPlayer = null;
+  }
+*/
 }
 
 void OnPlayerInput(Player@ player, string rawinput)
@@ -104,13 +104,18 @@ void OnPlayerInput(Player@ player, string rawinput)
 	TrimString(rawinput, input);
 	switch(player.GetPlayerGameState())
 	{
-	case PlayerGameState::ACCOUNT_ENTRY:
+	case PlayerGameState::ACCOUNT_NAME_ENTRY:
 		player.SetName(input);
-		player.SetPlayerGameState(PlayerGameState::INPUT);
+		player.SetPlayerGameState(PlayerGameState::ACCOUNT_PASSWORD_ENTRY);
 		break;
-	case PlayerGameState::INPUT:
+	case PlayerGameState::ACCOUNT_PASSWORD_ENTRY:
+	{
 		game_server.SendToAll(player.GetName() + " says: " + input + "\r\n");
+		string output;
+		HashPassword(input, output);
+		player.Send("Your password hash is:" + output);
 		break;
+	}
 	default:
 		break;
 	}

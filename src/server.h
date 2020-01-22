@@ -12,6 +12,7 @@
 #include "prioq.h"
 #include "as_manager.h"
 
+#include "crypto.h"
 #include "tickthread.h"
 #include "command_dispatch.h"
 #include <unordered_map>
@@ -50,6 +51,7 @@ struct Server
 	struct CmdDispatchThread cmd_dispatch_thread;
 
 	AngelScriptManager as_manager; //angelscript engine manager
+	CryptoManager crypto_manager;
 	char* MOTD;
 };
 

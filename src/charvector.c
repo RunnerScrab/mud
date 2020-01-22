@@ -150,7 +150,7 @@ el_t cv_at(cv_t* cv, size_t idx)
 	return cv->data[idx];
 }
 
-int cv_len(cv_t* cv)
+size_t cv_len(cv_t* cv)
 {
 	return cv->length;
 }

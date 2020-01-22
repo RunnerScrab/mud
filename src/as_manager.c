@@ -81,6 +81,12 @@ int AngelScriptManager_InitAPI(AngelScriptManager* manager, struct Server* serve
 
 	result = pEngine->RegisterGlobalFunction("void TrimString(const string& in, string& out)", asFUNCTION(ASAPI_TrimString),
 						asCALL_CDECL);
+
+	RETURNFAIL_IF(result < 0);
+
+	result = pEngine->RegisterGlobalFunction("void HashPassword(const string& in, string& out)", asFUNCTION(ASAPI_HashPassword),
+						asCALL_CDECL);
+
 	RETURNFAIL_IF(result < 0);
 
 	return 0;
