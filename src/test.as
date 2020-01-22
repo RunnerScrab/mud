@@ -97,12 +97,14 @@ void OnPlayerDisconnect(Player@ player)
 	*/
 }
 
-void OnPlayerInput(Player@ player, string input)
+void OnPlayerInput(Player@ player, string rawinput)
 {
+	string input;
+	TrimString(rawinput, input);
 	switch(player.GetPlayerGameState())
 	{
 	case PlayerGameState::ACCOUNT_ENTRY:
-		player.SetName(TrimString(input));
+		player.SetName(input);
 		player.SetPlayerGameState(PlayerGameState::INPUT);
 		break;
 	case PlayerGameState::INPUT:

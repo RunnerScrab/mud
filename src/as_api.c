@@ -67,9 +67,9 @@ void ASAPI_Log(std::string& message)
 	ServerLog(SERVERLOG_STATUS, message.c_str());
 }
 
-std::string ASAPI_TrimString(const std::string& buf)
+void ASAPI_TrimString(const std::string& in, std::string& out)
 {
-	size_t idx = buf.length() - 1;
-	for(; idx > 0 && isspace(buf[idx]); --idx);
-	return buf.substr(0, idx + 1);
+	size_t idx = in.length() - 1;
+	for(; idx > 0 && isspace(in[idx]); --idx);
+	out = in.substr(0, idx + 1);
 }
