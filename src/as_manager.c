@@ -119,7 +119,7 @@ int AngelScriptManager_LoadScripts(AngelScriptManager* manager, const char* scri
 	manager->on_player_disconnect_func = manager->engine->GetModule(0)->GetFunctionByDecl("void OnPlayerDisconnect(Player@ player)");
 	RETURNFAIL_IF(0 == manager->on_player_disconnect_func);
 
-	manager->on_player_input_func = manager->engine->GetModule(0)->GetFunctionByDecl("void OnPlayerInput(Player@ player, string message)");
+	manager->on_player_input_func = manager->engine->GetModule(0)->GetFunctionByDecl("void OnPlayerInput(Player@ player, string input)");
 	RETURNFAIL_IF(0 == manager->on_player_input_func);
 
 	manager->world_tick_scriptcontext = manager->engine->CreateContext();

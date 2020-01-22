@@ -46,6 +46,7 @@ class Player : PlayerConnection
 	{
 		m_name = v;
 	}
+
 	private PlayerGameState m_gamestate;
 	private string m_name;
 };
