@@ -447,8 +447,8 @@ void* HandleUserInputTask(void* pArg)
 		{
 			ServerLog(SERVERLOG_ERROR, "Couldn't convert client address.");
 		}
-		Client_Sendf(pClient, "You (%s) sent: %s\r\n\r\n",
-			out, cbuf->data);
+		/* Client_Sendf(pClient, "You (%s) sent: %s\r\n\r\n",
+		   out, cbuf->data);*/
 
 		// TODO: Process data here
 		AngelScriptManager_CallOnPlayerInput(&pServer->as_manager, pClient, cbuf->data);

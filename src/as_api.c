@@ -1,5 +1,6 @@
 #include "as_api.h"
 #include "poolalloc.h"
+#include <ctype.h>
 
 void ASAPI_SendToAll(struct Server* server, std::string& message)
 {
@@ -52,7 +53,6 @@ void ASAPI_QueueScriptCommand(struct Server* server, asIScriptObject* obj, unsig
 		pkg->cmd = obj;
 		pkg->cmdtype = server->as_manager.main_module->GetTypeInfoByDecl("ICommand");
 		pkg->pMemPool = &server->as_manager.mem_pool;
-		//	pkg->context = server->as_manager.engine->CreateContext();//Need to find a way to manage contexts, in a pool
 		pkg->engine = server->as_manager.engine;
 		size_t hfreectx = ASContextPool_GetFreeContextIndex(&server->as_manager.ctx_pool);
 		pkg->context_pool = &server->as_manager.ctx_pool;
@@ -65,4 +65,11 @@ void ASAPI_QueueScriptCommand(struct Server* server, asIScriptObject* obj, unsig
 void ASAPI_Log(std::string& message)
 {
 	ServerLog(SERVERLOG_STATUS, message.c_str());
+}
+
+std::string ASAPI_TrimString(const std::string& buf)
+{
+	size_t idx = buf.length() - 1;
+	for(; idx > 0 && isspace(buf[idx]); --idx);
+	return buf.substr(0, idx + 1);
 }

@@ -17,12 +17,45 @@ class TestCommand : ICommand
 	}
 };
 
+enum PlayerGameState {ACCOUNT_ENTRY = 0, INPUT };
+class Player : PlayerConnection
+{
+
+	Player()
+	{
+		super();
+		m_gamestate = PlayerGameState::ACCOUNT_ENTRY;
+	}
+
+	PlayerGameState GetPlayerGameState()
+	{
+		return m_gamestate;
+	}
+
+	void SetPlayerGameState(PlayerGameState v)
+	{
+		m_gamestate = v;
+	}
+
+	string GetName()
+	{
+		return m_name;
+	}
+
+	void SetName(string v)
+	{
+		m_name = v;
+	}
+	private PlayerGameState m_gamestate;
+	private string m_name;
+};
+
 TestCommand tc(1, 2);
 Player@ hPlayer = null;
 
 void GameTick()
 {
-
+/*
 	game_server.SendToAll("`red`Hello!`default`");
 	game_server.QueueScriptCommand(tc, 4);
 	game_server.QueueScriptCommand(tc, 2);
@@ -34,12 +67,15 @@ void GameTick()
 	{
 		Log("There are no players connected.\r\n");
 	}
+*/
 }
 
 
 
 void OnPlayerConnect(Player@ player)
 {
+	player.Send("Account: ");
+	/*
 	Log("OnPlayerConnect()");
 	player.Send("WELCOME!\r\n");
 	@hPlayer = @player;
@@ -47,19 +83,32 @@ void OnPlayerConnect(Player@ player)
 	{
 		hPlayer.Send("Handle assigned.\r\n");
 	}
+	*/
 }
 
 void OnPlayerDisconnect(Player@ player)
 {
+	/*
 	Log("Someone disconnected.\r\n");
 	if(@hPlayer is @player)
 	{
 		@hPlayer = null;
 	}
+	*/
 }
 
-void OnPlayerInput(Player@ player, string msg)
+void OnPlayerInput(Player@ player, string input)
 {
-	Log("Received player input.\r\n");
-	player.Send("You sent: " + msg + "\r\n");
+	switch(player.GetPlayerGameState())
+	{
+	case PlayerGameState::ACCOUNT_ENTRY:
+		player.SetName(TrimString(input));
+		player.SetPlayerGameState(PlayerGameState::INPUT);
+		break;
+	case PlayerGameState::INPUT:
+		game_server.SendToAll(player.GetName() + " says: " + input + "\r\n");
+		break;
+	default:
+		break;
+	}
 }

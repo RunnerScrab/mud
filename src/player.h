@@ -16,6 +16,7 @@ public:
   void AddRef();
   void Release();
   void Send(std::string& str);
+  void Disconnect();
   static Player* Factory();
 protected:
   Player(asIScriptObject* obj);

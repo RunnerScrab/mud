@@ -6,6 +6,8 @@
 #include "./angelscriptsdk/sdk/angelscript/source/scriptstdstring.h"
 #include "./angelscriptsdk/sdk/angelscript/source/scriptarray.h"
 
+#include "as_faststring.h"
+
 #include <cstdio>
 #include <cstdlib>
 #include <string>
@@ -35,7 +37,7 @@ int AngelScriptManager_InitEngine(AngelScriptManager* manager)
 	manager->engine->SetEngineProperty(asEP_INCLUDE_JIT_INSTRUCTIONS, 1);
 	manager->engine->SetJITCompiler(manager->jit);
 	RETURNFAIL_IF(!manager->engine);
-
+	manager->engine->SetEngineProperty(asEP_ALLOW_MULTILINE_STRINGS, true);
 	RegisterStdString(manager->engine);
 	RegisterScriptArray(manager->engine, true);
 	manager->engine->SetMessageCallback(asFUNCTION(as_MessageCallback), 0, asCALL_CDECL);
@@ -75,6 +77,10 @@ int AngelScriptManager_InitAPI(AngelScriptManager* manager, struct Server* serve
 	RETURNFAIL_IF(result < 0);
 
 	result = pEngine->RegisterGlobalProperty("Server game_server", server);
+	RETURNFAIL_IF(result < 0);
+
+	result = pEngine->RegisterGlobalFunction("string TrimString(string& in)", asFUNCTION(ASAPI_TrimString),
+						asCALL_CDECL);
 	RETURNFAIL_IF(result < 0);
 
 	return 0;
@@ -144,7 +150,6 @@ void AngelScriptManager_CallOnPlayerInput(AngelScriptManager* manager, struct Cl
 	ctx->Execute();
 
 	ASContextPool_ReturnContextByIndex(&manager->ctx_pool, idx);
-
 }
 
 void AngelScriptManager_CallOnPlayerConnect(AngelScriptManager* manager, struct Client* pClient)

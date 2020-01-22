@@ -44,7 +44,7 @@ void* TickThreadFn(void* pArgs)
 	ServerLog(SERVERLOG_STATUS, "Tick thread running.");
 	while(pThreadData->bIsRunning)
 	{
-		Server_SendAllClients(pServer, "Tick!\r\n\r\n");
+		//Server_SendAllClients(pServer, "Tick!\r\n\r\n");
 		curtime = time(0);
 
 		AngelScriptManager_RunWorldTick(&pServer->as_manager);
