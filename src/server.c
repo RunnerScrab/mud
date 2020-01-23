@@ -21,6 +21,7 @@
 #include "telnet.h"
 #include "zcompressor.h"
 #include "ansicolor.h"
+#include "rand.h"
 #include "crypto.h"
 
 #include "tickthread.h"
@@ -150,6 +151,8 @@ int Server_Configure(struct Server* server, const char* szAddr, unsigned short p
 	}
 	pthread_rwlock_unlock(&server->clients_rwlock);
 
+	RandGenerator_Init(&server->rand_generator);
+
 	if(FAILURE(CryptoManager_Init(&server->crypto_manager)))
 	{
 		ServerLog(SERVERLOG_ERROR, "FATAL: Failed to initialize cryptographic module!");
@@ -190,6 +193,7 @@ int Server_Teardown(struct Server* pServer)
 	ServerLog(SERVERLOG_STATUS, "Releasing Angelscript Engine.");
 	AngelScriptManager_ReleaseEngine(&pServer->as_manager);
 	ServerLog(SERVERLOG_STATUS, "Released Angelscript Engine.");
+	RandGenerator_Destroy(&pServer->rand_generator);
 	asThreadCleanup();
 	return 0;
 }

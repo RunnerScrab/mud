@@ -89,6 +89,12 @@ int AngelScriptManager_InitAPI(AngelScriptManager* manager, struct Server* serve
 
 	RETURNFAIL_IF(result < 0);
 
+	result = pEngine->RegisterGlobalFunction("void GenerateUUID(string& out)", asFUNCTION(ASAPI_GenerateUUID),
+						asCALL_CDECL);
+
+	RETURNFAIL_IF(result < 0);
+
+
 	return 0;
 }
 

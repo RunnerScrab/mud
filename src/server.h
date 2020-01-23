@@ -12,6 +12,7 @@
 #include "prioq.h"
 #include "as_manager.h"
 
+#include "rand.h"
 #include "crypto.h"
 #include "tickthread.h"
 #include "command_dispatch.h"
@@ -49,6 +50,8 @@ struct Server
 
 	struct TickThread game_tick_thread;
 	struct CmdDispatchThread cmd_dispatch_thread;
+
+	RandGenerator rand_generator;
 
 	AngelScriptManager as_manager; //angelscript engine manager
 	CryptoManager crypto_manager;

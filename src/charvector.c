@@ -78,8 +78,11 @@ int cv_init(cv_t* cv, size_t startsize)
 
 int cv_resize(cv_t* cv, size_t newcap)
 {
-	cv->data = (el_t*) trealloc(cv->data, sizeof(el_t) * newcap);
-	cv->capacity = newcap;
+	if(!cv->data || newcap != cv->capacity)
+	{
+		cv->data = (el_t*) trealloc(cv->data, sizeof(el_t) * newcap);
+		cv->capacity = newcap;
+	}
 	return cv->data ? 0 : -1;
 }
 

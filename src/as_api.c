@@ -2,6 +2,7 @@
 #include "poolalloc.h"
 #include "crypto.h"
 #include "charvector.h"
+#include "uuid.h"
 #include <ctype.h>
 
 void ASAPI_SendToAll(struct Server* server, std::string& message)
@@ -90,5 +91,16 @@ void ASAPI_HashPassword(const std::string& password, std::string& out)
 	{
 		printf("Hashing FAILED!\n");
 	}
+	cv_destroy(&buf);
+}
+
+void ASAPI_GenerateUUID(std::string& out)
+{
+	cv_t buf;
+	union UUID uuid;
+	cv_init(&buf, 37);
+	GenerateUUID(&uuid);
+	UUIDToString(&uuid, &buf);
+	out.assign(buf.data);
 	cv_destroy(&buf);
 }

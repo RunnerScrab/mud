@@ -76,6 +76,9 @@ void GameTick()
 void OnPlayerConnect(Player@ player)
 {
 	player.Send("Account: ");
+	string uuid;
+	GenerateUUID(uuid);
+	player.Send("\r\n" + uuid + "\r\n");
 /*
   Log("OnPlayerConnect()");
   player.Send("WELCOME!\r\n");
@@ -102,21 +105,30 @@ void OnPlayerInput(Player@ player, string rawinput)
 {
 	string input;
 	TrimString(rawinput, input);
-	switch(player.GetPlayerGameState())
+	if("makeuuid" == rawinput)
 	{
-	case PlayerGameState::ACCOUNT_NAME_ENTRY:
-		player.SetName(input);
-		player.SetPlayerGameState(PlayerGameState::ACCOUNT_PASSWORD_ENTRY);
-		break;
-	case PlayerGameState::ACCOUNT_PASSWORD_ENTRY:
-	{
-		game_server.SendToAll(player.GetName() + " says: " + input + "\r\n");
-		string output;
-		HashPassword(input, output);
-		player.Send("Your password hash is:" + output);
-		break;
+		string uuid;
+		GenerateUUID(uuid);
+		player.Send("Generated: " + uuid + "\r\n");
 	}
-	default:
-		break;
+	else
+	{
+		switch(player.GetPlayerGameState())
+		{
+		case PlayerGameState::ACCOUNT_NAME_ENTRY:
+			player.SetName(input);
+			player.SetPlayerGameState(PlayerGameState::ACCOUNT_PASSWORD_ENTRY);
+			break;
+		case PlayerGameState::ACCOUNT_PASSWORD_ENTRY:
+		{
+			game_server.SendToAll(player.GetName() + " says: " + input + "\r\n");
+			string output;
+			HashPassword(input, output);
+			player.Send("Your password hash is:" + output);
+			break;
+		}
+		default:
+			break;
+		}
 	}
 }
