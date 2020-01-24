@@ -23,20 +23,24 @@ extern "C" typedef struct
 	asIScriptEngine* engine;
 	asCJITCompiler* jit;
 
-	asIScriptModule* main_module;
+	asIScriptModule* main_module, *config_module;
 
 	asIScriptFunction* world_tick_func, *on_player_connect_func;
 	asIScriptFunction* on_player_disconnect_func, *on_player_input_func;
+	asIScriptFunction* server_setup_func;
 	asIScriptContext* world_tick_scriptcontext;
 
 	MemoryPool mem_pool;
 	ASContextPool ctx_pool;
+
+	size_t next_free_context_idx;
 }
 	AngelScriptManager;
 
 extern "C"
 {
 	int AngelScriptManager_InitEngine(AngelScriptManager* manager);
+	int AngelScriptManager_LoadServerConfig(AngelScriptManager* manager, struct Server* server);
 	int AngelScriptManager_LoadScripts(AngelScriptManager* manager, const char* script_dir);
 	int AngelScriptManager_InitAPI(AngelScriptManager* manager, struct Server* server);
 	void AngelScriptManager_RunWorldTick(AngelScriptManager* manager);

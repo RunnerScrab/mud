@@ -1,6 +1,7 @@
 #include "as_manager.h"
 #include "server.h"
 #include "as_api.h"
+#include "serverconfig.h"
 #include "talloc.h"
 #include "player.h"
 #include "./angelscriptsdk/sdk/angelscript/source/scriptstdstring.h"
@@ -37,6 +38,7 @@ int AngelScriptManager_InitEngine(AngelScriptManager* manager)
 	manager->engine->SetEngineProperty(asEP_INCLUDE_JIT_INSTRUCTIONS, 1);
 	manager->engine->SetJITCompiler(manager->jit);
 	RETURNFAIL_IF(!manager->engine);
+
 	manager->engine->SetEngineProperty(asEP_ALLOW_MULTILINE_STRINGS, true);
 	RegisterStdString(manager->engine);
 	RegisterScriptArray(manager->engine, true);
@@ -98,6 +100,53 @@ int AngelScriptManager_InitAPI(AngelScriptManager* manager, struct Server* serve
 	return 0;
 }
 
+int AngelScriptManager_LoadServerConfig(AngelScriptManager* manager, struct Server* server)
+{
+	//Rather than create an ad-hoc domain specific configuration language for the server,
+	//let's just use AngelScript since we've already got it.
+	//This needs to be called before AngelScriptManager_LoadScripts()
+	int result = 0;
+	std::string script;
+	std::string scriptpath = "./server.cfg";
+	FILE* fp = fopen(scriptpath.c_str(), "rb");
+	RETURNFAIL_IF(!fp);
+	printf("Opened server.cfg\n");
+	fseek(fp, 0, SEEK_END);
+	size_t len = ftell(fp);
+	fseek(fp, 0, SEEK_SET);
+	script.resize(len);
+	RETURNFAIL_IF(fread(&script[0], len, 1, fp) <= 0);
+	fclose(fp);
+	printf("Loaded:\n%s\n", script.c_str());
+	manager->config_module = manager->engine->GetModule("config_module", asGM_ALWAYS_CREATE);
+	RETURNFAIL_IF(manager->config_module->AddScriptSection("server_configuration", &script[0], len) < 0);
+	printf("Loaded server configuration script\n");
+
+	result = manager->engine->RegisterObjectType("ServerConfig", 0, asOBJ_REF | asOBJ_NOCOUNT);
+	RETURNFAIL_IF(result < 0);
+	printf("Registered server configuration type.\n");
+	result = manager->engine->RegisterObjectMethod("ServerConfig", "void SetDatabasePath(string& in)",
+					asFUNCTION(ASAPI_SetDatabasePath), asCALL_CDECL_OBJFIRST);
+	result = manager->engine->RegisterObjectMethod("ServerConfig", "void SetGameScriptPath(string& in)",
+						asFUNCTION(ASAPI_SetGameScriptPath), asCALL_CDECL_OBJFIRST);
+	RETURNFAIL_IF(result < 0);
+	printf("Registered ServerConfig methods.\n");
+	RETURNFAIL_IF(manager->config_module->Build() < 0);
+	manager->server_setup_func = manager->config_module->GetFunctionByDecl("void SetupServer(ServerConfig@ config)");
+
+	RETURNFAIL_IF(0 == manager->server_setup_func);
+	printf("Found setup function.\n");
+
+	size_t ctxidx = ASContextPool_GetFreeContextIndex(&manager->ctx_pool);
+	asIScriptContext* ctx = ASContextPool_GetContextAt(&manager->ctx_pool, ctxidx);
+	ctx->Prepare(manager->server_setup_func);
+	ctx->SetArgObject(0, &server->configuration);
+	ctx->Execute();
+	ASContextPool_ReturnContextByIndex(&manager->ctx_pool, ctxidx);
+
+	return 0;
+}
+
 int AngelScriptManager_LoadScripts(AngelScriptManager* manager, const char* script_dir)
 {
 	//TODO: May want to impose some kind of directory structure on scripts
@@ -115,23 +164,23 @@ int AngelScriptManager_LoadScripts(AngelScriptManager* manager, const char* scri
 
 	fclose(fp);
 
-	manager->main_module = manager->engine->GetModule(0, asGM_ALWAYS_CREATE);
+	manager->main_module = manager->engine->GetModule("game_module", asGM_ALWAYS_CREATE);
 	RETURNFAIL_IF(manager->main_module->AddScriptSection("game", &script[0], len) < 0);
 	RETURNFAIL_IF(LoadPlayerScript(manager->engine, manager->main_module));
 	RETURNFAIL_IF(manager->main_module->Build() < 0);
 
 	manager->jit->finalizePages();
 
-	manager->world_tick_func = manager->engine->GetModule(0)->GetFunctionByDecl("void GameTick()");
+	manager->world_tick_func = manager->main_module->GetFunctionByDecl("void GameTick()");
 	RETURNFAIL_IF(0 == manager->world_tick_func);
 
-	manager->on_player_connect_func = manager->engine->GetModule(0)->GetFunctionByDecl("void OnPlayerConnect(Player@ player)");
+	manager->on_player_connect_func = manager->main_module->GetFunctionByDecl("void OnPlayerConnect(Player@ player)");
 	RETURNFAIL_IF(0 == manager->on_player_connect_func);
 
-	manager->on_player_disconnect_func = manager->engine->GetModule(0)->GetFunctionByDecl("void OnPlayerDisconnect(Player@ player)");
+	manager->on_player_disconnect_func = manager->main_module->GetFunctionByDecl("void OnPlayerDisconnect(Player@ player)");
 	RETURNFAIL_IF(0 == manager->on_player_disconnect_func);
 
-	manager->on_player_input_func = manager->engine->GetModule(0)->GetFunctionByDecl("void OnPlayerInput(Player@ player, string input)");
+	manager->on_player_input_func = manager->main_module->GetFunctionByDecl("void OnPlayerInput(Player@ player, string input)");
 	RETURNFAIL_IF(0 == manager->on_player_input_func);
 
 	manager->world_tick_scriptcontext = manager->engine->CreateContext();

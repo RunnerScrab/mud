@@ -12,6 +12,8 @@
 #include "prioq.h"
 #include "as_manager.h"
 
+#include "serverconfig.h"
+
 #include "rand.h"
 #include "crypto.h"
 #include "tickthread.h"
@@ -32,6 +34,7 @@ struct Server
 	int epfd;
 	int cmd_pipe[2]; //Used for commands to the dispatch thread
 
+	struct ServerConfig configuration;
 	struct EvPkg epkg; //Used for epoll to pass data back to us via epoll_event
 	struct epoll_event server_event, cmdpipe_event;
 	struct epoll_event* evlist;

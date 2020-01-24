@@ -3,6 +3,7 @@
 #include "crypto.h"
 #include "charvector.h"
 #include "uuid.h"
+#include "serverconfig.h"
 #include <ctype.h>
 
 void ASAPI_SendToAll(struct Server* server, std::string& message)
@@ -103,4 +104,17 @@ void ASAPI_GenerateUUID(std::string& out)
 	UUIDToString(&uuid, &buf);
 	out.assign(buf.data);
 	cv_destroy(&buf);
+}
+
+void ASAPI_SetDatabasePath(struct ServerConfig* config, std::string& path)
+{
+	strncpy(config->dbpath, path.c_str(), sizeof(char) * 256);
+	ServerLog(SERVERLOG_STATUS, "Db path set to %s\n", config->dbpath);
+}
+
+void ASAPI_SetGameScriptPath(struct ServerConfig* config, std::string& path)
+{
+	strncpy(config->scriptpath, path.c_str(),
+		sizeof(char) * 256);
+	ServerLog(SERVERLOG_STATUS, "Game script path set to %s\n", config->scriptpath);
 }

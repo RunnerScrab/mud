@@ -208,8 +208,21 @@ int Server_Initialize(struct Server* server, unsigned int backlog)
 	server->cpu_cores = get_nprocs();
 
 	ServerLog(SERVERLOG_STATUS, "Server starting. %d cores detected.", server->cpu_cores);
+	int result = AngelScriptManager_InitEngine(&server->as_manager);
+	if(FAILURE(result))
+	{
+		ServerLog(SERVERLOG_ERROR, "Failed to initialize AngelScript engine.");
+		return -1;
+	}
 
-	int result = bind(server->sockfd, (struct sockaddr*) &server->addr_in,
+	result = AngelScriptManager_LoadServerConfig(&server->as_manager, server);
+	if(FAILURE(result))
+	{
+		ServerLog(SERVERLOG_ERROR, "Failed to load configuration file server.cfg.");
+		return -1;
+	}
+
+	result = bind(server->sockfd, (struct sockaddr*) &server->addr_in,
 			sizeof(struct sockaddr_in));
 
 	if(FAILURE(result))
@@ -232,12 +245,6 @@ int Server_Initialize(struct Server* server, unsigned int backlog)
 		inet_ntoa(server->addr_in.sin_addr), ntohs(server->addr_in.sin_port));
 
 
-	result = AngelScriptManager_InitEngine(&server->as_manager);
-	if(FAILURE(result))
-	{
-		ServerLog(SERVERLOG_ERROR, "Failed to initialize AngelScript engine.\n");
-		return -1;
-	}
 
 	result = AngelScriptManager_InitAPI(&server->as_manager, server);
 	if(FAILURE(result))
