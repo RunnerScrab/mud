@@ -17,14 +17,15 @@ class TestCommand : ICommand
 	}
 };
 
-enum PlayerGameState {ACCOUNT_NAME_ENTRY = 0, ACCOUNT_PASSWORD_ENTRY };
+enum PlayerGameState {LOGIN_MENU = 0,
+ACCOUNT_NAME_ENTRY, ACCOUNT_PASSWORD_ENTRY };
 class Player : PlayerConnection
 {
 
 	Player()
 	{
 		super();
-		m_gamestate = PlayerGameState::ACCOUNT_NAME_ENTRY;
+		m_gamestate = PlayerGameState::LOGIN_MENU;
 	}
 
 	PlayerGameState GetPlayerGameState()
@@ -115,6 +116,10 @@ void OnPlayerInput(Player@ player, string rawinput)
 	{
 		switch(player.GetPlayerGameState())
 		{
+		case PlayerGameState::LOGIN_MENU:
+		{
+			break;
+		}
 		case PlayerGameState::ACCOUNT_NAME_ENTRY:
 			player.SetName(input);
 			player.SetPlayerGameState(PlayerGameState::ACCOUNT_PASSWORD_ENTRY);
