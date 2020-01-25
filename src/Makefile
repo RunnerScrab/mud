@@ -1,6 +1,7 @@
 CC = g++
+SQLITECC = gcc
 CFLAGS = -Wall -g
-LDLIBS = -pthread -lcheck -lz -l:libsodium.so
+LDLIBS = -pthread -lcheck -lz -ldl -l:libsodium.so
 OUTPUT_OPTION = -MMD -MP -o $@
 
 CSOURCE := $(wildcard *.c)
@@ -15,10 +16,16 @@ CXXDEPS := $(CXXSOURCE:.cpp=.d)
 
 OBJS := $(COBJS) $(CXXOBJS)
 DEPS := $(CDEPS) $(CXXDEPS)
-LIBS = libangelscript.a
+LIBS = libangelscript.a libsqlite3.a
 
 mud: ${OBJS} ${LIBS}
 	${CC} -o mud ${OBJS} ${LIBS} ${LDLIBS}
+
+sqlite: sqlite3.o
+
+libsqlite3.a: sqlite/sqlite3.c
+	${SQLITECC} -c sqlite/sqlite3.c ${CFLAGS}
+	ar rcs libsqlite3.a sqlite3.o
 
 angelscript:
 	make -C angelscriptsdk/sdk/angelscript/projects/gnuc/
