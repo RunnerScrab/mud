@@ -10,7 +10,7 @@
 #include "zcompressor.h"
 #include "hrt_prioq.h"
 #include "poolalloc.h"
-#include <angelscript.h>
+#include "angelscript.h"
 
 struct EvPkg
 {

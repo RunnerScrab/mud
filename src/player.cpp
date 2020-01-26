@@ -2,7 +2,7 @@
 #include "as_manager.h"
 #include <cstring>
 #include <string>
-#include <angelscript.h>
+#include "angelscript.h"
 
 static const char* playerscript =
 	"shared abstract class PlayerConnection"

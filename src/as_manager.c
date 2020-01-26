@@ -4,10 +4,8 @@
 #include "serverconfig.h"
 #include "talloc.h"
 #include "player.h"
-#include "./angelscriptsdk/sdk/angelscript/source/scriptstdstring.h"
-#include "./angelscriptsdk/sdk/angelscript/source/scriptarray.h"
-
-#include "as_faststring.h"
+#include "scriptstdstring.h"
+#include "scriptarray.h"
 
 #include <cstdio>
 #include <cstdlib>

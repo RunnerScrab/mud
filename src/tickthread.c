@@ -5,7 +5,7 @@
 #include "server.h"
 #include <stddef.h>
 #include <pthread.h>
-#include <angelscript.h>
+#include "angelscript.h"
 
 void* TickThreadFn(void* pArgs);
 
