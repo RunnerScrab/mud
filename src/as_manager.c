@@ -81,16 +81,22 @@ int AngelScriptManager_InitAPI(AngelScriptManager* manager, struct Server* serve
 					asFUNCTION(ASAPI_QueueScriptCommand), asCALL_CDECL_OBJFIRST);
 	RETURNFAIL_IF(result < 0);
 
-	result = pEngine->RegisterGlobalFunction("void Log(string& in)", asFUNCTION(ASAPI_Log), asCALL_CDECL);
+	result = pEngine->RegisterObjectMethod("Server", "void DebugVariables(Player_t@ player)", asFUNCTION(ASAPI_DebugVariables),
+					asCALL_CDECL_OBJFIRST);
 	RETURNFAIL_IF(result < 0);
 
 	result = pEngine->RegisterGlobalProperty("Server game_server", server);
 	RETURNFAIL_IF(result < 0);
 
+	result = pEngine->RegisterGlobalFunction("void Log(string& in)", asFUNCTION(ASAPI_Log), asCALL_CDECL);
+	RETURNFAIL_IF(result < 0);
+
+
 	result = pEngine->RegisterGlobalFunction("void TrimString(const string& in, string& out)", asFUNCTION(ASAPI_TrimString),
 						asCALL_CDECL);
 
 	RETURNFAIL_IF(result < 0);
+
 
 	result = pEngine->RegisterGlobalFunction("void HashPassword(const string& in, string& out)", asFUNCTION(ASAPI_HashPassword),
 						asCALL_CDECL);
@@ -157,7 +163,7 @@ int AngelScriptManager_LoadScripts(AngelScriptManager* manager, const char* scri
 {
 	//TODO: May want to impose some kind of directory structure on scripts
 	std::string script;
-	std::string scriptpath = std::string(script_dir) + "/test.as";
+	std::string scriptpath = std::string(script_dir) + "test.as";
 	FILE* fp = fopen(scriptpath.c_str(), "rb");
 	RETURNFAIL_IF(!fp);
 
@@ -173,6 +179,19 @@ int AngelScriptManager_LoadScripts(AngelScriptManager* manager, const char* scri
 	RETURNFAIL_IF(manager->main_module->AddScriptSection("game", &script[0], len) < 0);
 	RETURNFAIL_IF(LoadPlayerScript(manager->engine, manager->main_module));
 	RETURNFAIL_IF(manager->main_module->Build() < 0);
+
+	//TODO: Remove this - debug script class information
+	printf("-Class information-\n");
+	size_t idx = 0, object_type_count = manager->main_module->GetObjectTypeCount();
+	for(; idx < object_type_count; ++idx)
+	{
+		asITypeInfo* pInfo = manager->main_module->GetObjectTypeByIndex(idx);
+		printf("Class %lu: %s\n", idx, pInfo->GetName());
+	}
+
+	size_t global_properties = manager->engine->GetGlobalPropertyCount();
+	printf("There are %lu global properties.\n", global_properties);
+	/////////////////////////////
 
 	manager->jit->finalizePages();
 
@@ -195,6 +214,7 @@ int AngelScriptManager_LoadScripts(AngelScriptManager* manager, const char* scri
 
 void AngelScriptManager_CallOnPlayerDisconnect(AngelScriptManager* manager, struct Client* pClient)
 {
+	printf("Calling on player disconnect.\n");
 	size_t idx = ASContextPool_GetFreeContextIndex(&manager->ctx_pool);
 	asIScriptContext* ctx = ASContextPool_GetContextAt(&manager->ctx_pool, idx);
 	ctx->Prepare(manager->on_player_disconnect_func);

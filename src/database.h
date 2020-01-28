@@ -8,7 +8,7 @@ struct Database
 	char path[256];
 };
 
-int Database_Init(struct ASDatabase* asdb, const char* path);
-void Database_Destroy(struct ASDatabase* asdb);
+int Database_Init(struct Database* asdb, const char* path);
+void Database_Release(struct Database* asdb);
 
 #endif

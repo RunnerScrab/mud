@@ -4,6 +4,7 @@
 #include "charvector.h"
 #include "uuid.h"
 #include "serverconfig.h"
+#include "player.h"
 #include <ctype.h>
 
 void ASAPI_SendToAll(struct Server* server, std::string& message)
@@ -44,6 +45,25 @@ void* ASAPI_RunScriptCommand(void* pArgs)
 	MemoryPool_Free(pPkg->pMemPool, sizeof(struct RunScriptCmdPkg), pArgs);
 
 	return (void*) 0;
+}
+
+void ASAPI_DebugVariables(struct Server* server, Player* playerobj)
+{
+	if(playerobj)
+	{
+		AngelScriptManager* manager = &server->as_manager;
+		asIScriptModule* module = manager->main_module;
+		size_t gpropertycount = manager->engine->GetGlobalPropertyCount();
+		size_t gvarcount = module->GetGlobalVarCount();
+		Client_Sendf(playerobj->m_pClient,
+			"Debug Variables called.\r\n"
+			"Global Properties: %lu\r\n"
+			"Global Functions: %lu\r\n"
+			"Global Variables: %lu\r\n",
+			gpropertycount, module->GetFunctionCount(), gvarcount);
+
+		playerobj->Release();
+	}
 }
 
 void ASAPI_QueueScriptCommand(struct Server* server, asIScriptObject* obj, unsigned int delay)

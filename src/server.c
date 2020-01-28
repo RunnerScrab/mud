@@ -99,7 +99,6 @@ int Server_Configure(struct Server* server, const char* szAddr, unsigned short p
 	server->addr_in.sin_family = AF_INET;
 	server->addr_in.sin_port = htons(port);
 	server->addr_in.sin_addr.s_addr = INADDR_ANY;
-	//inet_pton(AF_INET, szAddr, &(server->addr_in.sin_addr));
 
 	// Configure epoll for the server
 	server->evlist_len = 64;
@@ -159,15 +158,24 @@ int Server_Configure(struct Server* server, const char* szAddr, unsigned short p
 		Server_Teardown(server);
 		return -1;
 	}
+	ServerLog(SERVERLOG_STATUS, "Initialized cryptographic module.");
 
 	MemoryPool_Init(&server->mem_pool);
 
+	if(FAILURE(Database_Init(&server->db, server->configuration.dbpath)))
+	{
+		ServerLog(SERVERLOG_ERROR, "FATAL: Failed to initialize database!");
+		Server_Teardown(server);
+		return -1;
+	}
+	ServerLog(SERVERLOG_STATUS, "Initialized database.");
 
 	return 0;
 }
 
 int Server_Teardown(struct Server* pServer)
 {
+	Database_Release(&pServer->db);
 	CryptoManager_Destroy(&pServer->crypto_manager);
 	TickThread_Stop(&pServer->game_tick_thread);
 	CmdDispatchThread_Stop(&pServer->cmd_dispatch_thread);
@@ -253,7 +261,7 @@ int Server_Initialize(struct Server* server, unsigned int backlog)
 		return -1;
 	}
 
-	result = AngelScriptManager_LoadScripts(&server->as_manager, ".");
+	result = AngelScriptManager_LoadScripts(&server->as_manager, server->configuration.scriptpath);
 	if(FAILURE(result))
 	{
 		ServerLog(SERVERLOG_ERROR, "Failed to load game scripts.\n");

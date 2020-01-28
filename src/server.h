@@ -11,6 +11,7 @@
 #include "constants.h"
 #include "prioq.h"
 #include "as_manager.h"
+#include "database.h"
 
 #include "serverconfig.h"
 
@@ -58,6 +59,8 @@ struct Server
 
 	AngelScriptManager as_manager; //angelscript engine manager
 	CryptoManager crypto_manager;
+	struct Database db;
+
 	char* MOTD;
 };
 
