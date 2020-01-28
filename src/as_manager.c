@@ -51,6 +51,14 @@ int AngelScriptManager_InitEngine(AngelScriptManager* manager)
 	return 0;
 }
 
+static size_t GetFileLength(FILE* fp)
+{
+	fseek(fp, 0, SEEK_END);
+	size_t len = ftell(fp);
+	fseek(fp, 0, SEEK_SET);
+	return len;
+}
+
 int AngelScriptManager_InitAPI(AngelScriptManager* manager, struct Server* server)
 {
 	int result = 0;
@@ -111,9 +119,9 @@ int AngelScriptManager_LoadServerConfig(AngelScriptManager* manager, struct Serv
 	FILE* fp = fopen(scriptpath.c_str(), "rb");
 	RETURNFAIL_IF(!fp);
 	printf("Opened server.cfg\n");
-	fseek(fp, 0, SEEK_END);
-	size_t len = ftell(fp);
-	fseek(fp, 0, SEEK_SET);
+
+	size_t len = GetFileLength(fp);
+
 	script.resize(len);
 	RETURNFAIL_IF(fread(&script[0], len, 1, fp) <= 0);
 	fclose(fp);
@@ -155,9 +163,8 @@ int AngelScriptManager_LoadScripts(AngelScriptManager* manager, const char* scri
 	FILE* fp = fopen(scriptpath.c_str(), "rb");
 	RETURNFAIL_IF(!fp);
 
-	fseek(fp, 0, SEEK_END);
-	size_t len = ftell(fp);
-	fseek(fp, 0, SEEK_SET);
+	size_t len = GetFileLength(fp);
+
 	script.resize(len);
 
 	RETURNFAIL_IF(fread(&script[0], len, 1, fp) <= 0);
