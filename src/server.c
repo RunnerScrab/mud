@@ -55,46 +55,6 @@ void Server_SendClientMotd(struct Server* pServer, struct Client* pClient)
 	Client_WriteTo(pClient, pServer->MOTD, strlen(pServer->MOTD));
 }
 
-void Server_FreeMOTD(struct Server* server)
-{
-	tfree(server->MOTD);
-	server->MOTD = 0;
-}
-
-
-int Server_Teardown(struct Server* pServer)
-{
-	Database_Release(&pServer->db);
-	CryptoManager_Destroy(&pServer->crypto_manager);
-	TickThread_Stop(&pServer->game_tick_thread);
-	CmdDispatchThread_Stop(&pServer->cmd_dispatch_thread);
-	CmdDispatchThread_Destroy(&pServer->cmd_dispatch_thread);
-
-	Server_FreeMOTD(pServer);
-
-	pthread_mutex_lock(&pServer->timed_queue_mtx);
-	MemoryPool_Destroy(&pServer->mem_pool);
-	pthread_mutex_destroy(&pServer->timed_queue_mtx);
-	prioq_destroy(&pServer->timed_queue);
-	tfree(pServer->evlist);
-	ThreadPool_Destroy(&pServer->thread_pool);
-	ServerLog(SERVERLOG_STATUS, "Destroying client vector.");
-
-
-	Vector_Destroy(&pServer->clients);
-	pthread_rwlock_destroy(&pServer->clients_rwlock);
-	ServerLog(SERVERLOG_STATUS, "Client vector destroyed.");
-	close(pServer->sockfd);
-	close(pServer->cmd_pipe[0]);
-	close(pServer->cmd_pipe[1]);
-	ServerLog(SERVERLOG_STATUS, "Releasing Angelscript Engine.");
-	AngelScriptManager_ReleaseEngine(&pServer->as_manager);
-	ServerLog(SERVERLOG_STATUS, "Released Angelscript Engine.");
-	RandGenerator_Destroy(&pServer->rand_generator);
-	asThreadCleanup();
-	return 0;
-}
-
 void Server_WriteToCmdPipe(struct Server* server, const char* msg, size_t msglen)
 {
 	write(server->cmd_pipe[1], msg, sizeof(char) * msglen);

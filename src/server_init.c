@@ -28,6 +28,19 @@
 
 #define max(a, b) (a > b ? a : b)
 
+int Server_InitializeADTs(struct Server* server);
+int Server_InitializeScriptEngine(struct Server* server);
+int Server_LoadConfiguration(struct Server* server);
+int Server_LoadGame(struct Server* server);
+int Server_InitializeThreads(struct Server* server);
+int Server_InitializeNetwork(struct Server* server, const char* szAddr, unsigned short port);
+void Server_StopNetwork(struct Server* server);
+void Server_StopThreads(struct Server* server);
+void Server_UnloadGame(struct Server* server);
+void Server_FreeConfiguration(struct Server* server);
+void Server_StopScriptEngine(struct Server* server);
+void Server_ReleaseADTs(struct Server* server);
+
 int Server_LoadMOTD(struct Server* server)
 {
 	//TODO: Put MOTD filename/path in configuration
@@ -57,7 +70,7 @@ int Server_InitializeADTs(struct Server* server)
 	if(FAILURE(Vector_Create(&(server->clients), 64, Client_Destroy)))
 	{
 		ServerLog(SERVERLOG_ERROR, "FATAL: Failed to allocate memory for client list!");
-		Server_Teardown(server);
+		Server_Stop(server);
 		return -1;
 	}
 	pthread_rwlock_unlock(&server->clients_rwlock);
@@ -67,7 +80,7 @@ int Server_InitializeADTs(struct Server* server)
 	if(FAILURE(CryptoManager_Init(&server->crypto_manager)))
 	{
 		ServerLog(SERVERLOG_ERROR, "FATAL: Failed to initialize cryptographic module!");
-		Server_Teardown(server);
+		Server_Stop(server);
 		return -1;
 	}
 	ServerLog(SERVERLOG_STATUS, "Initialized cryptographic module.");
@@ -120,7 +133,7 @@ int Server_LoadGame(struct Server* server)
 	if(FAILURE(result))
 	{
 		ServerLog(SERVERLOG_ERROR, "FATAL: Failed to initialize database!");
-		Server_Teardown(server);
+		Server_Stop(server);
 		return -1;
 	}
 	ServerLog(SERVERLOG_STATUS, "Initialized database.");
@@ -209,7 +222,7 @@ int Server_InitializeNetwork(struct Server* server, const char* szAddr, unsigned
 					&(server->server_event))))
 	{
 		ServerLog(SERVERLOG_ERROR, "FATAL: Could not add server socket to epoll wait list!");
-		Server_Teardown(server);
+		Server_Stop(server);
 		return -1;
 	}
 
@@ -241,9 +254,74 @@ int Server_Start(struct Server* server)
 	Server_InitializeScriptEngine(server);
 	Server_LoadConfiguration(server);
 	Server_LoadGame(server);
+
 	Server_InitializeThreads(server);
 	//TODO: Put server bind address and port in configuration
 	Server_InitializeNetwork(server, "127.0.0.1", 9001);
 	ServerLog(SERVERLOG_STATUS, "Server starting. %d cores detected.", server->cpu_cores);
 	return 0;
+}
+
+void Server_StopNetwork(struct Server* server)
+{
+	close(server->sockfd);
+	close(server->cmd_pipe[0]);
+	close(server->cmd_pipe[1]);
+	tfree(server->evlist);
+}
+
+void Server_StopThreads(struct Server* server)
+{
+	ThreadPool_Destroy(&server->thread_pool);
+	CmdDispatchThread_Stop(&server->cmd_dispatch_thread);
+	CmdDispatchThread_Destroy(&server->cmd_dispatch_thread);
+	TickThread_Stop(&server->game_tick_thread);
+}
+
+void Server_FreeMOTD(struct Server* server)
+{
+	tfree(server->MOTD);
+	server->MOTD = 0;
+}
+
+void Server_UnloadGame(struct Server* server)
+{
+	Server_FreeMOTD(server);
+	Database_Release(&server->db);
+}
+
+void Server_FreeConfiguration(struct Server* server)
+{
+
+}
+
+void Server_StopScriptEngine(struct Server* server)
+{
+	AngelScriptManager_ReleaseEngine(&server->as_manager);
+	asThreadCleanup();
+}
+
+void Server_ReleaseADTs(struct Server* server)
+{
+	MemoryPool_Destroy(&server->mem_pool);
+	CryptoManager_Destroy(&server->crypto_manager);
+	RandGenerator_Destroy(&server->rand_generator);
+	Vector_Destroy(&server->clients);
+	pthread_rwlock_destroy(&server->clients_rwlock);
+	prioq_destroy(&server->timed_queue);
+	pthread_mutex_destroy(&server->timed_queue_mtx);
+}
+
+void Server_Stop(struct Server* server)
+{
+	Server_StopNetwork(server);
+	Server_StopThreads(server);
+	Server_UnloadGame(server);
+	Server_FreeConfiguration(server);
+	Server_ReleaseADTs(server);
+
+	//Generally, resources must be released in LIFO order (reverse of how they were acquired).
+	//However, the scripting engine cannot release certain objects while the rest of the mud engine
+	//retains references to them.
+	Server_StopScriptEngine(server);
 }

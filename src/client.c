@@ -48,6 +48,12 @@ void Client_Destroy(void* p)
 {
 	struct Client* pClient = (struct Client*) p;
 
+	if(pClient->player_obj)
+	{
+		pClient->player_obj->Release();
+		pClient->player_obj = 0;
+	}
+
 	cv_destroy(&pClient->tel_stream.sb_args);
 	cv_destroy(&pClient->input_buffer);
 	ZCompressor_StopAndRelease(&pClient->zstreams);
