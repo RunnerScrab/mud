@@ -9,12 +9,12 @@
 
 void* TickThreadFn(void* pArgs);
 
-void TickThread_Init(struct TickThread* tt, struct Server* server, size_t tickspeed)
+int TickThread_Init(struct TickThread* tt, struct Server* server, size_t tickspeed)
 {
 	tt->pServer = server;
 	tt->bIsRunning = 1;
 	tt->tick_delay = tickspeed;
-	pthread_create(&tt->thread, 0, TickThreadFn, (void*) tt);
+	return pthread_create(&tt->thread, 0, TickThreadFn, (void*) tt);
 }
 
 void TickThread_Stop(struct TickThread* tt)
