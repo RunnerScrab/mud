@@ -1,11 +1,11 @@
 #include "tickthread.h"
+#include "as_cinterface.h"
 #include "as_manager.h"
 #include "prioq.h"
 #include "poolalloc.h"
 #include "server.h"
 #include <stddef.h>
 #include <pthread.h>
-#include "angelscript.h"
 
 void* TickThreadFn(void* pArgs);
 
@@ -66,6 +66,6 @@ void* TickThreadFn(void* pArgs)
 		usleep(tick_delay);
 	}
 	ServerLog(SERVERLOG_STATUS, "Tickthread terminating.\n");
-	asThreadCleanup();
+	CCompatibleASThreadCleanup();
 	return (void*) 0;
 }

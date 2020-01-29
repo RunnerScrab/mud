@@ -183,7 +183,8 @@ void* hrt_prioq_extract_min(struct hrt_prioq* pHeap)
 
 		void* returnvalue = pMin->data;
 
-		pMin->key = {0, 0};
+		pMin->key.tv_nsec = 0;
+		pMin->key.tv_sec = 0;
 		pMin->data = 0;
 
 		swap_hrtprioq_node(&(pHeap->array[0]), &(pHeap->array[pHeap->len - 1]));

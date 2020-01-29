@@ -20,7 +20,6 @@
 #include "crypto.h"
 #include "tickthread.h"
 #include "command_dispatch.h"
-#include <unordered_map>
 
 #define SUCCESS(x) (x >= 0)
 #define FAILURE(x) (x < 0)
@@ -56,10 +55,10 @@ struct Server
 	struct TickThread game_tick_thread;
 	struct CmdDispatchThread cmd_dispatch_thread;
 
-	RandGenerator rand_generator;
+	struct RandGenerator rand_generator;
 
 	AngelScriptManager as_manager; //angelscript engine manager
-	CryptoManager crypto_manager;
+	struct CryptoManager crypto_manager;
 	struct Database db;
 
 	char* MOTD;

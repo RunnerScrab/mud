@@ -1,6 +1,11 @@
 #ifndef AS_API_H_
 #define AS_API_H_
+
+//This header file can only be included by C++ code
+extern "C"
+{
 #include "server.h"
+}
 #include "player.h"
 #include <string>
 

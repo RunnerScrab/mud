@@ -1,5 +1,8 @@
 #ifndef POOLALLOC_H_
 #define POOLALLOC_H_
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 #include "talloc.h"
 #include <string.h>
@@ -59,5 +62,9 @@ void AllocPool_Destroy(struct AllocPool* pAllocPool);
 
 void* AllocPool_Alloc(struct AllocPool* pAllocPool);
 void AllocPool_Free(struct AllocPool* pAllocPool, void* pFreeMe);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

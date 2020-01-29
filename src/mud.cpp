@@ -2,8 +2,8 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
-
 #include <sys/epoll.h>
+#include <errno.h>
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -12,12 +12,15 @@
 #include <unistd.h>
 #include <signal.h>
 
+extern "C"
+{
 #include "talloc.h"
 #include "vector.h"
 #include "client.h"
 #include "threadpool.h"
 #include "server.h"
 #include "constants.h"
+}
 #include "as_manager.h"
 
 
@@ -25,19 +28,6 @@
 #define FAILURE(x) (x < 0)
 
 static struct Server* g_pServer = 0;
-
-void Server_AddTimedTask(struct Server* pServer, void* (*taskfn) (void*),
-			time_t runtime, void* args,
-			void (*argreleaserfn) (void*))
-{
-	struct ThreadTask* pTask = (struct ThreadTask*) MemoryPool_Alloc(&pServer->mem_pool, sizeof(struct ThreadTask));
-	pTask->taskfn = taskfn;
-	pTask->pArgs = args;
-	pTask->releasefn = argreleaserfn;
-	pthread_mutex_lock(&pServer->timed_queue_mtx);
-	prioq_min_insert(&pServer->timed_queue, runtime, pTask);
-	pthread_mutex_unlock(&pServer->timed_queue_mtx);
-}
 
 void HandleKillSig(int sig)
 {

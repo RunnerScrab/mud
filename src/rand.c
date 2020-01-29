@@ -1,4 +1,5 @@
 #include "rand.h"
+#include <stdlib.h>
 
 int RandGenerator_Init(struct RandGenerator* rgn)
 {
@@ -19,7 +20,7 @@ void RandGenerator_Destroy(struct RandGenerator* rgn)
 
 }
 
-inline void RandGenerator_Gen64(unsigned long long* p64)
+void RandGenerator_Gen64(unsigned long long* p64)
 {
 	#ifdef USEINTELINTRINSICS_
 	_rdrand64_step(p64);

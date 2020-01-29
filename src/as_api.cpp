@@ -1,17 +1,20 @@
 #include "as_api.h"
+extern "C"
+{
 #include "poolalloc.h"
 #include "crypto.h"
 #include "charvector.h"
 #include "uuid.h"
 #include "serverconfig.h"
+}
 #include "player.h"
+#include "angelscript.h"
 #include <ctype.h>
 
 void ASAPI_SendToAll(struct Server* server, std::string& message)
 {
 	Server_SendAllClients(server, message.c_str());
 }
-
 
 struct RunScriptCmdPkg
 {

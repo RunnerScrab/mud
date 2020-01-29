@@ -1,12 +1,35 @@
 #ifndef ANGELSCRIPT_MANAGER_H
 #define ANGELSCRIPT_MANAGER_H
-#include "./angelscriptsdk/sdk/angelscript/include/angelscript.h"
-#include "./angelscriptsdk/sdk/angelscript/source/as_jit.h"
+#ifdef __cplusplus
+extern "C"
+{
 #include "poolalloc.h"
-#include <vector>
+}
+#else
+#include "poolalloc.h"
+#endif
+
 #include <pthread.h>
 
-extern "C" typedef struct
+#ifdef __cplusplus
+class asIScriptContext;
+class asIScriptEngine;
+class asCJITCompiler;
+class asIScriptModule;
+class asIScriptFunction;
+#else
+typedef struct asIScriptContext asIScriptContext;
+typedef struct asIScriptEngine asIScriptEngine;
+typedef struct asCJITCompiler asCJITCompiler;
+typedef struct asIScriptModule asIScriptModule;
+typedef struct asIScriptFunction asIScriptFunction;
+#endif
+
+struct Server;
+struct Client;
+struct ServerConfig;
+
+typedef struct
 {
 	asIScriptContext** pContextArray;
 	unsigned char* pInUseArray;
@@ -18,7 +41,7 @@ extern "C" typedef struct
 	pthread_mutex_t mtx;
 } ASContextPool;
 
-extern "C" typedef struct
+typedef struct
 {
 	asIScriptEngine* engine;
 	asCJITCompiler* jit;
@@ -30,32 +53,38 @@ extern "C" typedef struct
 	asIScriptFunction* server_setup_func;
 	asIScriptContext* world_tick_scriptcontext;
 
-	MemoryPool mem_pool;
+	struct MemoryPool mem_pool;
 	ASContextPool ctx_pool;
 
 	size_t next_free_context_idx;
 }
 	AngelScriptManager;
 
+#ifdef __cplusplus
 extern "C"
 {
-	int AngelScriptManager_InitEngine(AngelScriptManager* manager);
-	int AngelScriptManager_LoadServerConfig(AngelScriptManager* manager, struct Server* server);
-	int AngelScriptManager_LoadScripts(AngelScriptManager* manager, const char* script_dir);
-	int AngelScriptManager_InitAPI(AngelScriptManager* manager, struct Server* server);
-	void AngelScriptManager_RunWorldTick(AngelScriptManager* manager);
-	void AngelScriptManager_ReleaseEngine(AngelScriptManager* manager);
+#endif
+	extern int AngelScriptManager_InitEngine(AngelScriptManager* manager);
+	extern int AngelScriptManager_LoadServerConfig(AngelScriptManager* manager, struct ServerConfig* server);
+	extern int AngelScriptManager_LoadScripts(AngelScriptManager* manager, const char* script_dir);
+	extern int AngelScriptManager_InitAPI(AngelScriptManager* manager, struct Server* server);
+	extern void AngelScriptManager_RunWorldTick(AngelScriptManager* manager);
+	extern void AngelScriptManager_ReleaseEngine(AngelScriptManager* manager);
 
-	void AngelScriptManager_CallOnPlayerConnect(AngelScriptManager* manager, struct Client* pClient);
-	void AngelScriptManager_CallOnPlayerDisconnect(AngelScriptManager* manager, struct Client* pClient);
-	void AngelScriptManager_CallOnPlayerInput(AngelScriptManager* manager, struct Client* pClient,
+	extern void AngelScriptManager_CallOnPlayerConnect(AngelScriptManager* manager, struct Client* pClient);
+	extern void AngelScriptManager_CallOnPlayerDisconnect(AngelScriptManager* manager, struct Client* pClient);
+	extern void AngelScriptManager_CallOnPlayerInput(AngelScriptManager* manager, struct Client* pClient,
 						const char* input);
 
 
-	int ASContextPool_Init(ASContextPool* pPool, asIScriptEngine* pEngine, size_t initial_size);
-	asIScriptContext* ASContextPool_GetContextAt(ASContextPool* pPool, size_t idx);
-	void ASContextPool_ReturnContextByIndex(ASContextPool* pPool, size_t idx);
-	size_t ASContextPool_GetFreeContextIndex(ASContextPool* pPool);
-	void ASContextPool_Destroy(ASContextPool* pPool);
+	extern int ASContextPool_Init(ASContextPool* pPool, asIScriptEngine* pEngine, size_t initial_size);
+	extern asIScriptContext* ASContextPool_GetContextAt(ASContextPool* pPool, size_t idx);
+	extern void ASContextPool_ReturnContextByIndex(ASContextPool* pPool, size_t idx);
+	extern size_t ASContextPool_GetFreeContextIndex(ASContextPool* pPool);
+	extern void ASContextPool_Destroy(ASContextPool* pPool);
+
+#ifdef __cplusplus
 }
+#endif
+
 #endif

@@ -1,5 +1,6 @@
 #include "command_dispatch.h"
 #include "server.h"
+#include "as_cinterface.h"
 #include <sys/time.h>
 
 int CmdDispatchThread_Init(struct CmdDispatchThread* dispatchthread, struct Server* server)
@@ -38,13 +39,13 @@ void CmdDispatchThread_Destroy(struct CmdDispatchThread* dispatchthread)
 	pthread_mutex_destroy(&dispatchthread->wakecondmtx);
 }
 
-inline void ZeroTs(struct timespec* ts)
+void ZeroTs(struct timespec* ts)
 {
 	ts->tv_sec = 0;
 	ts->tv_nsec = 0;
 }
 
-inline int IsTsNonZero(struct timespec* ts)
+int IsTsNonZero(struct timespec* ts)
 {
 	return ts->tv_sec && ts->tv_nsec;
 }
@@ -130,6 +131,6 @@ void* UserCommandDispatchThreadFn(void* pArgs)
 
 	}
 	ServerLog(SERVERLOG_STATUS, "Command Dispatch thread exiting.");
-	asThreadCleanup();
+	CCompatibleASThreadCleanup();
 	return (void*) 0;
 }
