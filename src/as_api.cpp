@@ -1,14 +1,11 @@
 #include "as_api.h"
-
 extern "C"
 {
-#include "as_manager.h"
 #include "poolalloc.h"
 #include "crypto.h"
 #include "charvector.h"
 #include "uuid.h"
 #include "serverconfig.h"
-#include "server.h"
 }
 #include "player.h"
 #include "angelscript.h"
@@ -42,7 +39,7 @@ void* ASAPI_RunScriptCommand(void* pArgs)
 	//internally generated task everywhere tasks are handled,
 	//however, resulting in a slightly less flexible design.
 
-	asIScriptContext* context = reinterpret_cast<asIScriptContext*>(ASContextPool_GetContextAt(pctx_pool, pPkg->context_handle));
+	asIScriptContext* context = ASContextPool_GetContextAt(pctx_pool, pPkg->context_handle);
 	context->Prepare(func);
 	context->SetObject(pPkg->cmd);
 	context->Execute();
@@ -58,9 +55,8 @@ void ASAPI_DebugVariables(struct Server* server, Player* playerobj)
 	if(playerobj)
 	{
 		AngelScriptManager* manager = &server->as_manager;
-		asIScriptEngine* engine = reinterpret_cast<asIScriptEngine*>(manager->engine);
-		asIScriptModule* module = reinterpret_cast<asIScriptModule*>(manager->main_module);
-		size_t gpropertycount = engine->GetGlobalPropertyCount();
+		asIScriptModule* module = manager->main_module;
+		size_t gpropertycount = manager->engine->GetGlobalPropertyCount();
 		size_t gvarcount = module->GetGlobalVarCount();
 		Client_Sendf(playerobj->m_pClient,
 			"Debug Variables called.\r\n"
@@ -82,9 +78,9 @@ void ASAPI_QueueScriptCommand(struct Server* server, asIScriptObject* obj, unsig
 		struct RunScriptCmdPkg* pkg = (struct RunScriptCmdPkg*) MemoryPool_Alloc(
 			&server->as_manager.mem_pool, sizeof(struct RunScriptCmdPkg));
 		pkg->cmd = obj;
-		pkg->cmdtype = reinterpret_cast<asIScriptModule*>(server->as_manager.main_module)->GetTypeInfoByDecl("ICommand");
+		pkg->cmdtype = server->as_manager.main_module->GetTypeInfoByDecl("ICommand");
 		pkg->pMemPool = &server->as_manager.mem_pool;
-		pkg->engine = reinterpret_cast<asIScriptEngine*>(server->as_manager.engine);
+		pkg->engine = server->as_manager.engine;
 		size_t hfreectx = ASContextPool_GetFreeContextIndex(&server->as_manager.ctx_pool);
 		pkg->context_pool = &server->as_manager.ctx_pool;
 		pkg->context_handle = hfreectx;
