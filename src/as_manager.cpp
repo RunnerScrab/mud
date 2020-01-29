@@ -1,14 +1,17 @@
-#include "as_api.h"
+#include "as_manager.h"
 extern "C"
 {
+#include "server.h"
 #include "serverconfig.h"
 #include "talloc.h"
-#include "poolalloc.h"
 }
-
+#include "as_api.h"
 #include "player.h"
 #include "scriptstdstring.h"
 #include "scriptarray.h"
+
+#include "./angelscriptsdk/sdk/angelscript/include/angelscript.h"
+#include "./angelscriptsdk/sdk/angelscript/source/as_jit.h"
 
 #include <cstdio>
 #include <cstdlib>
@@ -17,75 +20,10 @@ extern "C"
 #include <pthread.h>
 #include <memory>
 
-#include "./angelscriptsdk/sdk/angelscript/include/angelscript.h"
-#include "./angelscriptsdk/sdk/angelscript/source/as_jit.h"
-
 #define RETURNFAIL_IF(x) if(x){return -1;}
 
 extern "C"
 {
-
-	typedef struct
-	{
-		void** pContextArray;
-		unsigned char* pInUseArray;
-
-		size_t ctx_count;
-
-		void* pEngine;
-
-		pthread_mutex_t mtx;
-	} ASContextPool;
-
-	typedef struct
-	{
-		/*
-		  asIScriptEngine* engine;
-		  asCJITCompiler* jit;
-
-		  asIScriptModule* main_module, *config_module;
-
-		  asIScriptFunction* world_tick_func, *on_player_connect_func;
-		  asIScriptFunction* on_player_disconnect_func, *on_player_input_func;
-		  asIScriptFunction* server_setup_func;
-		  asIScriptContext* world_tick_scriptcontext;
-		*/
-
-		void* engine;
-		void* jit;
-		void* main_module, *config_module;
-		void* world_tick_func, *on_player_connect_func;
-		void* on_player_disconnect_func, *on_player_input_func;
-		void* server_setup_func;
-		void* world_tick_scriptcontext;
-
-		struct MemoryPool mem_pool;
-		ASContextPool ctx_pool;
-
-		size_t next_free_context_idx;
-	}
-		AngelScriptManager;
-
-
-	int AngelScriptManager_InitEngine(AngelScriptManager* manager);
-	int AngelScriptManager_LoadServerConfig(AngelScriptManager* manager, struct ServerConfig* servercfg);
-	int AngelScriptManager_LoadScripts(AngelScriptManager* manager, const char* script_dir);
-	int AngelScriptManager_InitAPI(AngelScriptManager* manager, struct Server* server);
-	void AngelScriptManager_RunWorldTick(AngelScriptManager* manager);
-	void AngelScriptManager_ReleaseEngine(AngelScriptManager* manager);
-
-	void AngelScriptManager_CallOnPlayerConnect(AngelScriptManager* manager, struct Client* pClient);
-	void AngelScriptManager_CallOnPlayerDisconnect(AngelScriptManager* manager, struct Client* pClient);
-	void AngelScriptManager_CallOnPlayerInput(AngelScriptManager* manager, struct Client* pClient,
-						const char* input);
-
-
-	int ASContextPool_Init(ASContextPool* pPool, void* pEngine, size_t initial_size);
-	void* ASContextPool_GetContextAt(ASContextPool* pPool, size_t idx);
-	void ASContextPool_ReturnContextByIndex(ASContextPool* pPool, size_t idx);
-	size_t ASContextPool_GetFreeContextIndex(ASContextPool* pPool);
-	void ASContextPool_Destroy(ASContextPool* pPool);
-
 	void as_MessageCallback(const asSMessageInfo* msg, void* param)
 	{
 		const char *type = "ERR ";
@@ -94,9 +32,7 @@ extern "C"
 		else if( msg->type == asMSGTYPE_INFORMATION )
 			type = "INFO";
 
-
-//		ServerLog(SERVERLOG_ERROR, "%s (%d, %d) : %s : %s\n", msg->section, msg->row, msg->col, type, msg->message);
-		printf("%s (%d, %d) : %s : %s\n", msg->section, msg->row, msg->col, type, msg->message);
+		ServerLog(SERVERLOG_ERROR, "%s (%d, %d) : %s : %s\n", msg->section, msg->row, msg->col, type, msg->message);
 	}
 
 	int AngelScriptManager_InitEngine(AngelScriptManager* manager)
@@ -104,18 +40,19 @@ extern "C"
 		MemoryPool_Init(&manager->mem_pool);
 		manager->engine = asCreateScriptEngine();
 		manager->jit = new asCJITCompiler(0);
-		asIScriptEngine* engine = reinterpret_cast<asIScriptEngine*>(manager->engine);
-		engine->SetEngineProperty(asEP_INCLUDE_JIT_INSTRUCTIONS, 1);
-		engine->SetJITCompiler(reinterpret_cast<asIJITCompiler*>(manager->jit));
 
-		engine->SetEngineProperty(asEP_ALLOW_MULTILINE_STRINGS, true);
-		RegisterStdString(engine);
-		RegisterScriptArray(engine, true);
-		engine->SetMessageCallback(asFUNCTION(as_MessageCallback), 0, asCALL_CDECL);
+		manager->engine->SetEngineProperty(asEP_INCLUDE_JIT_INSTRUCTIONS, 1);
+		manager->engine->SetJITCompiler(manager->jit);
+		RETURNFAIL_IF(!manager->engine);
+
+		manager->engine->SetEngineProperty(asEP_ALLOW_MULTILINE_STRINGS, true);
+		RegisterStdString(manager->engine);
+		RegisterScriptArray(manager->engine, true);
+		manager->engine->SetMessageCallback(asFUNCTION(as_MessageCallback), 0, asCALL_CDECL);
 #ifdef DEBUG
-		ASContextPool_Init(&manager->ctx_pool, engine, 1);
+		ASContextPool_Init(&manager->ctx_pool, manager->engine, 1);
 #else
-		ASContextPool_Init(&manager->ctx_pool, engine, 32);
+		ASContextPool_Init(&manager->ctx_pool, manager->engine, 32);
 #endif
 		return 0;
 	}
@@ -131,8 +68,8 @@ extern "C"
 	int AngelScriptManager_InitAPI(AngelScriptManager* manager, struct Server* server)
 	{
 		int result = 0;
-		asIScriptEngine* pEngine = reinterpret_cast<asIScriptEngine*>(manager->engine);
-		result = RegisterPlayerProxyClass(pEngine, reinterpret_cast<asIScriptModule*>(manager->main_module));
+		asIScriptEngine* pEngine = manager->engine;
+		result = RegisterPlayerProxyClass(pEngine, manager->main_module);
 		RETURNFAIL_IF(result < 0);
 
 		result = pEngine->RegisterObjectType("Server", 0, asOBJ_REF | asOBJ_NOCOUNT);
@@ -201,35 +138,32 @@ extern "C"
 		RETURNFAIL_IF(fread(&script[0], len, 1, fp) <= 0);
 		fclose(fp);
 		printf("Loaded:\n%s\n", script.c_str());
-		asIScriptEngine* engine = reinterpret_cast<asIScriptEngine*>(manager->engine);
-		asIScriptModule* config_module = engine->GetModule("config_module", asGM_ALWAYS_CREATE);
-		manager->config_module = config_module;
-
-		RETURNFAIL_IF(config_module->AddScriptSection("server_configuration", &script[0], len) < 0);
+		manager->config_module = manager->engine->GetModule("config_module", asGM_ALWAYS_CREATE);
+		RETURNFAIL_IF(manager->config_module->AddScriptSection("server_configuration", &script[0], len) < 0);
 		printf("Loaded server configuration script\n");
 
-		result = engine->RegisterObjectType("ServerConfig", 0, asOBJ_REF | asOBJ_NOCOUNT);
+		result = manager->engine->RegisterObjectType("ServerConfig", 0, asOBJ_REF | asOBJ_NOCOUNT);
 		RETURNFAIL_IF(result < 0);
 		printf("Registered server configuration type.\n");
-		result = engine->RegisterObjectMethod("ServerConfig", "void SetDatabasePath(string& in)",
-						asFUNCTION(ASAPI_SetDatabasePath), asCALL_CDECL_OBJFIRST);
+		result = manager->engine->RegisterObjectMethod("ServerConfig", "void SetDatabasePath(string& in)",
+							asFUNCTION(ASAPI_SetDatabasePath), asCALL_CDECL_OBJFIRST);
 		RETURNFAIL_IF(result < 0);
-		result = engine->RegisterObjectMethod("ServerConfig", "void SetGameScriptPath(string& in)",
-						asFUNCTION(ASAPI_SetGameScriptPath), asCALL_CDECL_OBJFIRST);
+		result = manager->engine->RegisterObjectMethod("ServerConfig", "void SetGameScriptPath(string& in)",
+							asFUNCTION(ASAPI_SetGameScriptPath), asCALL_CDECL_OBJFIRST);
 		RETURNFAIL_IF(result < 0);
-		result =engine->RegisterObjectMethod("ServerConfig", "void SetGameBindAddress(string& in, uint16 port)",
-						asFUNCTION(ASAPI_SetGameBindAddress), asCALL_CDECL_OBJFIRST);
+		result = manager->engine->RegisterObjectMethod("ServerConfig", "void SetGameBindAddress(string& in, uint16 port)",
+							asFUNCTION(ASAPI_SetGameBindAddress), asCALL_CDECL_OBJFIRST);
 		RETURNFAIL_IF(result < 0);
 		printf("Registered ServerConfig methods.\n");
-		RETURNFAIL_IF(config_module->Build() < 0);
-		manager->server_setup_func = config_module->GetFunctionByDecl("void SetupServer(ServerConfig@ config)");
+		RETURNFAIL_IF(manager->config_module->Build() < 0);
+		manager->server_setup_func = manager->config_module->GetFunctionByDecl("void SetupServer(ServerConfig@ config)");
 
 		RETURNFAIL_IF(0 == manager->server_setup_func);
 		printf("Found setup function.\n");
 
 		size_t ctxidx = ASContextPool_GetFreeContextIndex(&manager->ctx_pool);
-		asIScriptContext* ctx = reinterpret_cast<asIScriptContext*>(ASContextPool_GetContextAt(&manager->ctx_pool, ctxidx));
-		ctx->Prepare(reinterpret_cast<asIScriptFunction*>(manager->server_setup_func));
+		asIScriptContext* ctx = ASContextPool_GetContextAt(&manager->ctx_pool, ctxidx);
+		ctx->Prepare(manager->server_setup_func);
 		ctx->SetArgObject(0, serverconfig);
 		ctx->Execute();
 		ASContextPool_ReturnContextByIndex(&manager->ctx_pool, ctxidx);
@@ -252,42 +186,41 @@ extern "C"
 		RETURNFAIL_IF(fread(&script[0], len, 1, fp) <= 0);
 
 		fclose(fp);
-		asIScriptEngine* engine = reinterpret_cast<asIScriptEngine*>(manager->engine);
-		asIScriptModule* main_module = engine->GetModule("game_module", asGM_ALWAYS_CREATE);
-		manager->main_module = main_module;
-		RETURNFAIL_IF(main_module->AddScriptSection("game", &script[0], len) < 0);
-		RETURNFAIL_IF(LoadPlayerScript(engine, main_module));
-		RETURNFAIL_IF(main_module->Build() < 0);
+
+		manager->main_module = manager->engine->GetModule("game_module", asGM_ALWAYS_CREATE);
+		RETURNFAIL_IF(manager->main_module->AddScriptSection("game", &script[0], len) < 0);
+		RETURNFAIL_IF(LoadPlayerScript(manager->engine, manager->main_module));
+		RETURNFAIL_IF(manager->main_module->Build() < 0);
 
 		//TODO: Remove this - debug script class information
 		printf("-Class information-\n");
-		size_t idx = 0, object_type_count = main_module->GetObjectTypeCount();
+		size_t idx = 0, object_type_count = manager->main_module->GetObjectTypeCount();
 		for(; idx < object_type_count; ++idx)
 		{
-			asITypeInfo* pInfo = main_module->GetObjectTypeByIndex(idx);
+			asITypeInfo* pInfo = manager->main_module->GetObjectTypeByIndex(idx);
 			printf("Class %lu: %s\n", idx, pInfo->GetName());
 		}
 
-		size_t global_properties = engine->GetGlobalPropertyCount();
+		size_t global_properties = manager->engine->GetGlobalPropertyCount();
 		printf("There are %lu global properties.\n", global_properties);
 		/////////////////////////////
 
-		reinterpret_cast<asCJITCompiler*>(manager->jit)->finalizePages();
+		manager->jit->finalizePages();
 
-		manager->world_tick_func = main_module->GetFunctionByDecl("void GameTick()");
+		manager->world_tick_func = manager->main_module->GetFunctionByDecl("void GameTick()");
 		RETURNFAIL_IF(0 == manager->world_tick_func);
 
-		manager->on_player_connect_func = main_module->GetFunctionByDecl("void OnPlayerConnect(Player@ player)");
+		manager->on_player_connect_func = manager->main_module->GetFunctionByDecl("void OnPlayerConnect(Player@ player)");
 		RETURNFAIL_IF(0 == manager->on_player_connect_func);
 
-		manager->on_player_disconnect_func = main_module->GetFunctionByDecl("void OnPlayerDisconnect(Player@ player)");
+		manager->on_player_disconnect_func = manager->main_module->GetFunctionByDecl("void OnPlayerDisconnect(Player@ player)");
 		RETURNFAIL_IF(0 == manager->on_player_disconnect_func);
 
-		manager->on_player_input_func = main_module->GetFunctionByDecl("void OnPlayerInput(Player@ player, string input)");
+		manager->on_player_input_func = manager->main_module->GetFunctionByDecl("void OnPlayerInput(Player@ player, string input)");
 		RETURNFAIL_IF(0 == manager->on_player_input_func);
 
-		manager->world_tick_scriptcontext = (void*) engine->CreateContext();
-		RETURNFAIL_IF(0 == manager->world_tick_scriptcontext);
+		manager->world_tick_scriptcontext = manager->engine->CreateContext();
+
 		return 0;
 	}
 
@@ -295,8 +228,8 @@ extern "C"
 	{
 		printf("Calling on player disconnect.\n");
 		size_t idx = ASContextPool_GetFreeContextIndex(&manager->ctx_pool);
-		asIScriptContext* ctx = reinterpret_cast<asIScriptContext*>(ASContextPool_GetContextAt(&manager->ctx_pool, idx));
-		ctx->Prepare(reinterpret_cast<asIScriptFunction*>(manager->on_player_disconnect_func));
+		asIScriptContext* ctx = ASContextPool_GetContextAt(&manager->ctx_pool, idx);
+		ctx->Prepare(manager->on_player_disconnect_func);
 
 		ctx->SetArgObject(0, pClient->player_obj);
 		ctx->Execute();
@@ -307,8 +240,8 @@ extern "C"
 	void AngelScriptManager_CallOnPlayerInput(AngelScriptManager* manager, struct Client* pClient, const char* input)
 	{
 		size_t idx = ASContextPool_GetFreeContextIndex(&manager->ctx_pool);
-		asIScriptContext* ctx = reinterpret_cast<asIScriptContext*>(ASContextPool_GetContextAt(&manager->ctx_pool, idx));
-		ctx->Prepare(reinterpret_cast<asIScriptFunction*>(manager->on_player_input_func));
+		asIScriptContext* ctx = ASContextPool_GetContextAt(&manager->ctx_pool, idx);
+		ctx->Prepare(manager->on_player_input_func);
 		ctx->SetArgObject(0, pClient->player_obj);
 		std::string strarg(input);
 		ctx->SetArgObject(1, &strarg);
@@ -320,8 +253,8 @@ extern "C"
 	void AngelScriptManager_CallOnPlayerConnect(AngelScriptManager* manager, struct Client* pClient)
 	{
 		size_t idx = ASContextPool_GetFreeContextIndex(&manager->ctx_pool);
-		asIScriptContext* ctx = reinterpret_cast<asIScriptContext*>(ASContextPool_GetContextAt(&manager->ctx_pool, idx));
-		ctx->Prepare(reinterpret_cast<asIScriptFunction*>(manager->on_player_connect_func));
+		asIScriptContext* ctx = ASContextPool_GetContextAt(&manager->ctx_pool, idx);
+		ctx->Prepare(manager->on_player_connect_func);
 		asIScriptObject* playerobj = CreatePlayerProxy(manager, pClient);
 
 		pClient->player_obj = playerobj;
@@ -334,27 +267,25 @@ extern "C"
 
 	void AngelScriptManager_RunWorldTick(AngelScriptManager* manager)
 	{
-		asIScriptContext* ctx = reinterpret_cast<asIScriptContext*>(manager->world_tick_scriptcontext);
-		ctx->Prepare(reinterpret_cast<asIScriptFunction*>(manager->world_tick_func));
-		ctx->Execute();
+		manager->world_tick_scriptcontext->Prepare(manager->world_tick_func);
+		manager->world_tick_scriptcontext->Execute();
 	}
 
 	void AngelScriptManager_ReleaseEngine(AngelScriptManager* manager)
 	{
-		reinterpret_cast<asIScriptContext*>(manager->world_tick_scriptcontext)->Release();
+		manager->world_tick_scriptcontext->Release();
 		ASContextPool_Destroy(&manager->ctx_pool);
-		reinterpret_cast<asIScriptEngine*>(manager->engine)->Release();
-		delete reinterpret_cast<asCJITCompiler*>(manager->jit);
+		manager->engine->Release();
+		delete manager->jit;
 
 		MemoryPool_Destroy(&manager->mem_pool);
 	}
 
-	int ASContextPool_Init(ASContextPool* pPool, void* engine, size_t initial_size)
+	int ASContextPool_Init(ASContextPool* pPool, asIScriptEngine* pEngine, size_t initial_size)
 	{
-		asIScriptEngine* pEngine = reinterpret_cast<asIScriptEngine*>(engine);
 		pthread_mutex_init(&pPool->mtx, 0);
 		pPool->pEngine = pEngine;
-		pPool->pContextArray = (void**) talloc(sizeof(asIScriptContext*) * initial_size);
+		pPool->pContextArray = (asIScriptContext**) talloc(sizeof(asIScriptContext*) * initial_size);
 		pPool->pInUseArray = (unsigned char*) talloc(sizeof(unsigned char) * initial_size);
 
 		RETURNFAIL_IF(!pPool->pContextArray || !pPool->pInUseArray);
@@ -373,7 +304,7 @@ extern "C"
 		return 0;
 	}
 
-	void* ASContextPool_GetContextAt(ASContextPool* pPool, size_t idx)
+	asIScriptContext* ASContextPool_GetContextAt(ASContextPool* pPool, size_t idx)
 	{
 		if(idx > pPool->ctx_count)
 			return 0;
@@ -395,14 +326,14 @@ extern "C"
 		{
 			size_t oldsize = pPool->ctx_count;
 			size_t newsize = oldsize << 1;
-			pPool->pContextArray = (void**) trealloc(pPool->pContextArray, newsize * sizeof(asIScriptContext*));
+			pPool->pContextArray = (asIScriptContext**) trealloc(pPool->pContextArray, newsize * sizeof(asIScriptContext*));
 			pPool->pInUseArray = (unsigned char*) trealloc(pPool->pInUseArray, newsize * sizeof(unsigned char));
 
 			memset(&pPool->pInUseArray[oldsize], 0, sizeof(unsigned char) * (newsize - oldsize));
 			size_t idx = oldsize;
 			for(; idx < newsize; ++idx)
 			{
-				pPool->pContextArray[idx] = reinterpret_cast<asIScriptEngine*>(pPool->pEngine)->CreateContext();
+				pPool->pContextArray[idx] = pPool->pEngine->CreateContext();
 			}
 
 			pPool->ctx_count = newsize;
@@ -423,7 +354,7 @@ extern "C"
 		size_t idx = 0, len = pPool->ctx_count;
 		for(; idx < len; ++idx)
 		{
-			reinterpret_cast<asIScriptContext*>(pPool->pContextArray[idx])->Release();
+			pPool->pContextArray[idx]->Release();
 		}
 		tfree(pPool->pContextArray);
 		tfree(pPool->pInUseArray);
