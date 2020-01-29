@@ -7,12 +7,11 @@ extern "C"
 		asThreadCleanup();
 	}
 
-	void asIScriptObject_Release(void** p)
+	void asIScriptObject_Release(asIScriptObject** p)
 	{
 		if(p && *p)
 		{
-			asIScriptObject* pObj = *reinterpret_cast<asIScriptObject**>(p);
-			pObj->Release();
+			(*p)->Release();
 			*p = 0;
 		}
 	}

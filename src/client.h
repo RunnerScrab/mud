@@ -22,7 +22,7 @@ struct EvPkg
 };
 
 struct CmdDispatchThread;
-struct asIScriptObject;
+typedef struct asIScriptObject asIScriptObject;
 
 struct Client
 {
@@ -47,7 +47,7 @@ struct Client
 	struct CmdDispatchThread* pCmdDispatcher;
 	struct MemoryPool mem_pool;
 
-	void* player_obj;
+	asIScriptObject* player_obj;
 };
 
 void Client_Disconnect(struct Client* pTarget);
