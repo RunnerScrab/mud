@@ -58,11 +58,10 @@ int main(int argc, char** argv)
 	int ready = 0;
 	int loop_ctr = 0;
 	volatile char mudloop_running = 1;
+
 	//TODO: Handle binding properly w/ ipv6 support
-	if(FAILURE(Server_Configure(&server, "127.0.0.1", SERVER_PORT))
-		|| FAILURE(Server_Initialize(&server, SERVER_LISTENQUEUELEN)))
+	if(FAILURE(Server_Start(&server)))
 	{
-		//Server_Teardown(&server);
 		return -1;
 	}
 
@@ -75,8 +74,9 @@ int main(int argc, char** argv)
 
 		if(ready == -1)
 		{
-			ServerLog(SERVERLOG_ERROR, "Ready -1\n");
-			//break;
+			char errmsg[256];
+			strerror_r(errno, errmsg, 256);
+			ServerLog(SERVERLOG_DEBUG, "epoll reported error: %s\n", errmsg);
 		}
 
 		for(loop_ctr = 0; loop_ctr < ready; ++loop_ctr)
@@ -116,7 +116,7 @@ int main(int argc, char** argv)
 
 
 	ServerLog(SERVERLOG_STATUS, "Server shutting down.");
-	Server_Teardown(&server);
+	Server_Stop(&server);
 	printf("%d unfreed allocations.\n", toutstanding_allocs());
 	return 0;
 }

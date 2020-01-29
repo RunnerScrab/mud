@@ -139,8 +139,12 @@ int AngelScriptManager_LoadServerConfig(AngelScriptManager* manager, struct Serv
 	printf("Registered server configuration type.\n");
 	result = manager->engine->RegisterObjectMethod("ServerConfig", "void SetDatabasePath(string& in)",
 					asFUNCTION(ASAPI_SetDatabasePath), asCALL_CDECL_OBJFIRST);
+	RETURNFAIL_IF(result < 0);
 	result = manager->engine->RegisterObjectMethod("ServerConfig", "void SetGameScriptPath(string& in)",
 						asFUNCTION(ASAPI_SetGameScriptPath), asCALL_CDECL_OBJFIRST);
+	RETURNFAIL_IF(result < 0);
+	result = manager->engine->RegisterObjectMethod("ServerConfig", "void SetGameBindAddress(string& in, uint16 port)",
+						asFUNCTION(ASAPI_SetGameBindAddress), asCALL_CDECL_OBJFIRST);
 	RETURNFAIL_IF(result < 0);
 	printf("Registered ServerConfig methods.\n");
 	RETURNFAIL_IF(manager->config_module->Build() < 0);

@@ -14,7 +14,7 @@ struct TickThread
 
 };
 
-void TickThread_Init(struct TickThread* tt, struct Server* server, size_t tickspeed);
+int TickThread_Init(struct TickThread* tt, struct Server* server, size_t tickspeed);
 void TickThread_Stop(struct TickThread* tt);
 
 #endif

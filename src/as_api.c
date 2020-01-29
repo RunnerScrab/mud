@@ -138,3 +138,9 @@ void ASAPI_SetGameScriptPath(struct ServerConfig* config, std::string& path)
 		sizeof(char) * 256);
 	ServerLog(SERVERLOG_STATUS, "Game script path set to %s\n", config->scriptpath);
 }
+
+void ASAPI_SetGameBindAddress(struct ServerConfig* config, std::string& addr, unsigned short port)
+{
+	strncpy(config->bindip, addr.c_str(), addr.length());
+	config->bindport = port;
+}
