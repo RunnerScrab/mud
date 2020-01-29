@@ -1,6 +1,7 @@
 #ifndef PLAYER_H_
 #define PLAYER_H_
 #include "client.h"
+#include "as_manager.h"
 #include <string>
 
 class asIScriptObject;
@@ -29,5 +30,5 @@ protected:
 
 int LoadPlayerScript(asIScriptEngine* engine, asIScriptModule* module);
 int RegisterPlayerProxyClass(asIScriptEngine* engine, asIScriptModule* module);
-asIScriptObject* CreatePlayerProxy(void* asmanager, struct Client* pClient);
+asIScriptObject* CreatePlayerProxy(AngelScriptManager* manager, struct Client* pClient);
 #endif
