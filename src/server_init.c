@@ -28,20 +28,20 @@
 
 #define max(a, b) (a > b ? a : b)
 
-int Server_InitializeADTs(struct Server* server);
-int Server_InitializeScriptEngine(struct Server* server);
-int Server_LoadConfiguration(struct Server* server);
-int Server_LoadGame(struct Server* server);
-int Server_InitializeThreads(struct Server* server);
-int Server_InitializeNetwork(struct Server* server, const char* szAddr, unsigned short port);
-void Server_StopNetwork(struct Server* server);
-void Server_StopThreads(struct Server* server);
-void Server_UnloadGame(struct Server* server);
-void Server_FreeConfiguration(struct Server* server);
-void Server_StopScriptEngine(struct Server* server);
-void Server_ReleaseADTs(struct Server* server);
+static int Server_InitializeADTs(struct Server* server);
+static int Server_InitializeScriptEngine(struct Server* server);
+static int Server_LoadConfiguration(struct Server* server);
+static int Server_LoadGame(struct Server* server);
+static int Server_InitializeThreads(struct Server* server);
+static int Server_InitializeNetwork(struct Server* server, const char* szAddr, unsigned short port);
+static void Server_StopNetwork(struct Server* server);
+static void Server_StopThreads(struct Server* server);
+static void Server_UnloadGame(struct Server* server);
+static void Server_FreeConfiguration(struct Server* server);
+static void Server_StopScriptEngine(struct Server* server);
+static void Server_ReleaseADTs(struct Server* server);
 
-int Server_LoadMOTD(struct Server* server)
+static int Server_LoadMOTD(struct Server* server)
 {
 	//TODO: Put MOTD filename/path in configuration
 	FILE* fp = fopen("motd.txt", "rb");
@@ -59,7 +59,7 @@ int Server_LoadMOTD(struct Server* server)
 	return 0;
 }
 
-int Server_InitializeADTs(struct Server* server)
+static int Server_InitializeADTs(struct Server* server)
 {
 	pthread_mutex_init(&server->timed_queue_mtx, 0);
 	prioq_create(&server->timed_queue, 32);
@@ -75,7 +75,13 @@ int Server_InitializeADTs(struct Server* server)
 	}
 	pthread_rwlock_unlock(&server->clients_rwlock);
 
-	RandGenerator_Init(&server->rand_generator);
+	if(FAILURE(RandGenerator_Init(&server->rand_generator)))
+	{
+		ServerLog(SERVERLOG_ERROR, "FATAL: Failed to initialize random number generator!");
+		Server_Stop(server);
+		return -1;
+	}
+	ServerLog(SERVERLOG_STATUS, "Initialized random number generator.");
 
 	if(FAILURE(CryptoManager_Init(&server->crypto_manager)))
 	{
@@ -90,7 +96,7 @@ int Server_InitializeADTs(struct Server* server)
 	return 0;
 }
 
-int Server_InitializeScriptEngine(struct Server* server)
+static int Server_InitializeScriptEngine(struct Server* server)
 {
 	int result = AngelScriptManager_InitEngine(&server->as_manager);
 	if(FAILURE(result))
@@ -98,6 +104,7 @@ int Server_InitializeScriptEngine(struct Server* server)
 		ServerLog(SERVERLOG_ERROR, "Failed to initialize AngelScript engine.");
 		return -1;
 	}
+	ServerLog(SERVERLOG_STATUS, "Initialized scripting engine.");
 
 	result = AngelScriptManager_InitAPI(&server->as_manager, server);
 	if(FAILURE(result))
@@ -105,11 +112,11 @@ int Server_InitializeScriptEngine(struct Server* server)
 		ServerLog(SERVERLOG_ERROR, "Failed to initialize script API.\n");
 		return -1;
 	}
-
+	ServerLog(SERVERLOG_STATUS, "Registered script API.");
 	return result;
 }
 
-int Server_LoadConfiguration(struct Server* server)
+static int Server_LoadConfiguration(struct Server* server)
 {
 	int result = AngelScriptManager_LoadServerConfig(&server->as_manager, server);
 	if(FAILURE(result))
@@ -117,10 +124,11 @@ int Server_LoadConfiguration(struct Server* server)
 		ServerLog(SERVERLOG_ERROR, "Failed to load configuration file server.cfg.");
 		return -1;
 	}
+	ServerLog(SERVERLOG_STATUS, "Configuration file loaded.");
 	return 0;
 }
 
-int Server_LoadGame(struct Server* server)
+static int Server_LoadGame(struct Server* server)
 {
 	int result = AngelScriptManager_LoadScripts(&server->as_manager, server->configuration.scriptpath);
 	if(FAILURE(result))
@@ -128,6 +136,7 @@ int Server_LoadGame(struct Server* server)
 		ServerLog(SERVERLOG_ERROR, "Failed to load game scripts.\n");
 		return -1;
 	}
+	ServerLog(SERVERLOG_STATUS, "Game scripts loaded.");
 
 	result = Database_Init(&server->db, server->configuration.dbpath);
 	if(FAILURE(result))
@@ -136,14 +145,14 @@ int Server_LoadGame(struct Server* server)
 		Server_Stop(server);
 		return -1;
 	}
-	ServerLog(SERVERLOG_STATUS, "Initialized database.");
+	ServerLog(SERVERLOG_STATUS, "Initialized database engine.");
 
 	Server_LoadMOTD(server);
 
 	return 0;
 }
 
-int Server_InitializeThreads(struct Server* server)
+static int Server_InitializeThreads(struct Server* server)
 {
 	server->cpu_cores = get_nprocs();
 
@@ -152,23 +161,25 @@ int Server_InitializeThreads(struct Server* server)
 		ServerLog(SERVERLOG_ERROR, "Failed to initialize server tick thread!");
 		return -1;
 	}
+	ServerLog(SERVERLOG_STATUS, "Initialized server tick thread.");
 
 	if(FAILURE(CmdDispatchThread_Init(&server->cmd_dispatch_thread, server)))
 	{
 		ServerLog(SERVERLOG_ERROR, "Failed to initialize task dispatch thread!");
 		return -1;
 	}
+	ServerLog(SERVERLOG_STATUS, "Initialized task dispatch thread.");
 
 	if(FAILURE(ThreadPool_Init(&server->thread_pool, max(server->cpu_cores - 2, 1))))
 	{
 		ServerLog(SERVERLOG_ERROR, "Failed to initialize thread pool!");
 		return -1;
 	}
-
+	ServerLog(SERVERLOG_STATUS, "Initialized thread pool.");
 	return 0;
 }
 
-int Server_InitializeNetwork(struct Server* server, const char* szAddr, unsigned short port)
+static int Server_InitializeNetwork(struct Server* server, const char* szAddr, unsigned short port)
 {
 	int opts = 1;
 	server->sockfd = socket(AF_INET, SOCK_STREAM, 0);
@@ -215,7 +226,6 @@ int Server_InitializeNetwork(struct Server* server, const char* szAddr, unsigned
 		return -1;
 	}
 
-
 	if(FAILURE(epoll_ctl(server->epfd,
 					EPOLL_CTL_ADD,
 					server->sockfd,
@@ -242,7 +252,7 @@ int Server_InitializeNetwork(struct Server* server, const char* szAddr, unsigned
 		return -1;
 	}
 
-	ServerLog(SERVERLOG_STATUS, "Server listening on %s:%d.",
+	ServerLog(SERVERLOG_STATUS, "Server now listening on %s:%d.",
 		inet_ntoa(server->addr_in.sin_addr), ntohs(server->addr_in.sin_port));
 
 	return 0;
@@ -250,19 +260,18 @@ int Server_InitializeNetwork(struct Server* server, const char* szAddr, unsigned
 
 int Server_Start(struct Server* server)
 {
+	memset(server, 0, sizeof(struct Server));
 	Server_InitializeADTs(server);
 	Server_InitializeScriptEngine(server);
 	Server_LoadConfiguration(server);
 	Server_LoadGame(server);
-
 	Server_InitializeThreads(server);
-	//TODO: Put server bind address and port in configuration
-	Server_InitializeNetwork(server, "127.0.0.1", 9001);
-	ServerLog(SERVERLOG_STATUS, "Server starting. %d cores detected.", server->cpu_cores);
+	Server_InitializeNetwork(server, server->configuration.bindip, server->configuration.bindport);
+	ServerLog(SERVERLOG_STATUS, "Server running. %d processor cores detected.", server->cpu_cores);
 	return 0;
 }
 
-void Server_StopNetwork(struct Server* server)
+static void Server_StopNetwork(struct Server* server)
 {
 	close(server->sockfd);
 	close(server->cmd_pipe[0]);
@@ -270,7 +279,7 @@ void Server_StopNetwork(struct Server* server)
 	tfree(server->evlist);
 }
 
-void Server_StopThreads(struct Server* server)
+static void Server_StopThreads(struct Server* server)
 {
 	ThreadPool_Destroy(&server->thread_pool);
 	CmdDispatchThread_Stop(&server->cmd_dispatch_thread);
@@ -278,30 +287,30 @@ void Server_StopThreads(struct Server* server)
 	TickThread_Stop(&server->game_tick_thread);
 }
 
-void Server_FreeMOTD(struct Server* server)
+static void Server_FreeMOTD(struct Server* server)
 {
 	tfree(server->MOTD);
 	server->MOTD = 0;
 }
 
-void Server_UnloadGame(struct Server* server)
+static void Server_UnloadGame(struct Server* server)
 {
 	Server_FreeMOTD(server);
 	Database_Release(&server->db);
 }
 
-void Server_FreeConfiguration(struct Server* server)
+static void Server_FreeConfiguration(struct Server* server)
 {
 
 }
 
-void Server_StopScriptEngine(struct Server* server)
+static void Server_StopScriptEngine(struct Server* server)
 {
 	AngelScriptManager_ReleaseEngine(&server->as_manager);
 	asThreadCleanup();
 }
 
-void Server_ReleaseADTs(struct Server* server)
+static void Server_ReleaseADTs(struct Server* server)
 {
 	MemoryPool_Destroy(&server->mem_pool);
 	CryptoManager_Destroy(&server->crypto_manager);
@@ -320,8 +329,9 @@ void Server_Stop(struct Server* server)
 	Server_FreeConfiguration(server);
 	Server_ReleaseADTs(server);
 
-	//Generally, resources must be released in LIFO order (reverse of how they were acquired).
-	//However, the scripting engine cannot release certain objects while the rest of the mud engine
-	//retains references to them.
+	//Generally, resources must be released in LIFO order (reverse
+	//of how they were acquired).  However, the scripting engine
+	//cannot release certain objects while the rest of the mud
+	//engine retains references to them.
 	Server_StopScriptEngine(server);
 }

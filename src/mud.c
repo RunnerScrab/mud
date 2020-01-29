@@ -74,8 +74,9 @@ int main(int argc, char** argv)
 
 		if(ready == -1)
 		{
-			ServerLog(SERVERLOG_ERROR, "Ready -1\n");
-			//break;
+			char errmsg[256];
+			strerror_r(errno, errmsg, 256);
+			ServerLog(SERVERLOG_DEBUG, "epoll reported error: %s\n", errmsg);
 		}
 
 		for(loop_ctr = 0; loop_ctr < ready; ++loop_ctr)
