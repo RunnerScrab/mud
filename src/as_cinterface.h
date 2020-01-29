@@ -3,7 +3,7 @@
 
 typedef struct asIScriptObject asIScriptObject;
 
-void ASThreadCleanup();
+void CCompatibleASThreadCleanup();
 void asIScriptObject_Release(asIScriptObject** p);
 
 #endif

@@ -309,7 +309,7 @@ static void Server_FreeConfiguration(struct Server* server)
 static void Server_StopScriptEngine(struct Server* server)
 {
 	AngelScriptManager_ReleaseEngine(&server->as_manager);
-	ASThreadCleanup();
+	CCompatibleASThreadCleanup();
 }
 
 static void Server_ReleaseADTs(struct Server* server)

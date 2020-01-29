@@ -66,6 +66,6 @@ void* TickThreadFn(void* pArgs)
 		usleep(tick_delay);
 	}
 	ServerLog(SERVERLOG_STATUS, "Tickthread terminating.\n");
-	ASThreadCleanup();
+	CCompatibleASThreadCleanup();
 	return (void*) 0;
 }

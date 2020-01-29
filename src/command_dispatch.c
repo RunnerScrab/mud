@@ -131,6 +131,6 @@ void* UserCommandDispatchThreadFn(void* pArgs)
 
 	}
 	ServerLog(SERVERLOG_STATUS, "Command Dispatch thread exiting.");
-	ASThreadCleanup();
+	CCompatibleASThreadCleanup();
 	return (void*) 0;
 }

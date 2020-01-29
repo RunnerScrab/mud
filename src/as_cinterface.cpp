@@ -2,7 +2,7 @@
 
 extern "C"
 {
-	void ASThreadCleanup()
+	void CCompatibleASThreadCleanup()
 	{
 		asThreadCleanup();
 	}
