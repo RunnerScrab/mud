@@ -102,14 +102,13 @@ int RegisterPlayerProxyClass(asIScriptEngine* engine, asIScriptModule* module)
 	return 0;
 }
 
-asIScriptObject* CreatePlayerProxy(AngelScriptManager* manager, struct Client* pClient)
+asIScriptObject* CreatePlayerProxy(void* asmanager, struct Client* pClient)
 {
-	asIScriptEngine* pEngine = manager->engine;
-	asIScriptModule* pModule = manager->main_module;
+	AngelScriptManager* manager = reinterpret_cast<AngelScriptManager*>(asmanager);
+	asIScriptEngine* pEngine = reinterpret_cast<asIScriptEngine*>(manager->engine);
+	asIScriptModule* pModule = reinterpret_cast<asIScriptModule*>(manager->main_module);
 	asIScriptObject* obj = reinterpret_cast<asIScriptObject*>(pEngine->CreateScriptObject(
-									pModule->GetTypeInfoByName("Player")
-									)
-		);
+									pModule->GetTypeInfoByName("Player")));
 	if(obj)
 	{
 		Player* pPlayer = *((Player**) obj->GetAddressOfProperty(0));

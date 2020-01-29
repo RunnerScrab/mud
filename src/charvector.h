@@ -3,6 +3,9 @@
 
 #include "talloc.h"
 #include <stdarg.h>
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 typedef char el_t;
 
@@ -31,5 +34,9 @@ el_t cv_at(cv_t* cv, size_t idx);
 size_t cv_len(cv_t* cv);
 
 void cv_sprintf(cv_t* pcv, const char* fmt, ...);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

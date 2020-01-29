@@ -26,6 +26,8 @@
 
 #include "tickthread.h"
 
+#include "as_cinterface.h"
+
 #define max(a, b) (a > b ? a : b)
 
 static int Server_InitializeADTs(struct Server* server);
@@ -118,7 +120,7 @@ static int Server_InitializeScriptEngine(struct Server* server)
 
 static int Server_LoadConfiguration(struct Server* server)
 {
-	int result = AngelScriptManager_LoadServerConfig(&server->as_manager, server);
+	int result = AngelScriptManager_LoadServerConfig(&server->as_manager, &server->configuration);
 	if(FAILURE(result))
 	{
 		ServerLog(SERVERLOG_ERROR, "Failed to load configuration file server.cfg.");
@@ -307,7 +309,7 @@ static void Server_FreeConfiguration(struct Server* server)
 static void Server_StopScriptEngine(struct Server* server)
 {
 	AngelScriptManager_ReleaseEngine(&server->as_manager);
-	asThreadCleanup();
+	ASThreadCleanup();
 }
 
 static void Server_ReleaseADTs(struct Server* server)

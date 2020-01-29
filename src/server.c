@@ -55,6 +55,19 @@ void Server_SendClientMotd(struct Server* pServer, struct Client* pClient)
 	Client_WriteTo(pClient, pServer->MOTD, strlen(pServer->MOTD));
 }
 
+void Server_AddTimedTask(struct Server* pServer, void* (*taskfn) (void*),
+			time_t runtime, void* args,
+			void (*argreleaserfn) (void*))
+{
+	struct ThreadTask* pTask = (struct ThreadTask*) MemoryPool_Alloc(&pServer->mem_pool, sizeof(struct ThreadTask));
+	pTask->taskfn = taskfn;
+	pTask->pArgs = args;
+	pTask->releasefn = argreleaserfn;
+	pthread_mutex_lock(&pServer->timed_queue_mtx);
+	prioq_min_insert(&pServer->timed_queue, runtime, pTask);
+	pthread_mutex_unlock(&pServer->timed_queue_mtx);
+}
+
 void Server_WriteToCmdPipe(struct Server* server, const char* msg, size_t msglen)
 {
 	write(server->cmd_pipe[1], msg, sizeof(char) * msglen);

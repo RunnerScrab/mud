@@ -9,22 +9,23 @@
 #endif
 
 #include <math.h>
+#include <stdarg.h>
 
 struct RandGenerator
 {
 	unsigned long long seed64;
-	u_int64_t wyhash64_x;
+	unsigned long long wyhash64_x;
 };
 
 struct RandFIFO
 {
-	u_int64_t* fifo;
+	unsigned long long* fifo;
 	size_t length;
 };
 
 int RandFIFO_Init(struct RandFIFO* fifo, size_t init_len);
 int RandGenerator_Init(struct RandGenerator* rgn);
 void RandGenerator_Destroy(struct RandGenerator* rgn);
-inline void RandGenerator_Gen64(unsigned long long* p64);
+void RandGenerator_Gen64(unsigned long long* p64);
 
 #endif

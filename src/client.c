@@ -10,6 +10,7 @@
 #include "iohelper.h"
 #include "ansicolor.h"
 #include "command_dispatch.h"
+#include "as_cinterface.h"
 
 struct Client* Client_Create(int sock, struct CmdDispatchThread* pDispatcher)
 {
@@ -48,12 +49,6 @@ void Client_Destroy(void* p)
 {
 	struct Client* pClient = (struct Client*) p;
 
-	if(pClient->player_obj)
-	{
-		pClient->player_obj->Release();
-		pClient->player_obj = 0;
-	}
-
 	cv_destroy(&pClient->tel_stream.sb_args);
 	cv_destroy(&pClient->input_buffer);
 	ZCompressor_StopAndRelease(&pClient->zstreams);
@@ -63,11 +58,8 @@ void Client_Destroy(void* p)
 	pthread_mutex_destroy(&pClient->cmd_queue_mtx);
 	MemoryPool_Destroy(&pClient->mem_pool);
 
-	if(pClient->player_obj)
-	{
-		pClient->player_obj->Release();
-		pClient->player_obj = 0;
-	}
+	asIScriptObject_Release(&pClient->player_obj);
+
 	tfree(pClient);
 }
 

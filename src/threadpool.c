@@ -1,6 +1,8 @@
 #include "threadpool.h"
 #include "talloc.h"
 #include "prioq.h"
+
+#include "as_cinterface.h"
 #include <sys/sysinfo.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -34,7 +36,6 @@ static void* ThreadPool_WorkerThreadFunc(void* pArg)
 		struct ThreadTask* pTask = (struct ThreadTask*) prioq_extract_min(&pPool->prio_queue);
 		pthread_mutex_unlock(&pPool->prio_queue_mutex);
 
-
 		if(pTask)
 		{
 			if(pTask->taskfn)
@@ -65,7 +66,7 @@ static void* ThreadPool_WorkerThreadFunc(void* pArg)
 	}
 	//This unlock is normally unnecessary and is for if we need to exit the
 	//worker thread loop suddenly
-	asThreadCleanup();
+	ASThreadCleanup();
 	pthread_mutex_unlock(&pPool->prio_queue_mutex);
 	return 0;
 }

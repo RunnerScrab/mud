@@ -1,7 +1,10 @@
-CC = g++
+CC = gcc
+CCXX = g++
+
 SQLITECC = gcc
 CFLAGS = -Wall -g
-LDLIBS = -pthread -lcheck -lz -ldl -l:libsodium.so
+CXXFLAGS = -Wall -g
+LDLIBS = -pthread -lcheck -lz -ldl -lm -l:libsodium.so
 OUTPUT_OPTION = -MMD -MP -o $@
 
 CSOURCE := $(wildcard *.c)
@@ -19,7 +22,8 @@ DEPS := $(CDEPS) $(CXXDEPS)
 LIBS = libangelscript.a libsqlite3.a
 
 mud: ${OBJS} ${LIBS}
-	${CC} -o mud ${OBJS} ${LIBS} ${LDLIBS}
+# The linking must be managed by g++
+	${CCXX} -o mud ${OBJS} ${LIBS} ${LDLIBS}
 
 sqlite: sqlite3.o
 
