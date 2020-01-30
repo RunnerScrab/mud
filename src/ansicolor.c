@@ -65,7 +65,7 @@ void ANSIColorizeString(const el_t* input, cv_t* output)
 	for(;*pInput && (markerstart = strstr(pInput, "`"));)
 	{
 		el_t* markerend = markerstart ? strstr(markerstart + 1, "`") : 0;
-		el_t symbol[16] = {0};
+		el_t symbol[32] = {0};
 		if(markerstart && markerend)
 		{
 			strncpy(symbol, markerstart + 1, markerend - markerstart - 1);
@@ -77,10 +77,10 @@ void ANSIColorizeString(const el_t* input, cv_t* output)
 			case '#':
 			{
 				//24-bit ANSI color code, foreground
-				el_t twentyfourbitansi[16] = {0};
+				el_t twentyfourbitansi[32] = {0};
 				unsigned char r, g, b;
 				atorgb(symbol, &r, &g, &b);
-				snprintf(twentyfourbitansi, sizeof(el_t) * 16, "\x1b[%d;2;%d;%d;%dm",
+				snprintf(twentyfourbitansi, sizeof(el_t) * 31, "\x1b[%d;2;%d;%d;%dm",
 					symbol[0] == '#'? 38 : 48,r, g, b);
 
 				//strncat(output, twentyfourbitansi, strlen(twentyfourbitansi));

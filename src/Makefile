@@ -2,8 +2,8 @@ CC = gcc
 CCXX = g++
 
 SQLITECC = gcc
-CFLAGS = -Wall -g
-CXXFLAGS = -Wall -g
+CFLAGS = -Wall -Ofast
+CXXFLAGS = -Wall -Ofast
 LDLIBS = -pthread -lcheck -lz -ldl -lm -l:libsodium.so
 OUTPUT_OPTION = -MMD -MP -o $@
 

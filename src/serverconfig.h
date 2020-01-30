@@ -3,7 +3,7 @@
 
 struct ServerConfig
 {
-	char dbpath[256];
+	char dbfilepath[256];
 	char scriptpath[256];
 	char bindip[32];
 	unsigned short bindport;

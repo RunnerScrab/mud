@@ -20,6 +20,6 @@ void ASAPI_HashPassword(const std::string& password, std::string& out);
 void ASAPI_GenerateUUID(std::string& out);
 
 void ASAPI_SetGameScriptPath(struct ServerConfig* config, std::string& path);
-void ASAPI_SetDatabasePath(struct ServerConfig* config, std::string& path);
+void ASAPI_SetDatabasePathAndFile(struct ServerConfig* config, std::string& path, std::string& filename);
 void ASAPI_SetGameBindAddress(struct ServerConfig* config, std::string& addr, unsigned short port);
 #endif

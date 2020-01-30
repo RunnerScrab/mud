@@ -56,7 +56,7 @@ BEGIN_AS_NAMESPACE
 #endif
 #endif
 
-// The modf function doesn't seem very intuitive, so I'm writing this 
+// The modf function doesn't seem very intuitive, so I'm writing this
 // function that simply returns the fractional part of the float value
 #if AS_USE_FLOAT
 float fractionf(float v)
@@ -72,35 +72,57 @@ double fraction(double v)
 }
 #endif
 
+//Avoid type punning - it can cause broken behavior at high levels of
+//compiler optimization
+typedef union
+{
+  asUINT asuint;
+  float asfloat;
+} TypePunFloat;
+
+typedef union
+{
+  asQWORD asqword;
+  double asdouble;
+} TypePunDouble;
+
 // As AngelScript doesn't allow bitwise manipulation of float types we'll provide a couple of
-// functions for converting float values to IEEE 754 formatted values etc. This also allow us to 
+// functions for converting float values to IEEE 754 formatted values etc. This also allow us to
 // provide a platform agnostic representation to the script so the scripts don't have to worry
 // about whether the CPU uses IEEE 754 floats or some other representation
 float fpFromIEEE(asUINT raw)
 {
+	TypePunFloat onion;
+	onion.asuint = raw;
 	// TODO: Identify CPU family to provide proper conversion
 	//        if the CPU doesn't natively use IEEE style floats
-	return *reinterpret_cast<float*>(&raw);
+	return onion.asfloat;
 }
 asUINT fpToIEEE(float fp)
 {
-	return *reinterpret_cast<asUINT*>(&fp);
+	TypePunFloat onion;
+	onion.asfloat = fp;
+	return onion.asuint;
 }
 double fpFromIEEE(asQWORD raw)
 {
-	return *reinterpret_cast<double*>(&raw);
+	TypePunDouble onion;
+	onion.asqword = raw;
+	return onion.asdouble;
 }
 asQWORD fpToIEEE(double fp)
 {
-	return *reinterpret_cast<asQWORD*>(&fp);
+	TypePunDouble onion;
+	onion.asdouble = fp;
+	return onion.asqword;
 }
 
-// closeTo() is used to determine if the binary representation of two numbers are 
+// closeTo() is used to determine if the binary representation of two numbers are
 // relatively close to each other. Numerical errors due to rounding errors build
 // up over many operations, so it is almost impossible to get exact numbers and
 // this is where closeTo() comes in.
 //
-// It shouldn't be used to determine if two numbers are mathematically close to 
+// It shouldn't be used to determine if two numbers are mathematically close to
 // each other.
 //
 // ref: http://www.cygnus-software.com/papers/comparingfloats/comparingfloats.htm
@@ -114,7 +136,7 @@ bool closeTo(float a, float b, float epsilon)
 	float diff = fabsf(a - b);
 	if( (a == 0 || b == 0) && (diff < epsilon) )
 		return true;
-	
+
 	// Otherwise we need to use relative comparison to account for precision
 	return diff / (fabs(a) + fabs(b)) < epsilon;
 }
@@ -126,7 +148,7 @@ bool closeTo(double a, double b, double epsilon)
 	double diff = fabs(a - b);
 	if( (a == 0 || b == 0) && (diff < epsilon) )
 		return true;
-	
+
 	return diff / (fabs(a) + fabs(b)) < epsilon;
 }
 
@@ -140,7 +162,7 @@ void RegisterScriptMath_Native(asIScriptEngine *engine)
 	r = engine->RegisterGlobalFunction("double fpFromIEEE(uint64)", asFUNCTIONPR(fpFromIEEE, (asQWORD), double), asCALL_CDECL); assert( r >= 0 );
 	r = engine->RegisterGlobalFunction("uint64 fpToIEEE(double)", asFUNCTIONPR(fpToIEEE, (double), asQWORD), asCALL_CDECL); assert( r >= 0 );
 
-	// Close to comparison with epsilon 
+	// Close to comparison with epsilon
 	r = engine->RegisterGlobalFunction("bool closeTo(float, float, float = 0.00001f)", asFUNCTIONPR(closeTo, (float, float, float), bool), asCALL_CDECL); assert( r >= 0 );
 	r = engine->RegisterGlobalFunction("bool closeTo(double, double, double = 0.0000000001)", asFUNCTIONPR(closeTo, (double, double, double), bool), asCALL_CDECL); assert( r >= 0 );
 
@@ -343,5 +365,3 @@ void RegisterScriptMath(asIScriptEngine *engine)
 }
 
 END_AS_NAMESPACE
-
-

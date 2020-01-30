@@ -4,9 +4,9 @@
 
 void UUIDToString(union UUID* uuid, cv_t* out)
 {
-	cv_resize(out, 37);
+	cv_resize(out, 38);
 	snprintf(out->data,
-		sizeof(char) * 37,
+		sizeof(char) * 38,
 		"%8.8x-%4.4x-%4.4x-%2.2x%2.2x-%x%x%x%x%x%x\n",
 		uuid->fields.time_low,
 		uuid->fields.time_mid,

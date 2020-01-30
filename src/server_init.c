@@ -140,7 +140,7 @@ static int Server_LoadGame(struct Server* server)
 	}
 	ServerLog(SERVERLOG_STATUS, "Game scripts loaded.");
 
-	result = Database_Init(&server->db, server->configuration.dbpath);
+	result = Database_Init(&server->db, server->configuration.dbfilepath);
 	if(FAILURE(result))
 	{
 		ServerLog(SERVERLOG_ERROR, "FATAL: Failed to initialize database!");

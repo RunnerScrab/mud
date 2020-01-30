@@ -137,16 +137,16 @@ extern "C"
 		script.resize(len);
 		RETURNFAIL_IF(fread(&script[0], len, 1, fp) <= 0);
 		fclose(fp);
-		printf("Loaded:\n%s\n", script.c_str());
+
 		manager->config_module = manager->engine->GetModule("config_module", asGM_ALWAYS_CREATE);
 		RETURNFAIL_IF(manager->config_module->AddScriptSection("server_configuration", &script[0], len) < 0);
-		printf("Loaded server configuration script\n");
 
 		result = manager->engine->RegisterObjectType("ServerConfig", 0, asOBJ_REF | asOBJ_NOCOUNT);
 		RETURNFAIL_IF(result < 0);
-		printf("Registered server configuration type.\n");
-		result = manager->engine->RegisterObjectMethod("ServerConfig", "void SetDatabasePath(string& in)",
-							asFUNCTION(ASAPI_SetDatabasePath), asCALL_CDECL_OBJFIRST);
+
+		result = manager->engine->RegisterObjectMethod("ServerConfig",
+							       "void SetDatabasePathAndFile(string& in, string& in)",
+							asFUNCTION(ASAPI_SetDatabasePathAndFile), asCALL_CDECL_OBJFIRST);
 		RETURNFAIL_IF(result < 0);
 		result = manager->engine->RegisterObjectMethod("ServerConfig", "void SetGameScriptPath(string& in)",
 							asFUNCTION(ASAPI_SetGameScriptPath), asCALL_CDECL_OBJFIRST);
@@ -154,12 +154,10 @@ extern "C"
 		result = manager->engine->RegisterObjectMethod("ServerConfig", "void SetGameBindAddress(string& in, uint16 port)",
 							asFUNCTION(ASAPI_SetGameBindAddress), asCALL_CDECL_OBJFIRST);
 		RETURNFAIL_IF(result < 0);
-		printf("Registered ServerConfig methods.\n");
 		RETURNFAIL_IF(manager->config_module->Build() < 0);
 		manager->server_setup_func = manager->config_module->GetFunctionByDecl("void SetupServer(ServerConfig@ config)");
 
 		RETURNFAIL_IF(0 == manager->server_setup_func);
-		printf("Found setup function.\n");
 
 		size_t ctxidx = ASContextPool_GetFreeContextIndex(&manager->ctx_pool);
 		asIScriptContext* ctx = ASContextPool_GetContextAt(&manager->ctx_pool, ctxidx);

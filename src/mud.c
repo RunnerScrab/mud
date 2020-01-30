@@ -12,15 +12,13 @@
 #include <unistd.h>
 #include <signal.h>
 
-extern "C"
-{
 #include "talloc.h"
 #include "vector.h"
 #include "client.h"
 #include "threadpool.h"
 #include "server.h"
 #include "constants.h"
-}
+
 #include "as_manager.h"
 
 
