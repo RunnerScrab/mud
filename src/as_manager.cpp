@@ -9,7 +9,7 @@ extern "C"
 #include "player.h"
 #include "scriptstdstring.h"
 #include "scriptarray.h"
-
+#include "scripthelper.h"
 #include "./angelscriptsdk/sdk/angelscript/include/angelscript.h"
 #include "./angelscriptsdk/sdk/angelscript/source/as_jit.h"
 
@@ -48,11 +48,12 @@ extern "C"
 		manager->engine->SetEngineProperty(asEP_ALLOW_MULTILINE_STRINGS, true);
 		RegisterStdString(manager->engine);
 		RegisterScriptArray(manager->engine, true);
+		RegisterExceptionRoutines(manager->engine);
 		manager->engine->SetMessageCallback(asFUNCTION(as_MessageCallback), 0, asCALL_CDECL);
 #ifdef DEBUG
-		ASContextPool_Init(&manager->ctx_pool, manager->engine, 1);
+		ASContextPool_Init(&manager->ctx_pool, manager->engine, manager, 1);
 #else
-		ASContextPool_Init(&manager->ctx_pool, manager->engine, 32);
+		ASContextPool_Init(&manager->ctx_pool, manager->engine, manager, 32);
 #endif
 		return 0;
 	}
@@ -279,7 +280,19 @@ extern "C"
 		MemoryPool_Destroy(&manager->mem_pool);
 	}
 
-	int ASContextPool_Init(ASContextPool* pPool, asIScriptEngine* pEngine, size_t initial_size)
+	void AngelScriptManager_OnScriptException(AngelScriptManager* manager, asIScriptContext* ctx)
+	{
+		const char* section_name = 0;
+		int col_number = 0;
+		int line_number = ctx->GetExceptionLineNumber(&col_number, &section_name);
+		asIScriptFunction* func = ctx->GetExceptionFunction();
+		ServerLog(SERVERLOG_ERROR, "SCRIPT EXCEPTION '%s' thrown from %s:%s:(%d, %d)!",
+			ctx->GetExceptionString(), section_name, func->GetDeclaration(),
+			line_number, col_number);
+	}
+
+	int ASContextPool_Init(ASContextPool* pPool, asIScriptEngine* pEngine, AngelScriptManager* pManager,
+			size_t initial_size)
 	{
 		pthread_mutex_init(&pPool->mtx, 0);
 		pPool->pEngine = pEngine;
@@ -296,7 +309,11 @@ extern "C"
 		size_t idx = 0;
 		for(; idx < initial_size; ++idx)
 		{
-			pPool->pContextArray[idx] = pEngine->CreateContext();
+			asIScriptContext* ctx = pEngine->CreateContext();
+			ctx->SetExceptionCallback(asFUNCTION(AngelScriptManager_OnScriptException),
+						pManager, asCALL_CDECL_OBJFIRST);
+
+			pPool->pContextArray[idx] = ctx;
 		}
 
 		return 0;

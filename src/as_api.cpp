@@ -50,6 +50,62 @@ void* ASAPI_RunScriptCommand(void* pArgs)
 	return (void*) 0;
 }
 
+const char* GetASTypeName(int type)
+{
+	static const char* asTypeNames[] =
+		{
+			"void", "bool", "int8", "int16", "int32", "int64",
+			"uint8", "uint16", "uint32", "uint64", "float",
+			"double", "objhandle", "handletoconst", "object",
+			"appobject", "scriptobject", "template", "seqnumber"
+		};
+
+	switch(type)
+	{
+	case asTYPEID_VOID:
+		return asTypeNames[0];
+	case asTYPEID_BOOL:
+		return asTypeNames[1];
+	case asTYPEID_INT8:
+		return asTypeNames[2];
+	case asTYPEID_INT16:
+		return asTypeNames[3];
+	case asTYPEID_INT32:
+		return asTypeNames[4];
+	case asTYPEID_INT64:
+		return asTypeNames[5];
+	case asTYPEID_UINT8:
+		return asTypeNames[6];
+	case asTYPEID_UINT16:
+		return asTypeNames[7];
+	case asTYPEID_UINT32:
+		return asTypeNames[8];
+	case asTYPEID_UINT64:
+		return asTypeNames[9];
+	case asTYPEID_FLOAT:
+		return asTypeNames[10];
+	case asTYPEID_DOUBLE:
+		return asTypeNames[11];
+	default:
+		if(asTYPEID_OBJHANDLE & type)
+			return asTypeNames[12];
+		if(asTYPEID_HANDLETOCONST & type)
+			return asTypeNames[13];
+		if(asTYPEID_MASK_OBJECT & type)
+			return asTypeNames[14];
+		if(asTYPEID_APPOBJECT & type)
+			return asTypeNames[15];
+		if(asTYPEID_SCRIPTOBJECT & type)
+			return asTypeNames[16];
+		if(asTYPEID_TEMPLATE & type)
+			return asTypeNames[17];
+		if(asTYPEID_MASK_SEQNBR & type)
+			return asTypeNames[18];
+
+		return "unknown";
+	}
+}
+
 void ASAPI_DebugVariables(struct Server* server, Player* playerobj)
 {
 	if(playerobj)
@@ -64,7 +120,34 @@ void ASAPI_DebugVariables(struct Server* server, Player* playerobj)
 			"Global Functions: %lu\r\n"
 			"Global Variables: %lu\r\n",
 			gpropertycount, module->GetFunctionCount(), gvarcount);
+		size_t idx = 0;
+		for(; idx < gvarcount; ++idx)
+		{
+			const char* name = 0;
+			int vartype = 0;
+			module->GetGlobalVar(idx, &name, 0, &vartype, 0);
+			Client_Sendf(playerobj->m_pClient, "Var %lu: %s <%s>\r\n",
+				idx, name, GetASTypeName(vartype));
+			if(vartype & asTYPEID_OBJHANDLE)
+			{
 
+			}
+			else if(vartype & asTYPEID_SCRIPTOBJECT)
+			{
+				void* p = module->GetAddressOfGlobalVar(idx);
+				asIScriptObject* obj = reinterpret_cast<asIScriptObject*>(p);
+				asITypeInfo* typeinfo = obj->GetObjectType();
+				if(typeinfo)
+				{
+					Client_Sendf(playerobj->m_pClient, "Was able to retrieve type info.\r\n");
+				}
+
+			}
+			else if(vartype & asTYPEID_APPOBJECT)
+			{
+
+			}
+		}
 		playerobj->Release();
 	}
 }

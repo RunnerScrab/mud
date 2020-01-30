@@ -263,12 +263,18 @@ static int Server_InitializeNetwork(struct Server* server, const char* szAddr, u
 int Server_Start(struct Server* server)
 {
 	memset(server, 0, sizeof(struct Server));
-	Server_InitializeADTs(server);
-	Server_InitializeScriptEngine(server);
-	Server_LoadConfiguration(server);
-	Server_LoadGame(server);
-	Server_InitializeThreads(server);
-	Server_InitializeNetwork(server, server->configuration.bindip, server->configuration.bindport);
+	if(FAILURE(Server_InitializeADTs(server)))
+		return -1;
+	if(FAILURE(Server_InitializeScriptEngine(server)))
+		return -1;
+	if(FAILURE(Server_LoadConfiguration(server)))
+		return -1;
+	if(FAILURE(Server_LoadGame(server)))
+		return -1;
+	if(FAILURE(Server_InitializeThreads(server)))
+		return -1;
+	if(FAILURE(Server_InitializeNetwork(server, server->configuration.bindip, server->configuration.bindport)))
+		return -1;
 	ServerLog(SERVERLOG_STATUS, "Server running. %d processor cores detected.", server->cpu_cores);
 	return 0;
 }

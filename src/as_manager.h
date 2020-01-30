@@ -77,7 +77,7 @@ extern "C"
 						const char* input);
 
 
-	extern int ASContextPool_Init(ASContextPool* pPool, asIScriptEngine* pEngine, size_t initial_size);
+	extern int ASContextPool_Init(ASContextPool*, asIScriptEngine*, AngelScriptManager*, size_t);
 	extern asIScriptContext* ASContextPool_GetContextAt(ASContextPool* pPool, size_t idx);
 	extern void ASContextPool_ReturnContextByIndex(ASContextPool* pPool, size_t idx);
 	extern size_t ASContextPool_GetFreeContextIndex(ASContextPool* pPool);

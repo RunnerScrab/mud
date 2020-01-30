@@ -32,6 +32,7 @@ Player::~Player()
 
 void Player::Send(std::string& str)
 {
+	printf("Trying to send: %s\n", str.c_str());
 	Client_WriteTo(m_pClient, str.c_str(), str.length());
 }
 
@@ -42,7 +43,7 @@ void Player::Disconnect()
 
 void Player::AddRef()
 {
-	++m_refCount;
+	asAtomicInc(m_refCount);
 	if(!m_isDead->Get())
 	{
 		m_obj->AddRef();
@@ -55,7 +56,8 @@ void Player::Release()
 	{
 		m_obj->Release();
 	}
-	if(--m_refCount == 0)
+	asAtomicDec(m_refCount);
+	if(m_refCount == 0)
 	{
 		delete this;
 	}
