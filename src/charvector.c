@@ -102,7 +102,7 @@ void cv_swap(cv_t* a, cv_t* b)
 	b->capacity = temp.capacity;
 }
 
-void cv_cpy(cv_t* dest, cv_t* source)
+void cv_copy(cv_t* dest, cv_t* source)
 {
 	dest->length = source->length;
 	dest->capacity = source->capacity;
@@ -156,32 +156,4 @@ el_t cv_at(cv_t* cv, size_t idx)
 size_t cv_len(cv_t* cv)
 {
 	return cv->length;
-}
-
-int cv_remove(cv_t* cv, el_t targel)
-{
-	size_t idx = 0, len = cv->length;
-	for(; idx < len; ++idx)
-	{
-		if(cv->data[idx] == targel)
-		{
-			//Since we don't care about ordering for our list of fds,
-			//just zero out the fd to remove, swap it with the last element of our
-			//array, then subtract 1 from the length
-			cv->data[idx] = 0;
-			swap_elements(&(cv->data[idx]), &(cv->data[len - 1]));
-			--cv->length;
-
-			if(cv->length <= (cv->capacity / 4))
-			{
-				//If we're using less than a quarter of capacity, shrink
-				//the array down to twice our usage
-				cv->capacity = cv->length << 1;
-				cv->data = (el_t*) trealloc(cv->data, cv->capacity * sizeof(el_t));
-			}
-			return 0;
-		}
-	}
-
-	return -1;
 }
