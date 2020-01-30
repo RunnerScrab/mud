@@ -72,49 +72,38 @@ double fraction(double v)
 }
 #endif
 
-//Avoid type punning - it can cause broken behavior at high levels of
-//compiler optimization
-typedef union
-{
-  asUINT asuint;
-  float asfloat;
-} TypePunFloat;
-
-typedef union
-{
-  asQWORD asqword;
-  double asdouble;
-} TypePunDouble;
-
 // As AngelScript doesn't allow bitwise manipulation of float types we'll provide a couple of
 // functions for converting float values to IEEE 754 formatted values etc. This also allow us to
 // provide a platform agnostic representation to the script so the scripts don't have to worry
 // about whether the CPU uses IEEE 754 floats or some other representation
 float fpFromIEEE(asUINT raw)
 {
-	TypePunFloat onion;
-	onion.asuint = raw;
 	// TODO: Identify CPU family to provide proper conversion
 	//        if the CPU doesn't natively use IEEE style floats
-	return onion.asfloat;
+	float intasfloat;
+	memcpy(&intasfloat, &raw, sizeof(asUINT));
+	return intasfloat;
 }
+
 asUINT fpToIEEE(float fp)
 {
-	TypePunFloat onion;
-	onion.asfloat = fp;
-	return onion.asuint;
+	asUINT floatasint;
+	memcpy(&floatasint, &fp, sizeof(float));
+	return floatasint;
 }
+
 double fpFromIEEE(asQWORD raw)
 {
-	TypePunDouble onion;
-	onion.asqword = raw;
-	return onion.asdouble;
+	double qwordasdouble;
+	memcpy(&qwordasdouble, &raw, sizeof(asQWORD));
+	return qwordasdouble;
 }
+
 asQWORD fpToIEEE(double fp)
 {
-	TypePunDouble onion;
-	onion.asdouble = fp;
-	return onion.asqword;
+	asQWORD doubleasqword;
+	memcpy(&doubleasqword, &fp, sizeof(double));
+	return doubleasqword;;
 }
 
 // closeTo() is used to determine if the binary representation of two numbers are
