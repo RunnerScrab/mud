@@ -39,10 +39,11 @@ extern "C"
 	{
 		MemoryPool_Init(&manager->mem_pool);
 		manager->engine = asCreateScriptEngine();
+		#ifdef x86_64
 		manager->jit = new asCJITCompiler(0);
-
 		manager->engine->SetEngineProperty(asEP_INCLUDE_JIT_INSTRUCTIONS, 1);
 		manager->engine->SetJITCompiler(manager->jit);
+		#endif
 		RETURNFAIL_IF(!manager->engine);
 
 		manager->engine->SetEngineProperty(asEP_ALLOW_MULTILINE_STRINGS, true);
@@ -204,7 +205,9 @@ extern "C"
 		printf("There are %lu global properties.\n", global_properties);
 		/////////////////////////////
 
+		#ifdef x86_64
 		manager->jit->finalizePages();
+		#endif
 
 		manager->world_tick_func = manager->main_module->GetFunctionByDecl("void GameTick()");
 		RETURNFAIL_IF(0 == manager->world_tick_func);
@@ -275,7 +278,10 @@ extern "C"
 		manager->world_tick_scriptcontext->Release();
 		ASContextPool_Destroy(&manager->ctx_pool);
 		manager->engine->Release();
+
+		#if x86_64
 		delete manager->jit;
+		#endif
 
 		MemoryPool_Destroy(&manager->mem_pool);
 	}

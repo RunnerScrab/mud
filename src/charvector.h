@@ -27,7 +27,7 @@ int cv_appendstr(cv_t* cv, el_t* data);
 int cv_appendcv(cv_t* dest, cv_t* src);
 int cv_append(cv_t* cv, el_t* data, size_t len);
 void cv_clear(cv_t* cv);
-
+void cv_strncat(cv_t* dest, el_t* source, size_t len);
 el_t cv_at(cv_t* cv, size_t idx);
 size_t cv_len(cv_t* cv);
 

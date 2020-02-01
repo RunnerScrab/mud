@@ -17,16 +17,17 @@ void cv_sprintf(cv_t* pcv, const char* fmt, ...)
 	size_t bwritten = vsnprintf(pcv->data, pcv->capacity, fmt, arglist);
 	va_end(arglist);
 	va_start(cpyarglist, fmt);
+	pcv->length = bwritten + 1;
 	if(bwritten >= pcv->capacity)
 	{
 		//Our buffer wasn't large enough. Resize it!
-		pcv->capacity = bwritten + 1;
-		pcv->length = pcv->capacity;
+		pcv->capacity = pcv->length;
 		pcv->data = (el_t*) trealloc(pcv->data,
 					sizeof(el_t) * pcv->capacity);
 		memset(pcv->data, 0, sizeof(el_t) * pcv->capacity);
 		vsnprintf(pcv->data, pcv->capacity, fmt, cpyarglist);
 	}
+
 	va_end(cpyarglist);
 }
 
@@ -133,10 +134,22 @@ void cv_strncpy(cv_t* dest, el_t* source, size_t len)
 	memcpy(dest->data, source, len);
 }
 
+void cv_strncat(cv_t* dest, el_t* source, size_t len)
+{
+	size_t orig_len = dest->length - 1; //The ->length member includes the 0.
+	if(orig_len + len + 1 >= dest->capacity)
+	{
+		dest->capacity = dest->capacity << 1;
+		dest->data = (el_t*) trealloc(dest->data, sizeof(el_t) * dest->capacity);
+	}
+	strcat(dest->data, source);
+	dest->length = orig_len + len + 1;
+}
+
 void cv_strcat(cv_t* dest, el_t* source)
 {
 	size_t len = strlen(source);
-	size_t orig_len = strlen(dest->data); //The ->length member includes the 0.
+	size_t orig_len = dest->length - 1; //The ->length member includes the 0.
 	if(orig_len + len + 1 >= dest->capacity)
 	{
 		dest->capacity = dest->capacity << 1;
