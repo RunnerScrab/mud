@@ -1,13 +1,14 @@
 #include "uuid.h"
 #include <stdlib.h>
 #include <stdio.h>
+#include <arpa/inet.h>
 
 void UUIDToString(union UUID* uuid, cv_t* out)
 {
-	cv_resize(out, 38);
+	cv_resize(out, 39);
 	snprintf(out->data,
 		sizeof(char) * 38,
-		"%8.8x-%4.4x-%4.4x-%2.2x%2.2x-%x%x%x%x%x%x\n",
+		 "%8.8x-%4.4x-%4.4x-%2.2x%2.2x-%2.2x%2.2x%2.2x%2.2x%2.2x%2.2x\n",
 		uuid->fields.time_low,
 		uuid->fields.time_mid,
 		uuid->fields.time_hi_and_version,
@@ -31,11 +32,15 @@ void GenerateUUID(union UUID* uuid)
 	unsigned long dwtwo = random();
 	unsigned long dwthree = random();
 	unsigned long dwfour = random();
-	uuid->qw.halfone = dwone << 32 | dwtwo;
-	uuid->qw.halftwo = dwthree << 32 |  dwfour;
+	uuid->qw.halfone = ((unsigned long long) dwone) << 32 | dwtwo;
+	uuid->qw.halftwo = ((unsigned long long) dwthree) << 32 |  dwfour;
 #endif
-	uuid->fields.clock_seq_hi_and_reserved &= 63;
+	//0000 0000
+	//1000 0000
+	uuid->fields.clock_seq_hi_and_reserved &= 191;
 	uuid->fields.clock_seq_hi_and_reserved |= 128;
-	uuid->fields.time_hi_and_version &= 4095;
-	uuid->fields.time_hi_and_version |= 16384;
+	//0000 0000 0000 0000
+	//0100 0000 0000 0000
+	uuid->fields.time_hi_and_version &= ((unsigned short) 20479);
+	uuid->fields.time_hi_and_version |= ((unsigned short) 16384);
 }

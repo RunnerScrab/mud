@@ -4,6 +4,11 @@
 #ifdef USEINTELINTRINSICS_
 #include <immintrin.h>
 #include <stdint.h>
+#else
+typedef unsigned int u_int32_t;
+typedef unsigned long long u_int64_t;
+typedef unsigned short u_int16_t;
+typedef unsigned char u_int8_t;
 #endif
 #include "charvector.h"
 
@@ -16,7 +21,6 @@ union UUID
 
 	struct
 	{
-		//unsigned long long nodes :48;
 		u_int32_t time_low;
 		u_int16_t time_mid;
 		u_int16_t time_hi_and_version;

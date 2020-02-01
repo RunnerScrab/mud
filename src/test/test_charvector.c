@@ -44,10 +44,12 @@ START_TEST(test_cv_strcat)
 	cv_t str;
 	cv_init(&str, 64);
 	cv_sprintf(&str, "Meow");
+	ck_assert_int_eq(5, cv_len(&str));
 	cv_strcat(&str, " meow");
 	cv_strcat(&str, " rowr");
 	ck_assert(!strcmp(str.data, "Meow meow rowr"));
-	ck_assert_int_eq(0, cv_at(&str, cv_len(&str)));
+	ck_assert_int_eq(0, cv_at(&str, cv_len(&str) - 1));
+	ck_assert_int_eq(15, cv_len(&str));
 	cv_destroy(&str);
 }
 

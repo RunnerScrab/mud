@@ -29,6 +29,7 @@ void RandGenerator_Gen64(unsigned long long* p64)
 	#endif
 }
 
+#ifdef x86_64
 u_int64_t RandGenerator_PRNG64(struct RandGenerator* rgn)
 {
         //PRNG algo by Vladimir Makarov
@@ -47,6 +48,7 @@ double RandGenerator_RandDouble(struct RandGenerator* rgn)
 	return ((double) RandGenerator_PRNG64(rgn))/max;
 }
 
+#endif
 int RandFIFO_Init(struct RandFIFO* fifo, size_t init_len)
 {
 	fifo->length = init_len;
