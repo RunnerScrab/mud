@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <check.h>
+#include "../talloc.h"
 #include "../charvector.h"
 
 START_TEST(cv_append_and_push)
@@ -38,6 +39,18 @@ START_TEST(cv_as_string)
 }
 END_TEST
 
+START_TEST(test_cv_strcat)
+{
+	cv_t str;
+	cv_init(&str, 64);
+	cv_sprintf(&str, "Meow");
+	cv_strcat(&str, " meow");
+	cv_strcat(&str, " rowr");
+	ck_assert(!strcmp(str.data, "Meow meow rowr"));
+	ck_assert_int_eq(0, cv_at(&str, cv_len(&str)));
+	cv_destroy(&str);
+}
+
 START_TEST(memoryleak_check)
 {
 	ck_assert(toutstanding_allocs() == 0);
@@ -48,7 +61,7 @@ Suite* cv_test_suite(void)
 {
 	Suite* s = suite_create("cv");
 	TCase* testcases = tcase_create("Core");
-
+	tcase_add_test(testcases, test_cv_strcat);
 	tcase_add_test(testcases, cv_append_and_push);
 	tcase_add_test(testcases, cv_as_string);
 	tcase_add_test(testcases, memoryleak_check);

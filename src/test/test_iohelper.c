@@ -1,5 +1,7 @@
 #include "../charvector.h"
 #include "../iohelper.h"
+#include "../talloc.h"
+
 #include <unistd.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -48,7 +50,7 @@ START_TEST(iohelper_test_write)
 	{
 		cv_push(&sendbuf, (unsigned char) idx);
 	}
-	ck_assert(write_from_cv(test_pipe[1], &sendbuf) == 512);
+	ck_assert(write_from_cv_raw(test_pipe[1], &sendbuf) == 512);
 
 	printf("Write test complete\n");
 	cv_destroy(&sendbuf);
@@ -90,6 +92,5 @@ int main(void)
 	srunner_free(sr);
 	close(test_pipe[0]);
 	close(test_pipe[1]);
-	talloc_subsys_release();
 	return (tests_failed == 0) ? EXIT_SUCCESS : EXIT_FAILURE;
 }

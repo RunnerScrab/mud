@@ -7,8 +7,8 @@ typedef char el_t;
 
 typedef struct
 {
-	el_t* data;
-	size_t length, capacity;
+    el_t* data;
+    size_t length, capacity;
 } cv_t; // Short for "Char Vector Type"
 
 //cv_sprintf notwithstanding, cv_t has C++ std::vector<char>-like semantics and should be
@@ -16,6 +16,9 @@ typedef struct
 
 void cv_swap(cv_t* a, cv_t* b);
 void cv_copy(cv_t* dest, cv_t* source);
+void cv_strcpy(cv_t* dest, el_t* source);
+void cv_strncpy(cv_t* dest, el_t* source, size_t len);
+void cv_strcat(cv_t* dest, el_t* source);
 int cv_init(cv_t* cv, size_t startsize);
 void cv_destroy(cv_t* cv);
 int cv_push(cv_t* cv, el_t newel);

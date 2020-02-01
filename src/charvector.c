@@ -60,7 +60,8 @@ int cv_appendcv(cv_t* dest, cv_t* src)
 
 int cv_appendstr(cv_t* cv, el_t* data)
 {
-	return cv_append(cv, data, strlen(data));
+	cv_strcat(cv, data);
+	return 0;
 }
 
 
@@ -110,6 +111,39 @@ void cv_copy(cv_t* dest, cv_t* source)
 		tfree(dest->data);
 	dest->data = (el_t*) talloc(sizeof(el_t) * dest->capacity);
 	memcpy(dest->data, source->data, dest->capacity);
+}
+
+void cv_strcpy(cv_t* dest, el_t* source)
+{
+	dest->length = strlen(source) + 1;
+	dest->capacity = dest->length;
+	if(dest->data)
+		tfree(dest->data);
+	dest->data = (el_t*) talloc(sizeof(el_t) * dest->capacity);
+	memcpy(dest->data, source, dest->capacity);
+}
+
+void cv_strncpy(cv_t* dest, el_t* source, size_t len)
+{
+	dest->length = len;
+	dest->capacity = len;
+	if(dest->data)
+		tfree(dest->data);
+	dest->data = (el_t*) talloc(sizeof(el_t) * dest->capacity);
+	memcpy(dest->data, source, len);
+}
+
+void cv_strcat(cv_t* dest, el_t* source)
+{
+	size_t len = strlen(source);
+	size_t orig_len = strlen(dest->data); //The ->length member includes the 0.
+	if(orig_len + len + 1 >= dest->capacity)
+	{
+		dest->capacity = dest->capacity << 1;
+		dest->data = (el_t*) trealloc(dest->data, sizeof(el_t) * dest->capacity);
+	}
+	strcat(dest->data, source);
+	dest->length = orig_len + len + 1;
 }
 
 void cv_destroy(cv_t* cv)
