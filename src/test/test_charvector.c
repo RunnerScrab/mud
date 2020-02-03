@@ -34,7 +34,7 @@ START_TEST(cv_as_string)
 	cv_init(&str, 1);
 	cv_sprintf(&str, "Meow %d u", 2);
 	ck_assert(strstr(str.data, "Meow 2 u"));
-	ck_assert_int_eq(0, cv_at(&str, cv_len(&str)));
+	ck_assert_int_eq(0, cv_at(&str, cv_len(&str) - 1));
 	cv_destroy(&str);
 }
 END_TEST
