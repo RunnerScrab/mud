@@ -39,7 +39,8 @@ extern "C"
 	{
 		MemoryPool_Init(&manager->mem_pool);
 		manager->engine = asCreateScriptEngine();
-		#ifdef x86_64
+		#ifdef __x86_64__
+		ServerLog(SERVERLOG_STATUS, "x86_64 Build. Enabling Angelscript JIT module.");
 		manager->jit = new asCJITCompiler(0);
 		manager->engine->SetEngineProperty(asEP_INCLUDE_JIT_INSTRUCTIONS, 1);
 		manager->engine->SetJITCompiler(manager->jit);
@@ -205,7 +206,7 @@ extern "C"
 		printf("There are %lu global properties.\n", global_properties);
 		/////////////////////////////
 
-		#ifdef x86_64
+		#ifdef __x86_64__
 		manager->jit->finalizePages();
 		#endif
 
@@ -279,7 +280,7 @@ extern "C"
 		ASContextPool_Destroy(&manager->ctx_pool);
 		manager->engine->Release();
 
-		#if x86_64
+		#if __x86_64__
 		delete manager->jit;
 		#endif
 

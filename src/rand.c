@@ -7,11 +7,11 @@ int RandGenerator_Init(struct RandGenerator* rgn)
 	clock_gettime(CLOCK_REALTIME, &ts);
 	rgn->seed64 =  ts.tv_sec << 32 | ts.tv_nsec;
 
-	#ifdef USEINTELINTRINSICS_
+#ifdef USEINTELINTRINSICS_
 	_rdseed64_step(&rgn->seed64);
-	#else
+#else
 	srandom(ts.tv_sec | ts.tv_nsec);
-	#endif
+#endif
 	return 0;
 }
 
@@ -22,14 +22,14 @@ void RandGenerator_Destroy(struct RandGenerator* rgn)
 
 void RandGenerator_Gen64(unsigned long long* p64)
 {
-	#ifdef USEINTELINTRINSICS_
+#ifdef USEINTELINTRINSICS_
 	_rdrand64_step(p64);
-	#else
+#else
 	*p64 = random() << 32 | random();
-	#endif
+#endif
 }
 
-#ifdef x86_64
+#ifdef USEINTELINTRINSICS_
 u_int64_t RandGenerator_PRNG64(struct RandGenerator* rgn)
 {
         //PRNG algo by Vladimir Makarov
