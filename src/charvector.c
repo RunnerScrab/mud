@@ -136,27 +136,27 @@ void cv_strncpy(cv_t* dest, el_t* source, size_t len)
 
 void cv_strncat(cv_t* dest, el_t* source, size_t len)
 {
-	size_t orig_len = dest->length - 1; //The ->length member includes the 0.
-	if(orig_len + len + 1 >= dest->capacity)
+	// To account for the null byte, the length must have 1 added to it and dest->length must have 1 subtracted
+	size_t new_len = dest->length + len;
+	if(new_len >= dest->capacity)
 	{
-		dest->capacity = dest->capacity << 1;
+		dest->capacity = max((dest->capacity << 1), new_len);
 		dest->data = (el_t*) trealloc(dest->data, sizeof(el_t) * dest->capacity);
 	}
-	strcat(dest->data, source);
-	dest->length = orig_len + len + 1;
+	dest->length = new_len;
+	strncat(dest->data, source, len);
 }
 
 void cv_strcat(cv_t* dest, el_t* source)
 {
-	size_t len = strlen(source);
-	size_t orig_len = dest->length - 1; //The ->length member includes the 0.
-	if(orig_len + len + 1 >= dest->capacity)
+	size_t new_len = dest->length + strlen(source);
+	if(new_len >= dest->capacity)
 	{
-		dest->capacity = dest->capacity << 1;
+		dest->capacity = max((dest->capacity << 1), new_len);
 		dest->data = (el_t*) trealloc(dest->data, sizeof(el_t) * dest->capacity);
 	}
 	strcat(dest->data, source);
-	dest->length = orig_len + len + 1;
+	dest->length = new_len;
 }
 
 void cv_destroy(cv_t* cv)

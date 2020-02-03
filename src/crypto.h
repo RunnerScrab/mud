@@ -1,7 +1,7 @@
 #ifndef CRYPTO_H_
 #define CRYPTO_H_
 #include "charvector.h"
-#include <sodium.h>
+#include "libsodium/src/libsodium/include/sodium.h"
 
 struct CryptoManager
 {

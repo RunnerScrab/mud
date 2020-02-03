@@ -39,11 +39,13 @@ extern "C"
 	{
 		MemoryPool_Init(&manager->mem_pool);
 		manager->engine = asCreateScriptEngine();
-		#ifdef x86_64
+
+#ifdef __x86_64__
+		ServerLog(SERVERLOG_STATUS, "x86_64 Build. Enabling Angelscript JIT module.");
 		manager->jit = new asCJITCompiler(0);
 		manager->engine->SetEngineProperty(asEP_INCLUDE_JIT_INSTRUCTIONS, 1);
 		manager->engine->SetJITCompiler(manager->jit);
-		#endif
+#endif
 		RETURNFAIL_IF(!manager->engine);
 
 		manager->engine->SetEngineProperty(asEP_ALLOW_MULTILINE_STRINGS, true);
@@ -147,7 +149,7 @@ extern "C"
 		RETURNFAIL_IF(result < 0);
 
 		result = manager->engine->RegisterObjectMethod("ServerConfig",
-							       "void SetDatabasePathAndFile(string& in, string& in)",
+							"void SetDatabasePathAndFile(string& in, string& in)",
 							asFUNCTION(ASAPI_SetDatabasePathAndFile), asCALL_CDECL_OBJFIRST);
 		RETURNFAIL_IF(result < 0);
 		result = manager->engine->RegisterObjectMethod("ServerConfig", "void SetGameScriptPath(string& in)",
@@ -205,9 +207,9 @@ extern "C"
 		printf("There are %lu global properties.\n", global_properties);
 		/////////////////////////////
 
-		#ifdef x86_64
+#ifdef __x86_64__
 		manager->jit->finalizePages();
-		#endif
+#endif
 
 		manager->world_tick_func = manager->main_module->GetFunctionByDecl("void GameTick()");
 		RETURNFAIL_IF(0 == manager->world_tick_func);
@@ -279,9 +281,10 @@ extern "C"
 		ASContextPool_Destroy(&manager->ctx_pool);
 		manager->engine->Release();
 
-		#if x86_64
+
+#if __x86_64__
 		delete manager->jit;
-		#endif
+#endif
 
 		MemoryPool_Destroy(&manager->mem_pool);
 	}

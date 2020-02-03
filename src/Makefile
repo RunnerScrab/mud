@@ -4,7 +4,7 @@ CCXX = g++
 SQLITECC = gcc
 CFLAGS = -Wall -Ofast
 CXXFLAGS = -Wall -Ofast
-LDLIBS = -pthread -lcheck -lz -ldl -lm -l:libsodium.so
+LDLIBS = -pthread -lz -ldl -lm -Wl,-soname,libsodium.so,-rpath='./' -L. -l:libsodium.so
 OUTPUT_OPTION = -MMD -MP -o $@
 
 CSOURCE := $(wildcard *.c)

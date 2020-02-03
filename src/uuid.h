@@ -3,8 +3,8 @@
 
 #ifdef USEINTELINTRINSICS_
 #include <immintrin.h>
-#include <stdint.h>
 #endif
+#include <stdint.h>
 #include "charvector.h"
 
 union UUID
@@ -16,7 +16,6 @@ union UUID
 
 	struct
 	{
-		//unsigned long long nodes :48;
 		u_int32_t time_low;
 		u_int16_t time_mid;
 		u_int16_t time_hi_and_version;
