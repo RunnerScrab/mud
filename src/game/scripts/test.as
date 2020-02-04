@@ -65,10 +65,10 @@ class Player : PlayerConnection
 	Meower@ GetMeower() { return m_meower;}
 	void SetMeower(Meower@ m)
 	{
-
+		@m_meower = @m;
 		Log("Attempting to set player meower.\n");
 		Send("Trying to set your meower.\r\n");
-		string msg = "Your meower's UUID is " + m_meower.GetUUID() + "\r\n";
+		string msg = "Your meower's UUID is `red`" + m_meower.GetUUID() + "`default`\r\n";
 		Send(msg);
 	}
 
