@@ -31,7 +31,7 @@ void cv_sprintf(cv_t* pcv, const char* fmt, ...)
 	va_end(cpyarglist);
 }
 
-int cv_append(cv_t* cv, el_t* data, size_t len)
+int cv_append(cv_t* cv, const el_t* data, size_t len)
 {
 	if((cv->length + len) > cv->capacity)
 	{
@@ -59,7 +59,7 @@ int cv_appendcv(cv_t* dest, cv_t* src)
 	return cv_append(dest, src->data, src->length);
 }
 
-int cv_appendstr(cv_t* cv, el_t* data)
+int cv_appendstr(cv_t* cv, const el_t* data)
 {
 	cv_strcat(cv, data);
 	return 0;
@@ -114,7 +114,7 @@ void cv_copy(cv_t* dest, cv_t* source)
 	memcpy(dest->data, source->data, dest->capacity);
 }
 
-void cv_strcpy(cv_t* dest, el_t* source)
+void cv_strcpy(cv_t* dest, const el_t* source)
 {
 	dest->length = strlen(source) + 1;
 	dest->capacity = dest->length;
@@ -124,7 +124,7 @@ void cv_strcpy(cv_t* dest, el_t* source)
 	memcpy(dest->data, source, dest->capacity);
 }
 
-void cv_strncpy(cv_t* dest, el_t* source, size_t len)
+void cv_strncpy(cv_t* dest, const el_t* source, size_t len)
 {
 	dest->length = len;
 	dest->capacity = len;
@@ -134,7 +134,7 @@ void cv_strncpy(cv_t* dest, el_t* source, size_t len)
 	memcpy(dest->data, source, len);
 }
 
-void cv_strncat(cv_t* dest, el_t* source, size_t len)
+void cv_strncat(cv_t* dest, const el_t* source, size_t len)
 {
 	// To account for the null byte, the length must have 1 added to it and dest->length must have 1 subtracted
 	size_t new_len = dest->length + len;
@@ -147,7 +147,7 @@ void cv_strncat(cv_t* dest, el_t* source, size_t len)
 	strncat(dest->data, source, len);
 }
 
-void cv_strcat(cv_t* dest, el_t* source)
+void cv_strcat(cv_t* dest, const el_t* source)
 {
 	size_t new_len = dest->length + strlen(source);
 	if(new_len >= dest->capacity)

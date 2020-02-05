@@ -16,18 +16,18 @@ typedef struct
 
 void cv_swap(cv_t* a, cv_t* b);
 void cv_copy(cv_t* dest, cv_t* source);
-void cv_strcpy(cv_t* dest, el_t* source);
-void cv_strncpy(cv_t* dest, el_t* source, size_t len);
-void cv_strcat(cv_t* dest, el_t* source);
+void cv_strcpy(cv_t* dest, const el_t* source);
+void cv_strncpy(cv_t* dest, const el_t* source, size_t len);
+void cv_strcat(cv_t* dest, const el_t* source);
 int cv_init(cv_t* cv, size_t startsize);
 void cv_destroy(cv_t* cv);
 int cv_push(cv_t* cv, el_t newel);
 int cv_resize(cv_t* cv, size_t newsize);
-int cv_appendstr(cv_t* cv, el_t* data);
+int cv_appendstr(cv_t* cv, const el_t* data);
 int cv_appendcv(cv_t* dest, cv_t* src);
-int cv_append(cv_t* cv, el_t* data, size_t len);
+int cv_append(cv_t* cv, const el_t* data, size_t len);
 void cv_clear(cv_t* cv);
-void cv_strncat(cv_t* dest, el_t* source, size_t len);
+void cv_strncat(cv_t* dest, const el_t* source, size_t len);
 el_t cv_at(cv_t* cv, size_t idx);
 size_t cv_len(cv_t* cv);
 
