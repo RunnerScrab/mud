@@ -12,13 +12,40 @@
 #include "command_dispatch.h"
 #include "as_cinterface.h"
 
+size_t Client_GetRefCount(struct Client* client)
+{
+	pthread_rwlock_rdlock(&client->refcount_rwlock);
+	size_t retval = client->refcount;
+	pthread_rwlock_unlock(&client->refcount_rwlock);
+	return retval;
+}
+
+void Client_AddRef(struct Client* client)
+{
+	pthread_rwlock_wrlock(&client->refcount_rwlock);
+	++client->refcount;
+	printf("Client refval incremented to %lu\n", client->refcount);
+	pthread_rwlock_unlock(&client->refcount_rwlock);
+}
+
+void Client_ReleaseRef(struct Client* client)
+{
+	pthread_rwlock_wrlock(&client->refcount_rwlock);
+	--client->refcount;
+	printf("Client refval decremented to %lu\n", client->refcount);
+	pthread_rwlock_unlock(&client->refcount_rwlock);
+}
+
 struct Client* Client_Create(int sock, struct CmdDispatchThread* pDispatcher)
 {
 	struct Client* pClient = (struct Client*) talloc(sizeof(struct Client));
+	memset(pClient, 0, sizeof(struct Client));
+
 	pClient->player_obj = 0;
 	pClient->pCmdDispatcher = pDispatcher;
 	memset(&pClient->tel_stream, 0, sizeof(TelnetStream));
 
+	pthread_mutex_init(&pClient->connection_state_mtx, 0);
 	ZCompressor_Init(&pClient->zstreams);
 	cv_init(&pClient->tel_stream.sb_args, 32);
 
@@ -37,29 +64,33 @@ struct Client* Client_Create(int sock, struct CmdDispatchThread* pDispatcher)
 	hrt_prioq_create(&pClient->cmd_queue, 32);
 	pthread_mutex_init(&pClient->cmd_queue_mtx, 0);
 	MemoryPool_Init(&pClient->mem_pool);
+
+	pthread_rwlock_init(&pClient->refcount_rwlock, 0);
 	return pClient;
 }
 
 void Client_Disconnect(struct Client* pClient)
 {
+	pClient->bDisconnected = 1;
 	close(pClient->sock);
 }
 
 void Client_Destroy(void* p)
 {
 	struct Client* pClient = (struct Client*) p;
-
+	pthread_mutex_lock(&pClient->connection_state_mtx);
 	cv_destroy(&pClient->tel_stream.sb_args);
 	cv_destroy(&pClient->input_buffer);
 	ZCompressor_StopAndRelease(&pClient->zstreams);
 
+	pthread_mutex_destroy(&pClient->connection_state_mtx);
 	pthread_mutex_lock(&pClient->cmd_queue_mtx);
 	hrt_prioq_destroy(&pClient->cmd_queue);
 	pthread_mutex_destroy(&pClient->cmd_queue_mtx);
 	MemoryPool_Destroy(&pClient->mem_pool);
 
 	asIScriptObject_Release(&pClient->player_obj);
-
+	pthread_rwlock_destroy(&pClient->refcount_rwlock);
 	tfree(pClient);
 }
 
@@ -70,19 +101,25 @@ int Client_WriteTo(struct Client* pTarget, const char* buf, size_t len)
 	cv_t color_buf;
 	cv_init(&color_buf, len);
 	ANSIColorizeString(buf, &color_buf);
+	pthread_mutex_lock(&pTarget->connection_state_mtx);
 	switch(pTarget->tel_stream.opts.b_mccp2)
 	{
 	case 1:
 	{
 		cv_t compout;
 		cv_init(&compout, len);
+
 		if(ZCompressor_CompressRawData(&pTarget->zstreams,
 						color_buf.data, len, &compout) < 0)
 		{
+			pthread_mutex_unlock(&pTarget->connection_state_mtx);
+			cv_destroy(&compout);
+			cv_destroy(&color_buf);
 			return -1;
 		}
 
 		int result = write_from_cv_raw(pTarget->sock, &compout);
+		pthread_mutex_unlock(&pTarget->connection_state_mtx);
 		cv_destroy(&compout);
 		cv_destroy(&color_buf);
 		return result;
@@ -92,6 +129,7 @@ int Client_WriteTo(struct Client* pTarget, const char* buf, size_t len)
 		size_t written = write_full_raw(pTarget->sock,
 						color_buf.data, len);
 		cv_destroy(&color_buf);
+		pthread_mutex_unlock(&pTarget->connection_state_mtx);
 		return written;
 	}
 	}

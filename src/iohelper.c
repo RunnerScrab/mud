@@ -1,4 +1,5 @@
 #include "iohelper.h"
+#include <sys/socket.h>
 #include <unistd.h>
 #define max(a, b) (a > b ? a : b)
 #define min(a, b) (a < b ? a : b)
@@ -43,8 +44,7 @@ int write_from_cv_raw(int fd, cv_t* cv)
 	int bufsize = cv->length;
 	do
 	{
-		written = write(fd,
-				&cv->data[total_written], cv->length - total_written);
+		written = send(fd, &cv->data[total_written], cv->length - total_written, MSG_NOSIGNAL);
 
 		if(written < 0)
 			return written;
@@ -61,7 +61,7 @@ int write_full_raw(int fd, const char* msg, size_t len)
 
 	do
 	{
-		written = write(fd, &msg[total_written], len - total_written);
+		written = send(fd,  &msg[total_written], len - total_written, MSG_NOSIGNAL);
 
 		if(written < 0)
 			return written;

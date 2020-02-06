@@ -76,14 +76,6 @@
 #define SSPI 139
 #define PRAGMAHB 140
 
-
-#define TELSTATE_INPUT 0 //No commands
-#define TELSTATE_IAC 1 //IAC received
-#define TELSTATE_SB 2 //Suboption negotiation received
-#define TELSTATE_SE 3 //End of Suboption negotiation (following an IAC)
-#define TELSTATE_CMD 4 //3 byte command likely used in major option negotiation
-#define TELSTATE_ERROR 5 //Stream has entered invalid state and does not conform to any known telnet RFC
-
 const unsigned char supported_options[] =
 {
 	ECHO,
@@ -242,7 +234,11 @@ int TelnetStream_ProcessByte(TelnetStream* stream, unsigned char x, cv_t* normal
 		default:
 			//Character is not part of a telnet command and is just a
 			//normal input character
-			cv_push(normal_char_dump, x);
+			if(cv_pushlimited(normal_char_dump, x) < 0)
+			{
+				//User has sent an excessively long string in the midst of telnet negotiation
+				SetTelnetState(curtelstate, TELSTATE_ERROR);
+			}
 			break;
 		}
 		break;
@@ -271,8 +267,12 @@ int TelnetStream_ProcessByte(TelnetStream* stream, unsigned char x, cv_t* normal
 		}
 		else
 		{
-			//TODO: Begin collecting subnegotiation arguments
-			cv_push(&stream->sb_args, x);
+			//Begin collecting subnegotiation arguments
+			if(cv_pushlimited(&stream->sb_args, x) < 0)
+			{
+				//Client was sending an excessively long subnegotiation stream
+				SetTelnetState(curtelstate, TELSTATE_ERROR);
+			}
 		}
 		break;
 	case TELSTATE_SE:

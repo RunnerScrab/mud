@@ -15,49 +15,59 @@
 extern "C" {
 #endif
 
-struct EvPkg
-{
-	int sockfd;
-	void* pData;
-};
+	struct EvPkg
+	{
+		int sockfd;
+		void* pData;
+	};
 
-struct CmdDispatchThread;
-typedef struct asIScriptObject asIScriptObject;
+	struct CmdDispatchThread;
+	typedef struct asIScriptObject asIScriptObject;
 
-struct Client
-{
-	int sock;
-	struct EvPkg ev_pkg;
-	struct sockaddr_in addr;
+	struct Client
+	{
+		int sock;
+		struct EvPkg ev_pkg;
+		struct sockaddr_in addr;
 
-	TelnetStream tel_stream;
-	ZCompressor zstreams;
+		TelnetStream tel_stream;
+		ZCompressor zstreams;
+		pthread_mutex_t connection_state_mtx;
 
-	struct timespec connection_time;
-	struct timespec last_input_time;
+		struct timespec connection_time;
+		struct timespec last_input_time;
 
-	float cmd_intervals[CLIENT_STOREDCMDINTERVALS]; // average commands per second sent
-	unsigned char interval_idx;
+		unsigned int bytes_sent_at_intervals[CLIENT_STOREDCMDINTERVALS];
+		float cmd_intervals[CLIENT_STOREDCMDINTERVALS]; // average commands per second sent
+		unsigned char interval_idx;
 
-	cv_t input_buffer;
+		cv_t input_buffer;
 
-	struct hrt_prioq cmd_queue;
-	pthread_mutex_t cmd_queue_mtx;
+		struct hrt_prioq cmd_queue;
+		pthread_mutex_t cmd_queue_mtx;
 
-	struct CmdDispatchThread* pCmdDispatcher;
-	struct MemoryPool mem_pool;
+		struct CmdDispatchThread* pCmdDispatcher;
+		struct MemoryPool mem_pool;
 
-	asIScriptObject* player_obj;
-};
+		asIScriptObject* player_obj;
 
-void Client_Disconnect(struct Client* pTarget);
-int Client_WriteTo(struct Client* pTarget, const char* buf, size_t len);
-void Client_Sendf(struct Client* pTarget, const char* fmt, ...);
-struct Client* Client_Create(int sock, struct CmdDispatchThread*);
-void Client_Destroy(void* p);
+		unsigned char bDisconnected;
+		unsigned int refcount;
+		pthread_rwlock_t refcount_rwlock;
+	};
 
-void Client_QueueCommand(struct Client* pClient, void* (*taskfn) (void*),
-			time_t runtime_s, long runtime_ns, void* args, void (*argreleaserfn) (void*));
+	void Client_Disconnect(struct Client* pTarget);
+	int Client_WriteTo(struct Client* pTarget, const char* buf, size_t len); //What the rest of the engine should use for client output
+	void Client_Sendf(struct Client* pTarget, const char* fmt, ...); //Uses WriteTo
+	struct Client* Client_Create(int sock, struct CmdDispatchThread*);
+	void Client_Destroy(void* p);
+
+	size_t Client_GetRefCount(struct Client* client);
+	void Client_ReleaseRef(struct Client* client);
+	void Client_AddRef(struct Client* client);
+
+	void Client_QueueCommand(struct Client* pClient, void* (*taskfn) (void*),
+				time_t runtime_s, long runtime_ns, void* args, void (*argreleaserfn) (void*));
 
 #ifdef __cplusplus
 }

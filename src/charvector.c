@@ -167,6 +167,21 @@ void cv_destroy(cv_t* cv)
 	cv->data = 0;
 }
 
+int cv_pushlimited(cv_t* cv, el_t newel)
+{
+	//Like push, but will not realloc on its own
+	if(cv->length < cv->capacity && cv->data)
+	{
+		cv->data[cv->length] = newel;
+		++cv->length;
+		return 0;
+	}
+	else
+	{
+		return -1;
+	}
+}
+
 int cv_push(cv_t* cv, el_t newel)
 {
 	if(cv->length >= cv->capacity)
