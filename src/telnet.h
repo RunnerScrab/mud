@@ -5,6 +5,13 @@
 #include <stdio.h>
 #include "constants.h"
 
+#define TELSTATE_INPUT 0 //No commands
+#define TELSTATE_IAC 1 //IAC received
+#define TELSTATE_SB 2 //Suboption negotiation received
+#define TELSTATE_SE 3 //End of Suboption negotiation (following an IAC)
+#define TELSTATE_CMD 4 //3 byte command likely used in major option negotiation
+#define TELSTATE_ERROR 5 //Stream has entered invalid state and does not conform to any known telnet RFC
+
 typedef struct
 {
 	//To support, 857, 858, 859, 1091, 1073, 1079

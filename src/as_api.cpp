@@ -205,7 +205,7 @@ void ASAPI_GenerateUUID(std::string& out)
 {
 	cv_t buf;
 	union UUID uuid;
-	cv_init(&buf, 37);
+	cv_init(&buf, 38);
 	GenerateUUID(&uuid);
 	UUIDToString(&uuid, &buf);
 	out.assign(buf.data);

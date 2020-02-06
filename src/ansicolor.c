@@ -15,7 +15,7 @@ struct AnsiCode color_codes[] = {
 	{"black", "\x1B[30m", 5},
 	{"blue", "\x1B[34m", 5},
 	{"cyan", "\x1B[36m", 5},
-	{"default", "\x1B[00m", 5},
+	{"default", "\x1B[0m", 4},
 	{"green", "\x1B[32m", 5},
 	{"magenta", "\x1B[35m", 5},
 	{"red", "\x1B[31m", 5},
@@ -81,7 +81,7 @@ void ANSIColorizeString(const el_t* input, cv_t* output)
 				unsigned char r, g, b;
 				atorgb(symbol, &r, &g, &b);
 				snprintf(twentyfourbitansi, sizeof(el_t) * 31, "\x1b[%d;2;%d;%d;%dm",
-					symbol[0] == '#'? 38 : 48,r, g, b);
+					(symbol[0] == '#'? 38 : 48),r, g, b);
 
 				//strncat(output, twentyfourbitansi, strlen(twentyfourbitansi));
 				cv_appendstr(output, twentyfourbitansi);

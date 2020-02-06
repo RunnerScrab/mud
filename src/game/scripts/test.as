@@ -68,7 +68,7 @@ class Player : PlayerConnection
 		@m_meower = @m;
 		Log("Attempting to set player meower.\n");
 		Send("Trying to set your meower.\r\n");
-		string msg = "Your meower's UUID is `red`" + m_meower.GetUUID() + "`default`\r\n";
+		string msg = "\r\nYour meower's UUID is `@ff0000`" + m_meower.GetUUID() + "`default`!\r\n";
 		Send(msg);
 	}
 
@@ -112,7 +112,7 @@ void OnPlayerConnect(Player@ player)
 	g_meowers.insertLast(Meower());
 	player.SetMeower(g_meowers[g_meowers.length() - 1]);
 	g_players.insertLast(player);
-	game_server.SendToAll("Someone has connected. There are " + g_players.length() + " players connected.\r\n");
+	game_server.SendToAll("\r\nSomeone has connected. There are " + g_players.length() + " players connected.\r\n");
 	}
 //	catch
 //	{

@@ -2,9 +2,11 @@ CC = gcc
 CCXX = g++
 
 SQLITECC = gcc
-CFLAGS = -Wall -Ofast
-CXXFLAGS = -Wall -Ofast
-LDLIBS = -pthread -lz -ldl -lm -Wl,-soname,libsodium.so,-rpath='./' -L. -l:libsodium.so
+OPTFLAG = -Og
+DEBUGFLAGS = -g
+CFLAGS = -Wall ${OPTFLAG} ${DEBUGFLAGS}
+CXXFLAGS = -Wall ${OPTFLAG} ${DEBUGFLAGS} 
+LDLIBS = ${OPTFLAG} -pthread -lz -ldl -lm -Wl,-soname,libsodium.so,-rpath='./' -L. -l:libsodium.so ${DEBUGFLAGS}
 OUTPUT_OPTION = -MMD -MP -o $@
 
 CSOURCE := $(wildcard *.c)

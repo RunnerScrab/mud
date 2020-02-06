@@ -34,6 +34,13 @@ const int SERVERLOG_ERROR = 2;
 #ifndef max
 #define max(a, b) (a > b ? a : b)
 #endif
+#ifndef min
+#define min(a, b) (a < b ? a : b)
+#endif
+
+
+//Nonnegative if OK, -1 if player is clocked sending too much too fast
+int Server_ClockPlayer(struct Server* pServer, struct Client* pClient, size_t data_sent);
 
 void ServerLog(unsigned int code, const char* fmt, ...)
 {
@@ -93,25 +100,37 @@ void Server_SendAllClients(struct Server* pServer, const char* fmt, ...)
 void Server_HandleClientDisconnect(struct Server* pServer,
 				struct Client* pClient)
 {
-	ServerLog(SERVERLOG_STATUS, "Client disconnected.");
-	AngelScriptManager_CallOnPlayerDisconnect(&pServer->as_manager, pClient);
-	size_t foundkey = 0;
 
-	pthread_rwlock_wrlock(&pServer->clients_rwlock);
-	if(FAILURE(Vector_Find(&pServer->clients, &pClient->sock, CompClientSock, &foundkey)))
+	if(!pClient->bDisconnected)
 	{
-		ServerLog(SERVERLOG_DEBUG, "DEBUG: Couldn't find client in vector!");
+		ServerLog(SERVERLOG_STATUS, "Client disconnected.");
 	}
-	else
+
+	Client_Disconnect(pClient);
+	size_t cref = Client_GetRefCount(pClient);
+	ServerLog(SERVERLOG_DEBUG, "Client has a refcount of %lu\n", cref);
+	if(!cref)
 	{
-		close(pClient->sock);
-		//This should actually be done automatically, according to man epoll
-		epoll_ctl(pServer->epfd, EPOLL_CTL_DEL, pClient->sock, 0);
-		printf("Client vec size: %lu\n", Vector_Count(&pServer->clients));
-		Vector_Remove(&pServer->clients, foundkey);
-		printf("Client vec size after remove: %lu\n", Vector_Count(&pServer->clients));
+		AngelScriptManager_CallOnPlayerDisconnect(&pServer->as_manager, pClient);
+		size_t foundkey = 0;
+
+		pthread_rwlock_wrlock(&pServer->clients_rwlock);
+		if(FAILURE(Vector_Find(&pServer->clients, &pClient->sock, CompClientSock, &foundkey)))
+		{
+			ServerLog(SERVERLOG_DEBUG, "Couldn't find client in vector!");
+		}
+		else
+		{
+			ServerLog(SERVERLOG_DEBUG, "Removing client from client vector.");
+			//This should actually be done automatically, according to man epoll
+			epoll_ctl(pServer->epfd, EPOLL_CTL_DEL, pClient->sock, 0);
+			printf("Client vec size: %lu\n", Vector_Count(&pServer->clients));
+			Vector_Remove(&pServer->clients, foundkey);
+			printf("Client vec size after remove: %lu\n", Vector_Count(&pServer->clients));
+		}
+		pthread_rwlock_unlock(&pServer->clients_rwlock);
 	}
-	pthread_rwlock_unlock(&pServer->clients_rwlock);
+
 }
 
 void Server_DisconnectClient(struct Server* pServer, struct Client* pClient)
@@ -127,7 +146,21 @@ struct HandleUserInputTaskPkg
 
 void ReleaseHandleUserInputTaskPkg(void* pArg)
 {
-	struct Server* pServer = ((struct HandleUserInputTaskPkg*) pArg)->pServer;
+
+	struct HandleUserInputTaskPkg* pkg = (struct HandleUserInputTaskPkg*) pArg;
+	struct Server* pServer = pkg->pServer;
+	struct Client* pClient = pkg->pClient;
+	ServerLog(SERVERLOG_DEBUG, "Client ref is being decremented.");
+	Client_ReleaseRef(pClient);
+
+	if(pClient->bDisconnected && !Client_GetRefCount(pClient))
+	{
+		//If a client spams data and is disconnected, it's possible that
+		//they will have multiple HandleUserInput tasks still enqueued after
+		//their connection is terminated.
+		Server_DisconnectClient(pServer, pkg->pClient);
+	}
+
 	MemoryPool_Free(&(pServer->mem_pool), sizeof(struct HandleUserInputTaskPkg), pArg);
 }
 
@@ -170,11 +203,29 @@ void* HandleUserInputTask(void* pArg)
 	struct HandleUserInputTaskPkg* pPkg = (struct HandleUserInputTaskPkg*) pArg;
 	struct Server* pServer = pPkg->pServer;
 	struct Client* pClient = pPkg->pClient;
+	ServerLog(SERVERLOG_DEBUG, "Entered HandleUserInputTask");
+	if(pClient->bDisconnected)
+	{
+		ServerLog(SERVERLOG_DEBUG, "Client was already disconnected.");
+		Server_DisconnectClient(pServer, pClient);
+		return (void*) 0;
+	}
+
 
 	unsigned char bClientDisconnected = 0;
 	cv_t clientinput;
 	cv_init(&clientinput, CLIENT_MAXINPUTLEN);
 	size_t bytes_read = read_to_cv(pClient->sock, &clientinput, 0, CLIENT_MAXINPUTLEN);
+
+
+	if(Server_ClockPlayer(pServer, pClient, bytes_read) < 0)
+	{
+		ServerLog(SERVERLOG_ERROR, "Client sending data too fast!");
+		Client_Sendf(pClient, "\r\n`@255;0;0`You are sending data too fast and are being disconnected.`default`\r\n");
+		cv_destroy(&clientinput);
+		Server_DisconnectClient(pServer, pClient);
+		return (void*) -1;
+	}
 
 	size_t idx = 0, z = bytes_read;
 	char bHadIAC = 0;
@@ -192,6 +243,7 @@ void* HandleUserInputTask(void* pArg)
 			RearmClientSocket(pServer, pClient);
 			cv_destroy(&decompout);
 			cv_destroy(&clientinput);
+
 			return (void*) -1;
 		}
 		cv_swap(&decompout, &clientinput);
@@ -202,12 +254,31 @@ void* HandleUserInputTask(void* pArg)
 	if(memchr(clientinput.data, 255, clientinput.length))
 	{
 		cv_t normchars;
-		cv_init(&normchars, 64);
+		cv_init(&normchars, 128);
 		//Process IACs
 		for(; idx < z; ++idx)
 		{
-			bHadIAC |= TelnetStream_ProcessByte(&pClient->tel_stream,
-							clientinput.data[idx], &normchars);
+			register unsigned char ch = clientinput.data[idx];
+			if(ch)
+			{
+				bHadIAC |= TelnetStream_ProcessByte(&pClient->tel_stream, ch, &normchars);
+			}
+			else
+			{
+				//We received a 0 byte, which, outside of the TRANSMIT BINARY command (which we will not support),
+				//is possibly shellcode.
+				pClient->tel_stream.state = TELSTATE_ERROR;
+				break;
+			}
+		}
+
+		if(TELSTATE_ERROR == pClient->tel_stream.state)
+		{
+
+			Client_Sendf(pClient, "`red`Your client appears to be sending erroneous telnet commands.`default`\r\n");
+			cv_destroy(&clientinput);
+			Server_DisconnectClient(pServer, pClient);
+			return (void*) -1;
 		}
 
 		if(bHadIAC)
@@ -221,7 +292,7 @@ void* HandleUserInputTask(void* pArg)
 		}
 		cv_destroy(&normchars);
 	}
-
+	pthread_mutex_unlock(&pClient->connection_state_mtx);
 
 	unsigned char inputcomplete = 0;
 	cv_t* cbuf = &(pClient->input_buffer);
@@ -257,7 +328,7 @@ void* HandleUserInputTask(void* pArg)
 	{
 		//At this point, we have a complete user command and can process it
 		/* DEMO CODE */
-		printf("Received: %s\n", cbuf->data);
+		printf("Attemping to process: %s\n", cbuf->data);
 		char out[64] = {0};
 		if(!inet_ntop(pClient->addr.sin_family, (void*) &pClient->addr.sin_addr, out, sizeof(char) * 64))
 		{
@@ -267,21 +338,23 @@ void* HandleUserInputTask(void* pArg)
 		   out, cbuf->data);*/
 
 		// TODO: Process data here
+		ServerLog(SERVERLOG_DEBUG, "Calling AS CallOnPlayerInput.");
 		AngelScriptManager_CallOnPlayerInput(&pServer->as_manager, pClient, cbuf->data);
+		ServerLog(SERVERLOG_DEBUG, "Returned from calling AS CallOnPlayerInput.");
 
-		if(strstr(cbuf->data, "kill"))
+		if(!strncmp(cbuf->data, "kill", min(4, bytes_read)))
 		{
 			//This is obviously just for debugging!
 			//TODO: Get rid of this or put it in an admin only command
 
 			Server_WriteToCmdPipe(pServer, "kill", 5);
 		}
-		else if(strstr(cbuf->data, "quit"))
+		else if(!strncmp(cbuf->data, "quit", min(4, bytes_read)))
 		{
 			Server_DisconnectClient(pServer, pClient);
 			bClientDisconnected = 1;
 		}
-		else if(strstr(cbuf->data, "testtimer"))
+		else if(!strncmp(cbuf->data, "testtimer", min(9, bytes_read)))
 		{
 			//TODO: Delete this
 			Server_AddTimedTask(pServer, TestTimedTask,
@@ -289,7 +362,7 @@ void* HandleUserInputTask(void* pArg)
 					(void*) pServer,
 					0);
 		}
-		else if(strstr(cbuf->data, "tc"))
+		else if(!strncmp(cbuf->data, "tc", min(2, bytes_read)))
 		{
 			ServerLog(SERVERLOG_STATUS, "Queueing user command.");
 			struct timespec current_ts;
@@ -326,9 +399,8 @@ float TimeDiffSecs(struct timespec* b, struct timespec* a)
 		(b->tv_nsec - a->tv_nsec)/1000000000.0;
 }
 
-void Server_HandleUserInput(struct Server* pServer, struct Client* pClient)
+int Server_ClockPlayer(struct Server* pServer, struct Client* pClient, size_t data_sent)
 {
-	//This function dispatches a task to handle the user's input
 	struct timespec curtime;
 
 	if(FAILURE(clock_gettime(CLOCK_BOOTTIME, &curtime)))
@@ -336,59 +408,68 @@ void Server_HandleUserInput(struct Server* pServer, struct Client* pClient)
 		ServerLog(SERVERLOG_DEBUG, "CLOCK FAILED\n");
 	}
 
-	if(TimeDiffSecs(&curtime, &pClient->connection_time) >= 5.f)
+	//MUD clients are often in character mode upon first connecting
+	//to perform negotiation, which means a very high command rate.
+	//We don't want to throttle/boot a user because of or during negotiation.
+
+	//TODO: Change this to a bitrate limit
+	float interval = TimeDiffSecs(&curtime, &pClient->last_input_time);
+
+	pClient->bytes_sent_at_intervals[pClient->interval_idx] = data_sent;
+	pClient->cmd_intervals[pClient->interval_idx] = interval;
+
+	pClient->interval_idx = (pClient->interval_idx + 1) % CLIENT_STOREDCMDINTERVALS;
+
+	memcpy(&(pClient->last_input_time), &curtime, sizeof(struct timespec));
+
+	unsigned char idx = 0;
+	float sum = 0.f, bsum = 0.f;
+	for(; idx < CLIENT_STOREDCMDINTERVALS; ++idx)
 	{
-		//MUD clients are often in character mode upon first connecting
-		//to perform negotiation, which means a very high command rate.
-		//We don't want to throttle/boot a user because of or during negotiation.
-
-		//TODO: Change this to a bitrate limit
-		float interval = TimeDiffSecs(&curtime, &pClient->last_input_time);
-
-		pClient->cmd_intervals[pClient->interval_idx] = interval;
-		pClient->interval_idx = (pClient->interval_idx + 1) % CLIENT_STOREDCMDINTERVALS;
-		memcpy(&(pClient->last_input_time), &curtime, sizeof(struct timespec));
-
-		unsigned char idx = 0;
-		float sum = 0.f;
-		for(; idx < CLIENT_STOREDCMDINTERVALS; ++idx)
-		{
-			sum += pClient->cmd_intervals[idx];
-		}
-		float average_cps = ((float) CLIENT_STOREDCMDINTERVALS) / sum;
-
-		if(average_cps > CLIENT_MAXCMDRATE)
-		{
-			ServerLog(SERVERLOG_STATUS, "Client is being disconnected for exceeding command rate. (%f cmds/s)", average_cps);
-			Client_Sendf(pClient,
-				"You are sending commands at an average rate of %f per second"
-				" and are being disconnected. Make sure your client is in line mode.\n", average_cps);
-			Server_DisconnectClient(pServer, pClient);
-			return;
-		}
-		else if(average_cps > 5.f)
-		{
-			Client_Sendf(pClient,
-				"You are sending commands at an average rate of %f per second.\n", average_cps);
-			RearmClientSocket(pServer, pClient);
-			return;
-		}
+		bsum += pClient->bytes_sent_at_intervals[idx];
+		sum += pClient->cmd_intervals[idx];
 	}
+
+	float average_bps = bsum/sum;
+
+	if(bsum >= CLIENT_MAXINPUTLEN &&  average_bps >= CLIENT_MAXBPS)
+	{
+		ServerLog(SERVERLOG_STATUS, "Client is being disconnected for exceeding maximum transmission rate. (%f bytes/s)", average_bps);
+		return -1;
+	}
+	else if(bsum >= CLIENT_MAXINPUTLEN && average_bps > (CLIENT_MAXBPS / 2))
+	{
+		Client_Sendf(pClient,
+			"`#255;0;0`You are sending data at an average rate of %f bytes/second. You will be kicked if this goes over %d.`default`\r\n", average_bps,
+			CLIENT_MAXBPS);
+		RearmClientSocket(pServer, pClient);
+		return 0;
+	}
+
+
+	return 0;
+
+}
+
+void Server_HandleUserInput(struct Server* pServer, struct Client* pClient)
+{
+	//This function dispatches a task to handle the user's input
 	struct HandleUserInputTaskPkg* pPkg = (struct HandleUserInputTaskPkg*) MemoryPool_Alloc(&(pServer->mem_pool),
 												sizeof(struct HandleUserInputTaskPkg));
 
 	pPkg->pServer = pServer;
 	pPkg->pClient = pClient;
-
+	Client_AddRef(pClient);
+	ServerLog(SERVERLOG_DEBUG, "Client ref is being incremented.");
 	if(FAILURE(ThreadPool_AddTask(&(pServer->thread_pool),
 						HandleUserInputTask, 1, pPkg,
 						ReleaseHandleUserInputTaskPkg)))
 	{
+		Client_ReleaseRef(pClient);
 		ServerLog(SERVERLOG_ERROR,
 			"Failed to add threadpool task!");
 		RearmClientSocket(pServer, pClient);
 	}
-
 }
 
 int Server_AcceptClient(struct Server* server)

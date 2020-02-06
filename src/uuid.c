@@ -5,10 +5,10 @@
 
 void UUIDToString(union UUID* uuid, cv_t* out)
 {
-	cv_resize(out, 39);
+	cv_resize(out, 37);
 	snprintf(out->data,
-		sizeof(char) * 38,
-		 "%8.8x-%4.4x-%4.4x-%2.2x%2.2x-%2.2x%2.2x%2.2x%2.2x%2.2x%2.2x\n",
+		sizeof(char) * 37,
+		 "%8.8x-%4.4x-%4.4x-%2.2x%2.2x-%2.2x%2.2x%2.2x%2.2x%2.2x%2.2x",
 		uuid->fields.time_low,
 		uuid->fields.time_mid,
 		uuid->fields.time_hi_and_version,

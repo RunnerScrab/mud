@@ -9,7 +9,7 @@ START_TEST(cv_append_and_push)
 {
 	size_t startallocs = tget_allocs() + tget_reallocs();
 	cv_t str;
-	cv_init(&str, 16);
+	cv_init(&str, 1);
 	size_t idx = 0, z = 0;
 	for(; idx < 10; ++idx)
 		cv_push(&str, idx);
