@@ -5,19 +5,19 @@ SQLITECC = gcc
 OPTFLAG = -Og
 DEBUGFLAGS = -g
 CFLAGS = -Wall ${OPTFLAG} ${DEBUGFLAGS}
-CXXFLAGS = -Wall ${OPTFLAG} ${DEBUGFLAGS} 
+CXXFLAGS = -Wall ${OPTFLAG} ${DEBUGFLAGS}
 LDLIBS = ${OPTFLAG} -pthread -lz -ldl -lm -Wl,-soname,libsodium.so,-rpath='./' -L. -l:libsodium.so ${DEBUGFLAGS}
 OUTPUT_OPTION = -MMD -MP -o $@
 
 CSOURCE := $(wildcard *.c)
 CXXSOURCE := $(wildcard *.cpp)
+CXXSOURCE += $(wildcard as_addons/*.cpp)
 
 COBJS := $(CSOURCE:.c=.o)
 CXXOBJS := $(CXXSOURCE:.cpp=.o)
 
 CDEPS := $(CSOURCE:.c=.d)
 CXXDEPS := $(CXXSOURCE:.cpp=.d)
-
 
 OBJS := $(COBJS) $(CXXOBJS)
 DEPS := $(CDEPS) $(CXXDEPS)

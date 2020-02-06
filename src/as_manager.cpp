@@ -7,9 +7,9 @@ extern "C"
 }
 #include "as_api.h"
 #include "player.h"
-#include "scriptstdstring.h"
-#include "scriptarray.h"
-#include "scripthelper.h"
+#include "as_addons/scriptstdstring.h"
+#include "as_addons/scriptarray.h"
+#include "as_addons/scripthelper.h"
 #include "./angelscriptsdk/sdk/angelscript/include/angelscript.h"
 #include "./angelscriptsdk/sdk/angelscript/source/as_jit.h"
 
