@@ -149,11 +149,15 @@ void ReleaseHandleUserInputTaskPkg(void* pArg)
 
 	struct HandleUserInputTaskPkg* pkg = (struct HandleUserInputTaskPkg*) pArg;
 	struct Server* pServer = pkg->pServer;
+	struct Client* pClient = pkg->pClient;
 	ServerLog(SERVERLOG_DEBUG, "Client ref is being decremented.");
-	Client_ReleaseRef(pkg->pClient);
+	Client_ReleaseRef(pClient);
 
-	if(!Client_GetRefCount(pkg->pClient))
+	if(pClient->bDisconnected && !Client_GetRefCount(pClient))
 	{
+		//If a client spams data and is disconnected, it's possible that
+		//they will have multiple HandleUserInput tasks still enqueued after
+		//their connection is terminated.
 		Server_DisconnectClient(pServer, pkg->pClient);
 	}
 
