@@ -221,7 +221,7 @@ void* HandleUserInputTask(void* pArg)
 	if(Server_ClockPlayer(pServer, pClient, bytes_read) < 0)
 	{
 		ServerLog(SERVERLOG_ERROR, "Client sending data too fast!");
-
+		Client_Sendf(pClient, "\r\n`@255;0;0`You are sending data too fast and are being disconnected.`default`\r\n");
 		cv_destroy(&clientinput);
 		Server_DisconnectClient(pServer, pClient);
 		return (void*) -1;
@@ -470,12 +470,6 @@ void Server_HandleUserInput(struct Server* pServer, struct Client* pClient)
 			"Failed to add threadpool task!");
 		RearmClientSocket(pServer, pClient);
 	}
-
-	if(!Client_GetRefCount(pClient))
-	{
-		Server_DisconnectClient(pServer, pClient);
-	}
-
 }
 
 int Server_AcceptClient(struct Server* server)

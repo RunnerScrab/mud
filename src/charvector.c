@@ -117,10 +117,13 @@ void cv_copy(cv_t* dest, cv_t* source)
 void cv_strcpy(cv_t* dest, const el_t* source)
 {
 	dest->length = strlen(source) + 1;
-	dest->capacity = dest->length;
-	if(dest->data)
-		tfree(dest->data);
-	dest->data = (el_t*) talloc(sizeof(el_t) * dest->capacity);
+
+	if(dest->capacity < dest->length)
+	{
+		dest->capacity = max(dest->length, (dest->capacity<<1));
+		dest->data = (el_t*) trealloc(dest->data, sizeof(el_t) * dest->capacity);
+	}
+
 	memcpy(dest->data, source, dest->capacity);
 }
 
