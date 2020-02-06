@@ -19,8 +19,11 @@ int TickThread_Init(struct TickThread* tt, struct Server* server, size_t tickspe
 
 void TickThread_Stop(struct TickThread* tt)
 {
-	tt->bIsRunning = 0;
-	pthread_join(tt->thread, 0);
+	if(tt->bIsRunning)
+	{
+		tt->bIsRunning = 0;
+		pthread_join(tt->thread, 0);
+	}
 }
 
 void* TickThreadFn(void* pArgs)

@@ -24,12 +24,15 @@ int CmdDispatchThread_Init(struct CmdDispatchThread* dispatchthread, struct Serv
 
 void CmdDispatchThread_Stop(struct CmdDispatchThread* dispatchthread)
 {
-	ServerLog(SERVERLOG_STATUS, "Stopping cmd dispatch thread.");
-	dispatchthread->bIsRunning = 0;
-	pthread_cond_broadcast(&dispatchthread->wakecond);
-	ServerLog(SERVERLOG_STATUS, "Wake broadcast");
-	pthread_join(dispatchthread->thread, 0);
-	ServerLog(SERVERLOG_STATUS, "Cmd dispatch thread joined.");
+	if(dispatchthread->bIsRunning)
+	{
+		ServerLog(SERVERLOG_STATUS, "Stopping cmd dispatch thread.");
+		dispatchthread->bIsRunning = 0;
+		pthread_cond_broadcast(&dispatchthread->wakecond);
+		ServerLog(SERVERLOG_STATUS, "Wake broadcast");
+		pthread_join(dispatchthread->thread, 0);
+		ServerLog(SERVERLOG_STATUS, "Cmd dispatch thread joined.");
+	}
 }
 
 void CmdDispatchThread_Destroy(struct CmdDispatchThread* dispatchthread)
