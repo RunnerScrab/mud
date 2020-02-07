@@ -16,6 +16,7 @@ class TestCommand : ICommand
 		return 0;
 	}
 };
+
 class Meower
 {
 	Meower()
@@ -40,6 +41,12 @@ class Player : PlayerConnection
 	{
 		super();
 		m_gamestate = PlayerGameState::LOGIN_MENU;
+
+	}
+	~Player()
+	{
+		//We shouldn't necessarily save in the destructor
+  		SaveProperty("meoweruuid", m_meower.GetUUID());
 	}
 
 	PlayerGameState GetPlayerGameState()
@@ -112,6 +119,7 @@ void OnPlayerConnect(Player@ player)
 	g_meowers.insertLast(Meower());
 	player.SetMeower(g_meowers[g_meowers.length() - 1]);
 	g_players.insertLast(player);
+
 	game_server.SendToAll("\r\nSomeone has connected. There are " + g_players.length() + " players connected.\r\n");
 	}
 //	catch
@@ -121,6 +129,7 @@ void OnPlayerConnect(Player@ player)
 /*
   Log("OnPlayerConnect()");
   player.Send("WELCOME!\r\n");
+
   @hPlayer = @player;
   if(hPlayer !is null)
   {

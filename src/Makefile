@@ -51,4 +51,4 @@ clean:
 	cd angelscriptsdk/sdk/angelscript/projects/gnuc/ && make clean
 
 etags:
-	etags *.c *.h
+	etags *.cpp *.c *.h

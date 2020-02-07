@@ -106,6 +106,12 @@ const char* GetASTypeName(int type)
 	}
 }
 
+std::string ASAPI_DebugObject(asIScriptObject* obj)
+{
+	asITypeInfo* typeinfo = obj->GetObjectType();
+	return typeinfo->GetName();
+}
+
 void ASAPI_DebugVariables(struct Server* server, Player* playerobj)
 {
 	if(playerobj)

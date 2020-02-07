@@ -7,6 +7,8 @@ extern "C"
 }
 #include "as_api.h"
 #include "player.h"
+#include "persistentobj.h"
+
 #include "as_addons/scriptstdstring.h"
 #include "as_addons/scriptarray.h"
 #include "as_addons/scripthelper.h"
@@ -32,7 +34,7 @@ extern "C"
 		else if( msg->type == asMSGTYPE_INFORMATION )
 			type = "INFO";
 
-		ServerLog(SERVERLOG_ERROR, "%s (%d, %d) : %s : %s\n", msg->section, msg->row, msg->col, type, msg->message);
+		ServerLog(SERVERLOG_ERROR, "Angelscript: %s (%d, %d) : %s : %s\n", msg->section, msg->row, msg->col, type, msg->message);
 	}
 
 	int AngelScriptManager_InitEngine(AngelScriptManager* manager)
@@ -73,6 +75,9 @@ extern "C"
 	{
 		int result = 0;
 		asIScriptEngine* pEngine = manager->engine;
+		result = RegisterPersistentObjProxyClass(pEngine, manager->main_module);
+		RETURNFAIL_IF(result < 0);
+
 		result = RegisterPlayerProxyClass(pEngine, manager->main_module);
 		RETURNFAIL_IF(result < 0);
 
@@ -191,6 +196,8 @@ extern "C"
 
 		manager->main_module = manager->engine->GetModule("game_module", asGM_ALWAYS_CREATE);
 		RETURNFAIL_IF(manager->main_module->AddScriptSection("game", &script[0], len) < 0);
+
+		RETURNFAIL_IF(LoadPersistentObjScript(manager->engine, manager->main_module));
 		RETURNFAIL_IF(LoadPlayerScript(manager->engine, manager->main_module));
 		RETURNFAIL_IF(manager->main_module->Build() < 0);
 

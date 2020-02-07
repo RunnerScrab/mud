@@ -1,7 +1,11 @@
 #ifndef PLAYER_H_
 #define PLAYER_H_
+#include "as_refcountedobj.h"
+#include "persistentobj.h"
 #include "client.h"
 #include "as_manager.h"
+
+
 #include <string>
 
 class asIScriptObject;
@@ -9,23 +13,16 @@ class asILockableSharedBool;
 class asIScriptEngine;
 class asIScriptModule;
 
-class Player
+class Player : public PersistentObj
 {
 public:
   struct Client* m_pClient;
-  void AddRef();
-  void Release();
   void Send(std::string& str);
   void Disconnect();
   static Player* Factory();
 protected:
   Player(asIScriptObject* obj);
   ~Player();
-
-  int m_refCount;
-  asILockableSharedBool* m_isDead;
-  asIScriptObject* m_obj;
-
 };
 
 int LoadPlayerScript(asIScriptEngine* engine, asIScriptModule* module);
