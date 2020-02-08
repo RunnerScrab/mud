@@ -11,6 +11,9 @@ class PersistentObj : public AS_RefCountedObj
 {
 public:
 	void SaveProperty(const std::string&, const std::string&);
+
+	std::string LoadStringProperty(const std::string& name);
+
 	static PersistentObj* Factory();
 protected:
 

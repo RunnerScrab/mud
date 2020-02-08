@@ -1,8 +1,9 @@
 #include "as_refcountedobj.h"
+#include "angelscript.h"
 #include "as_manager.h"
 #include <cstring>
 #include <string>
-#include "angelscript.h"
+
 
 AS_RefCountedObj::AS_RefCountedObj(asIScriptObject* obj)
 {

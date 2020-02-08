@@ -18,6 +18,12 @@ void PersistentObj::SaveProperty(const std::string& propname, const std::string&
 		typeinfo->GetName(), propname.c_str(), propval.c_str());
 }
 
+std::string LoadStringProperty(const std::string& name, const std::string& defaultvalue)
+{
+	asITypeInfo* typeinfo = m_obj->GetObjectType();
+	printf("LoadStringProperty\n");
+}
+
 PersistentObj::PersistentObj(asIScriptObject* obj)
 : AS_RefCountedObj(obj)
 {
