@@ -21,7 +21,7 @@ class Meower
 {
 	Meower()
 	{
-		Log("Trying to make a meower.\n");
+		Log("Trying to make a meower. это - кошка!\n");
 		GenerateUUID(m_uuid);
 		Log("Meower uuid: " + m_uuid + "\n");
 	}
@@ -74,7 +74,7 @@ class Player : PlayerConnection
 	{
 		@m_meower = @m;
 		Log("Attempting to set player meower.\n");
-		Send("Trying to set your meower.\r\n");
+		Send("Trying to set your meower. это - кошка. \r\n");
 		string msg = "\r\nYour meower's UUID is `@ff0000`" + m_meower.GetUUID() + "`default`!\r\n";
 		Send(msg);
 	}

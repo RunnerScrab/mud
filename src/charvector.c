@@ -7,6 +7,7 @@
 
 #define min(a, b) (a < b ? a : b)
 #define max(a, b) (a > b ? a : b)
+#define MINALLOC 8
 
 void cv_sprintf(cv_t* pcv, const char* fmt, ...)
 {
@@ -21,7 +22,7 @@ void cv_sprintf(cv_t* pcv, const char* fmt, ...)
 	if(bwritten >= pcv->capacity)
 	{
 		//Our buffer wasn't large enough. Resize it!
-		pcv->capacity = pcv->length;
+		pcv->capacity = max(1, pcv->length);
 		pcv->data = (el_t*) trealloc(pcv->data,
 					sizeof(el_t) * pcv->capacity);
 		memset(pcv->data, 0, sizeof(el_t) * pcv->capacity);
@@ -36,6 +37,7 @@ int cv_append(cv_t* cv, const el_t* data, size_t len)
 	if((cv->length + len) > cv->capacity)
 	{
 		cv->capacity = max((cv->capacity << 1),(cv->capacity + len));
+		cv->capacity = max(cv->capacity, MINALLOC);
 		cv->data = (el_t*) trealloc(cv->data,
 					sizeof(el_t) * cv->capacity);
 		if(!cv->data)
@@ -68,13 +70,11 @@ int cv_appendstr(cv_t* cv, const el_t* data)
 
 int cv_init(cv_t* cv, size_t startsize)
 {
-	if(startsize > 0)
-	{
-		cv->length = 0;
-		cv->capacity = startsize << 1;
-		cv->data = (el_t*) talloc(sizeof(el_t) * cv->capacity);
-		memset(cv->data, 0, sizeof(el_t) * cv->capacity);
-	}
+	cv->length = 0;
+	cv->capacity = max(startsize, MINALLOC);
+	cv->data = (el_t*) talloc(sizeof(el_t) * cv->capacity);
+	memset(cv->data, 0, sizeof(el_t) * cv->capacity);
+
 	return (startsize > 0 && cv->data) ? 0 : -1;
 }
 
@@ -82,7 +82,7 @@ int cv_resize(cv_t* cv, size_t newcap)
 {
 	if(!cv->data || newcap != cv->capacity)
 	{
-		cv->data = (el_t*) trealloc(cv->data, sizeof(el_t) * newcap);
+		cv->data = (el_t*) trealloc(cv->data, sizeof(el_t) * max(MINALLOC, newcap));
 		cv->capacity = newcap;
 	}
 	return cv->data ? 0 : -1;
@@ -107,7 +107,7 @@ void cv_swap(cv_t* a, cv_t* b)
 void cv_copy(cv_t* dest, cv_t* source)
 {
 	dest->length = source->length;
-	dest->capacity = source->capacity;
+	dest->capacity = max(MINALLOC, source->capacity);
 	if(dest->data)
 		tfree(dest->data);
 	dest->data = (el_t*) talloc(sizeof(el_t) * dest->capacity);
@@ -121,6 +121,7 @@ void cv_strcpy(cv_t* dest, const el_t* source)
 	if(dest->capacity < dest->length)
 	{
 		dest->capacity = max(dest->length, (dest->capacity<<1));
+		dest->capacity = max(MINALLOC, dest->capacity);
 		dest->data = (el_t*) trealloc(dest->data, sizeof(el_t) * dest->capacity);
 	}
 
@@ -130,7 +131,7 @@ void cv_strcpy(cv_t* dest, const el_t* source)
 void cv_strncpy(cv_t* dest, const el_t* source, size_t len)
 {
 	dest->length = len;
-	dest->capacity = len;
+	dest->capacity = max(MINALLOC, len);
 	if(dest->data)
 		tfree(dest->data);
 	dest->data = (el_t*) talloc(sizeof(el_t) * dest->capacity);
@@ -140,7 +141,7 @@ void cv_strncpy(cv_t* dest, const el_t* source, size_t len)
 void cv_strncat(cv_t* dest, const el_t* source, size_t len)
 {
 	// To account for the null byte, the length must have 1 added to it and dest->length must have 1 subtracted
-	size_t new_len = dest->length + len;
+	size_t new_len = max(MINALLOC, (dest->length + len));
 	if(new_len >= dest->capacity)
 	{
 		dest->capacity = max((dest->capacity << 1), new_len);
@@ -152,7 +153,7 @@ void cv_strncat(cv_t* dest, const el_t* source, size_t len)
 
 void cv_strcat(cv_t* dest, const el_t* source)
 {
-	size_t new_len = dest->length + strlen(source);
+	size_t new_len = max(MINALLOC, (dest->length + strlen(source)));
 	if(new_len >= dest->capacity)
 	{
 		dest->capacity = max((dest->capacity << 1), new_len);
@@ -189,7 +190,8 @@ int cv_push(cv_t* cv, el_t newel)
 {
 	if(cv->length >= cv->capacity)
 	{
-		cv->capacity = cv->capacity << 1;
+		cv->capacity = max((cv->capacity << 1), (cv->capacity + cv->length));
+		cv->capacity = max(cv->capacity, MINALLOC);
 		cv->data = (el_t*) trealloc(cv->data, sizeof(el_t) * cv->capacity);
 	}
 

@@ -11,6 +11,7 @@ static const char* persistentobjscript =
 	"PersistentObj_t @m_obj;"
 	"};";
 
+
 void PersistentObj::SaveProperty(const std::string& propname, const std::string& propval)
 {
 	asITypeInfo* typeinfo = m_obj->GetObjectType();
@@ -18,10 +19,11 @@ void PersistentObj::SaveProperty(const std::string& propname, const std::string&
 		typeinfo->GetName(), propname.c_str(), propval.c_str());
 }
 
-std::string LoadStringProperty(const std::string& name, const std::string& defaultvalue)
+std::string PersistentObj::LoadStringProperty(const std::string& name, const std::string& defaultvalue)
 {
 	asITypeInfo* typeinfo = m_obj->GetObjectType();
 	printf("LoadStringProperty\n");
+	return "";
 }
 
 PersistentObj::PersistentObj(asIScriptObject* obj)
