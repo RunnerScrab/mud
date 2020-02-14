@@ -68,11 +68,27 @@ void PersistentObj::SavePropertyINT64(const std::string& propname, long long v)
 				typeinfo->GetName(), propname.c_str(), v);
 }
 
+void PersistentObj::SavePropertyFloat(const std::string& propname, float v)
+{
+	asITypeInfo* typeinfo = m_obj->GetObjectType();
+	printf("SaveProperty (float) called from instance of class %s with name: %s val %f\n",
+				typeinfo->GetName(), propname.c_str(), v);
+
+}
+
+void PersistentObj::SavePropertyDouble(const std::string& propname, double v)
+{
+	asITypeInfo* typeinfo = m_obj->GetObjectType();
+	printf("SaveProperty (double) called from instance of class %s with name: %s val %f\n",
+				typeinfo->GetName(), propname.c_str(), v);
+}
+
 
 std::string PersistentObj::LoadStringProperty(const std::string& name, const std::string& defaultvalue)
 {
-	asITypeInfo* typeinfo = m_obj->GetObjectType();
+/*	asITypeInfo* typeinfo = m_obj->GetObjectType();
 	printf("LoadStringProperty\n");
+*/
 	return "";
 }
 

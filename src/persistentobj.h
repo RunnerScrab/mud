@@ -20,6 +20,9 @@ public:
 	void SavePropertyINT32(const std::string& name, int);
 	void SavePropertyINT64(const std::string& name, long long);
 
+	void SavePropertyFloat(const std::string& name, float);
+	void SavePropertyDouble(const std::string& name, double);
+
 	std::string LoadStringProperty(const std::string& name, const std::string& defaultvalue);
 	static PersistentObj* Factory();
 protected:

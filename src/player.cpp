@@ -24,7 +24,8 @@ static const char* playerscript =
 	"protected void SaveProperty(string name, int16 val){m_obj.SaveProperty(name, val);}"
 	"protected void SaveProperty(string name, int val){m_obj.SaveProperty(name, val);}"
 	"protected void SaveProperty(string name, int64 val){m_obj.SaveProperty(name, val);}"
-
+	"protected void SaveProperty(string name, float val){m_obj.SaveProperty(name, val);}"
+	"protected void SaveProperty(string name, double val){m_obj.SaveProperty(name, val);}"
 	"Player_t @opImplCast() {return @m_obj;}"
 	"private Player_t @m_obj;"
 	"}";
@@ -134,8 +135,19 @@ int RegisterPlayerProxyClass(asIScriptEngine* engine, asIScriptModule* module)
 						asMETHODPR(Player, SavePropertyINT32, (const std::string&, int), void),
 						asCALL_THISCALL) < 0)
 		return -1;
+
 	if(engine->RegisterObjectMethod("Player_t", "void SaveProperty(string& in, int64 v)",
 						asMETHODPR(Player, SavePropertyINT64, (const std::string&, long long), void),
+						asCALL_THISCALL) < 0)
+		return -1;
+
+	if(engine->RegisterObjectMethod("Player_t", "void SaveProperty(string& in, float v)",
+						asMETHODPR(Player, SavePropertyFloat, (const std::string&, float), void),
+						asCALL_THISCALL) < 0)
+		return -1;
+
+	if(engine->RegisterObjectMethod("Player_t", "void SaveProperty(string& in, double v)",
+						asMETHODPR(Player, SavePropertyDouble, (const std::string&, double), void),
 						asCALL_THISCALL) < 0)
 		return -1;
 

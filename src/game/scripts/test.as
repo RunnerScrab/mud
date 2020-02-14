@@ -51,6 +51,7 @@ class Player : PlayerConnection
 		int64 number = 123456;
 		SaveProperty("thingies", val);
 		SaveProperty("testprop", number);
+		SaveProperty("somereal", 4.f);
 	}
 
 	PlayerGameState GetPlayerGameState()
