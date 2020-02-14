@@ -17,13 +17,17 @@ class TestCommand : ICommand
 	}
 };
 
-class Meower
+class Meower : PersistentObj
 {
 	Meower()
 	{
 		Log("Trying to make a meower. это - кошка!\n");
 		GenerateUUID(m_uuid);
 		Log("Meower uuid: " + m_uuid + "\n");
+	}
+	~Meower()
+	{
+		SaveProperty("uuid", m_uuid);
 	}
 	string GetUUID()
 	{

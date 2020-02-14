@@ -7,6 +7,17 @@ static const char* persistentobjscript =
 	"shared abstract class PersistentObj {"
 	"PersistentObj(){@m_obj = PersistentObj_t();}"
 	"protected void SaveProperty(string name, string val){m_obj.SaveProperty(name, val);}"
+	"protected void SaveProperty(string name, uint8 val){m_obj.SaveProperty(name, val);}"
+	"protected void SaveProperty(string name, uint16 val){m_obj.SaveProperty(name, val);}"
+	"protected void SaveProperty(string name, uint val){m_obj.SaveProperty(name, val);}"
+	"protected void SaveProperty(string name, uint64 val){m_obj.SaveProperty(name, val);}"
+	"protected void SaveProperty(string name, int8 val){m_obj.SaveProperty(name, val);}"
+	"protected void SaveProperty(string name, int16 val){m_obj.SaveProperty(name, val);}"
+	"protected void SaveProperty(string name, int val){m_obj.SaveProperty(name, val);}"
+	"protected void SaveProperty(string name, int64 val){m_obj.SaveProperty(name, val);}"
+	"protected void SaveProperty(string name, float val){m_obj.SaveProperty(name, val);}"
+	"protected void SaveProperty(string name, double val){m_obj.SaveProperty(name, val);}"
+
 	"PersistentObj_t @opImplCast() {return m_obj;}"
 	"PersistentObj_t @m_obj;"
 	"};";
@@ -137,6 +148,48 @@ int RegisterPersistentObjProxyClass(asIScriptEngine* engine, asIScriptModule* mo
 					asCALL_THISCALL);
 	if(result < 0)
 		return -1;
+
+	if(engine->RegisterObjectMethod("PersistentObj_t", "void SaveProperty(string& in, uint16 v)",
+						asMETHODPR(PersistentObj, SavePropertyUINT16, (const std::string&, unsigned short), void),
+						asCALL_THISCALL) < 0)
+		return -1;
+	if(engine->RegisterObjectMethod("PersistentObj_t", "void SaveProperty(string& in, uint v)",
+						asMETHODPR(PersistentObj, SavePropertyUINT32, (const std::string&, unsigned int), void),
+						asCALL_THISCALL) < 0)
+		return -1;
+	if(engine->RegisterObjectMethod("PersistentObj_t", "void SaveProperty(string& in, uint64 v)",
+						asMETHODPR(PersistentObj, SavePropertyUINT64, (const std::string&, unsigned long long), void),
+						asCALL_THISCALL) < 0)
+		return -1;
+
+	if(engine->RegisterObjectMethod("PersistentObj_t", "void SaveProperty(string& in, int8 v)",
+						asMETHODPR(PersistentObj, SavePropertyINT8, (const std::string&, char), void),
+						asCALL_THISCALL) < 0)
+		return -1;
+	if(engine->RegisterObjectMethod("PersistentObj_t", "void SaveProperty(string& in, int16 v)",
+						asMETHODPR(PersistentObj, SavePropertyINT16, (const std::string&, short), void),
+						asCALL_THISCALL) < 0)
+		return -1;
+	if(engine->RegisterObjectMethod("PersistentObj_t", "void SaveProperty(string& in, int v)",
+						asMETHODPR(PersistentObj, SavePropertyINT32, (const std::string&, int), void),
+						asCALL_THISCALL) < 0)
+		return -1;
+
+	if(engine->RegisterObjectMethod("PersistentObj_t", "void SaveProperty(string& in, int64 v)",
+						asMETHODPR(PersistentObj, SavePropertyINT64, (const std::string&, long long), void),
+						asCALL_THISCALL) < 0)
+		return -1;
+
+	if(engine->RegisterObjectMethod("PersistentObj_t", "void SaveProperty(string& in, float v)",
+						asMETHODPR(PersistentObj, SavePropertyFloat, (const std::string&, float), void),
+						asCALL_THISCALL) < 0)
+		return -1;
+
+	if(engine->RegisterObjectMethod("PersistentObj_t", "void SaveProperty(string& in, double v)",
+						asMETHODPR(PersistentObj, SavePropertyDouble, (const std::string&, double), void),
+						asCALL_THISCALL) < 0)
+		return -1;
+
 	return 0;
 }
 
