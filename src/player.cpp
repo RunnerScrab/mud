@@ -13,7 +13,18 @@ static const char* playerscript =
 	"}"
 	"void Send(string msg){m_obj.Send(msg);}"
 	"void Disconnect(){m_obj.Disconnect();}"
+
 	"protected void SaveProperty(string name, string val){m_obj.SaveProperty(name, val);}"
+
+	"protected void SaveProperty(string name, uint8 val){m_obj.SaveProperty(name, val);}"
+	"protected void SaveProperty(string name, uint16 val){m_obj.SaveProperty(name, val);}"
+	"protected void SaveProperty(string name, uint val){m_obj.SaveProperty(name, val);}"
+	"protected void SaveProperty(string name, uint64 val){m_obj.SaveProperty(name, val);}"
+	"protected void SaveProperty(string name, int8 val){m_obj.SaveProperty(name, val);}"
+	"protected void SaveProperty(string name, int16 val){m_obj.SaveProperty(name, val);}"
+	"protected void SaveProperty(string name, int val){m_obj.SaveProperty(name, val);}"
+	"protected void SaveProperty(string name, int64 val){m_obj.SaveProperty(name, val);}"
+
 	"Player_t @opImplCast() {return @m_obj;}"
 	"private Player_t @m_obj;"
 	"}";
@@ -94,9 +105,44 @@ int RegisterPlayerProxyClass(asIScriptEngine* engine, asIScriptModule* module)
 						asMETHODPR(Player, SaveProperty, (const std::string&, const std::string&), void),
 						asCALL_THISCALL) < 0)
 		return -1;
+	if(engine->RegisterObjectMethod("Player_t", "void SaveProperty(string& in, uint8 v)",
+						asMETHODPR(Player, SavePropertyUINT8, (const std::string&, unsigned char), void),
+						asCALL_THISCALL) < 0)
+		return -1;
+	if(engine->RegisterObjectMethod("Player_t", "void SaveProperty(string& in, uint16 v)",
+						asMETHODPR(Player, SavePropertyUINT16, (const std::string&, unsigned short), void),
+						asCALL_THISCALL) < 0)
+		return -1;
+	if(engine->RegisterObjectMethod("Player_t", "void SaveProperty(string& in, uint v)",
+						asMETHODPR(Player, SavePropertyUINT32, (const std::string&, unsigned int), void),
+						asCALL_THISCALL) < 0)
+		return -1;
+	if(engine->RegisterObjectMethod("Player_t", "void SaveProperty(string& in, uint64 v)",
+						asMETHODPR(Player, SavePropertyUINT64, (const std::string&, unsigned long long), void),
+						asCALL_THISCALL) < 0)
+		return -1;
+
+	if(engine->RegisterObjectMethod("Player_t", "void SaveProperty(string& in, int8 v)",
+						asMETHODPR(Player, SavePropertyINT8, (const std::string&, char), void),
+						asCALL_THISCALL) < 0)
+		return -1;
+	if(engine->RegisterObjectMethod("Player_t", "void SaveProperty(string& in, int16 v)",
+						asMETHODPR(Player, SavePropertyINT16, (const std::string&, short), void),
+						asCALL_THISCALL) < 0)
+		return -1;
+	if(engine->RegisterObjectMethod("Player_t", "void SaveProperty(string& in, int v)",
+						asMETHODPR(Player, SavePropertyINT32, (const std::string&, int), void),
+						asCALL_THISCALL) < 0)
+		return -1;
+	if(engine->RegisterObjectMethod("Player_t", "void SaveProperty(string& in, int64 v)",
+						asMETHODPR(Player, SavePropertyINT64, (const std::string&, long long), void),
+						asCALL_THISCALL) < 0)
+		return -1;
+
 
 	if(engine->RegisterObjectMethod("PersistentObj_t", "Player_t@ opCast()", asFUNCTION((refCast<PersistentObj, Player>)), asCALL_CDECL_OBJLAST) < 0)
 		return -1;
+
 	if(engine->RegisterObjectMethod("Player_t", "PersistentObj_t@ opImplCast()",
 						asFUNCTION((refCast<Player, PersistentObj>)), asCALL_CDECL_OBJLAST) < 0)
 		return -1;

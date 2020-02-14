@@ -47,6 +47,10 @@ class Player : PlayerConnection
 	{
 		//We shouldn't necessarily save in the destructor
   		SaveProperty("meoweruuid", m_meower.GetUUID());
+		uint8 val = 255;
+		int64 number = 123456;
+		SaveProperty("thingies", val);
+		SaveProperty("testprop", number);
 	}
 
 	PlayerGameState GetPlayerGameState()

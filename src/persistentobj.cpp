@@ -19,6 +19,56 @@ void PersistentObj::SaveProperty(const std::string& propname, const std::string&
 		typeinfo->GetName(), propname.c_str(), propval.c_str());
 }
 
+void PersistentObj::SavePropertyUINT8(const std::string& propname, unsigned char byte)
+{
+	asITypeInfo* typeinfo = m_obj->GetObjectType();
+	printf("SaveProperty (uint8) called from instance of class %s with name: %s val %d\n",
+				typeinfo->GetName(), propname.c_str(), byte);
+}
+
+void PersistentObj::SavePropertyUINT16(const std::string& propname, unsigned short v)
+{
+}
+
+void PersistentObj::SavePropertyUINT32(const std::string& propname, unsigned int v)
+{
+	asITypeInfo* typeinfo = m_obj->GetObjectType();
+	printf("SaveProperty (uint) called from instance of class %s with name: %s val %d\n",
+				typeinfo->GetName(), propname.c_str(), v);
+
+}
+
+void PersistentObj::SavePropertyUINT64(const std::string& propname, unsigned long long v)
+{
+
+}
+
+void PersistentObj::SavePropertyINT8(const std::string& propname, char byte)
+{
+	asITypeInfo* typeinfo = m_obj->GetObjectType();
+	printf("SaveProperty (uint8) called from instance of class %s with name: %s val %d\n",
+				typeinfo->GetName(), propname.c_str(), byte);
+}
+
+void PersistentObj::SavePropertyINT16(const std::string& propname, short v)
+{
+}
+
+void PersistentObj::SavePropertyINT32(const std::string& propname, int v)
+{
+	asITypeInfo* typeinfo = m_obj->GetObjectType();
+	printf("SaveProperty (uint) called from instance of class %s with name: %s val %d\n",
+				typeinfo->GetName(), propname.c_str(), v);
+}
+
+void PersistentObj::SavePropertyINT64(const std::string& propname, long long v)
+{
+	asITypeInfo* typeinfo = m_obj->GetObjectType();
+	printf("SaveProperty (int64) called from instance of class %s with name: %s val %lld\n",
+				typeinfo->GetName(), propname.c_str(), v);
+}
+
+
 std::string PersistentObj::LoadStringProperty(const std::string& name, const std::string& defaultvalue)
 {
 	asITypeInfo* typeinfo = m_obj->GetObjectType();
@@ -27,7 +77,7 @@ std::string PersistentObj::LoadStringProperty(const std::string& name, const std
 }
 
 PersistentObj::PersistentObj(asIScriptObject* obj)
-: AS_RefCountedObj(obj)
+	: AS_RefCountedObj(obj)
 {
 
 }
@@ -57,7 +107,18 @@ int RegisterPersistentObjProxyClass(asIScriptEngine* engine, asIScriptModule* mo
 		return -1;
 
 	result = engine->RegisterObjectMethod("PersistentObj_t", "void SaveProperty(string& in, string& in)",
-					asMETHODPR(PersistentObj, SaveProperty, (const std::string&, const std::string&), void), asCALL_THISCALL);
+					asMETHODPR(PersistentObj,
+						SaveProperty,
+						(const std::string&, const std::string&), void),
+					asCALL_THISCALL);
+	if(result < 0)
+		return -1;
+
+	result = engine->RegisterObjectMethod("PersistentObj_t", "void SaveProperty(string& in, uint8& in)",
+					asMETHODPR(PersistentObj,
+						SavePropertyUINT8,
+						(const std::string&, unsigned char), void),
+					asCALL_THISCALL);
 	if(result < 0)
 		return -1;
 	return 0;

@@ -10,8 +10,15 @@ class asIScriptModule;
 class PersistentObj : public AS_RefCountedObj
 {
 public:
-	void SaveProperty(const std::string&, const std::string&);
-
+	void SaveProperty(const std::string& name, const std::string&);
+	void SavePropertyUINT8(const std::string& name, unsigned char);
+	void SavePropertyUINT16(const std::string& name, unsigned short);
+	void SavePropertyUINT32(const std::string& name, unsigned int);
+	void SavePropertyUINT64(const std::string& name, unsigned long long);
+	void SavePropertyINT8(const std::string& name, char);
+	void SavePropertyINT16(const std::string& name, short);
+	void SavePropertyINT32(const std::string& name, int);
+	void SavePropertyINT64(const std::string& name, long long);
 
 	std::string LoadStringProperty(const std::string& name, const std::string& defaultvalue);
 	static PersistentObj* Factory();
