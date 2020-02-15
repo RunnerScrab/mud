@@ -36,10 +36,12 @@ void Client_ReleaseRef(struct Client* client)
 	pthread_rwlock_unlock(&client->refcount_rwlock);
 }
 
-struct Client* Client_Create(int sock, struct CmdDispatchThread* pDispatcher)
+struct Client* Client_Create(int sock, struct Server* server, struct CmdDispatchThread* pDispatcher)
 {
 	struct Client* pClient = (struct Client*) talloc(sizeof(struct Client));
 	memset(pClient, 0, sizeof(struct Client));
+
+	pClient->server = server;
 
 	pClient->player_obj = 0;
 	pClient->pCmdDispatcher = pDispatcher;

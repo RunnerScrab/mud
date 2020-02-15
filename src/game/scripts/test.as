@@ -12,7 +12,8 @@ class TestCommand : ICommand
 
 	int opCall()
 	{
-		game_server.SendToAll("Ran TestCommand");
+		int sum = a + b;
+		game_server.SendToAll("Ran TestCommand. Result: " + sum);
 		return 0;
 	}
 };
@@ -174,6 +175,7 @@ void OnPlayerDisconnect(Player@ player)
 */
 }
 
+
 void OnPlayerInput(Player@ player, string rawinput)
 {
 	string input;
@@ -190,6 +192,10 @@ void OnPlayerInput(Player@ player, string rawinput)
 	else if("debugvars" == rawinput)
 	{
 		game_server.DebugVariables(player);
+	}
+	else if("testcmd" == rawinput)
+	{
+		player.QueueCommand(TestCommand(5, 7), 0, 0);
 	}
 	else
 	{

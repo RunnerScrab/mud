@@ -3,7 +3,9 @@
 #include <string>
 
 #include "uuid.h"
+#include "as_api.h"
 #include "as_manager.h"
+#include "poolalloc.h"
 #include "angelscript.h"
 
 static const char* playerscript =
@@ -15,9 +17,8 @@ static const char* playerscript =
 	"}"
 	"void Send(string msg){m_obj.Send(msg);}"
 	"void Disconnect(){m_obj.Disconnect();}"
-
+	"void QueueCommand(ICommand@+ cmd, uint32 delay_s, uint32 delay_ns){m_obj.QueueCommand(cmd, delay_s, delay_ns);}"
 	"protected void SaveProperty(string name, string val){m_obj.SaveProperty(name, val);}"
-
 	"protected void SaveProperty(string name, uint8 val){m_obj.SaveProperty(name, val);}"
 	"protected void SaveProperty(string name, uint16 val){m_obj.SaveProperty(name, val);}"
 	"protected void SaveProperty(string name, uint val){m_obj.SaveProperty(name, val);}"
@@ -51,6 +52,11 @@ void Player::Send(std::string& str)
 void Player::Disconnect()
 {
 	Client_Disconnect(m_pClient);
+}
+
+void Player::QueueCommand(asIScriptObject* obj, unsigned int delay_s, unsigned int delay_ns)
+{
+	ASAPI_QueueClientScriptCommand(m_pClient, obj, delay_s, delay_ns);
 }
 
 Player* Player::Factory()
@@ -105,6 +111,10 @@ int RegisterPlayerProxyClass(asIScriptEngine* engine, asIScriptModule* module)
 		return -1;
 	if(engine->RegisterObjectMethod("Player_t", "void Disconnect()", asMETHOD(Player, Disconnect), asCALL_THISCALL) < 0)
 		return -1;
+	if(engine->RegisterObjectMethod("Player_t", "void QueueCommand(ICommand@+ cmd, uint32 delay_s, uint32 delay_ns)",
+						asMETHOD(Player, QueueCommand), asCALL_THISCALL) < 0)
+		return -1;
+
 	if(engine->RegisterObjectMethod("Player_t", "void SaveProperty(string& in, string& in)",
 						asMETHODPR(Player, SaveProperty, (const std::string&, const std::string&), void),
 						asCALL_THISCALL) < 0)

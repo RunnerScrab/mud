@@ -20,7 +20,6 @@ struct RunScriptCmdPkg
 {
 	asITypeInfo* cmdtype;
 	asIScriptObject* cmd;
-	size_t context_handle;
 	asIScriptEngine* engine;
 	ASContextPool* context_pool;
 	MemoryPool* pMemPool; //Memory pool space for this struct was allocated on
@@ -38,15 +37,15 @@ void* ASAPI_RunScriptCommand(void* pArgs)
 	//require differentiating between a script task and an
 	//internally generated task everywhere tasks are handled,
 	//however, resulting in a slightly less flexible design.
-
-	asIScriptContext* context = ASContextPool_GetContextAt(pctx_pool, pPkg->context_handle);
+	size_t context_handle = ASContextPool_GetFreeContextIndex(pctx_pool);
+	asIScriptContext* context = ASContextPool_GetContextAt(pctx_pool, context_handle);
 	context->Prepare(func);
 	context->SetObject(pPkg->cmd);
 	context->Execute();
-	ASContextPool_ReturnContextByIndex(pctx_pool, pPkg->context_handle);
+	ASContextPool_ReturnContextByIndex(pctx_pool, context_handle);
 	printf("Running script function\n");
 	MemoryPool_Free(pPkg->pMemPool, sizeof(struct RunScriptCmdPkg), pArgs);
-
+	pPkg->cmd->Release();
 	return (void*) 0;
 }
 
@@ -163,6 +162,7 @@ void ASAPI_QueueScriptCommand(struct Server* server, asIScriptObject* obj, unsig
 	printf("Attempting to queue script command.\n");
 	if(obj)
 	{
+		obj->AddRef();
 		printf("Queueing script command.\n");
 		struct RunScriptCmdPkg* pkg = (struct RunScriptCmdPkg*) MemoryPool_Alloc(
 			&server->as_manager.mem_pool, sizeof(struct RunScriptCmdPkg));
@@ -170,11 +170,40 @@ void ASAPI_QueueScriptCommand(struct Server* server, asIScriptObject* obj, unsig
 		pkg->cmdtype = server->as_manager.main_module->GetTypeInfoByDecl("ICommand");
 		pkg->pMemPool = &server->as_manager.mem_pool;
 		pkg->engine = server->as_manager.engine;
-		size_t hfreectx = ASContextPool_GetFreeContextIndex(&server->as_manager.ctx_pool);
 		pkg->context_pool = &server->as_manager.ctx_pool;
-		pkg->context_handle = hfreectx;
 		Server_AddTimedTask(server, ASAPI_RunScriptCommand,
 				time(0) + delay, pkg, 0);
+	}
+}
+
+void ASAPI_QueueClientScriptCommand(struct Client* pClient, asIScriptObject* obj, unsigned int delay_s, unsigned int delay_ns)
+{
+	printf("Attempting to queue client command.\n");
+	if(obj)
+	{
+		obj->AddRef();
+		printf("Queueing client script command.\n");
+
+		struct RunScriptCmdPkg* pkg = (struct RunScriptCmdPkg*) MemoryPool_Alloc(
+			&pClient->mem_pool, sizeof(struct RunScriptCmdPkg));
+		struct Server* server = pClient->server;
+		pkg->cmd = obj;
+		pkg->cmdtype = server->as_manager.main_module->GetTypeInfoByDecl("ICommand");
+		pkg->pMemPool = &pClient->mem_pool;
+		pkg->engine = server->as_manager.engine;
+		pkg->context_pool = &server->as_manager.ctx_pool;
+		struct timespec curtime;
+		if(clock_gettime(CLOCK_MONOTONIC, &curtime) >= 0)
+		{
+			//ASAPI_RunScriptCommand will release the memory from the provided memory pool
+			Client_QueueCommand(pClient, ASAPI_RunScriptCommand,
+					curtime.tv_sec + delay_s, curtime.tv_nsec + delay_ns,
+					pkg, 0);
+		}
+		else
+		{
+			ServerLog(SERVERLOG_ERROR, "Failed to get clock time for queueing client command.");
+		}
 	}
 }
 

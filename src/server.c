@@ -485,7 +485,7 @@ int Server_AcceptClient(struct Server* server)
 	{
 		ServerLog(SERVERLOG_STATUS, "Client connected.\n");
 
-		pConnectingClient = Client_Create(accepted_sock, &server->cmd_dispatch_thread);
+		pConnectingClient = Client_Create(accepted_sock, server, &server->cmd_dispatch_thread);
 		memcpy(&pConnectingClient->addr, &connaddr, sizeof(struct sockaddr_in));
 		struct epoll_event clev;
 		clev.events = EPOLLIN | EPOLLONESHOT;

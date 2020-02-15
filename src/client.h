@@ -21,6 +21,7 @@ extern "C" {
 		void* pData;
 	};
 
+	struct Server;
 	struct CmdDispatchThread;
 	typedef struct asIScriptObject asIScriptObject;
 
@@ -46,6 +47,8 @@ extern "C" {
 		struct hrt_prioq cmd_queue;
 		pthread_mutex_t cmd_queue_mtx;
 
+		struct Server* server;
+
 		struct CmdDispatchThread* pCmdDispatcher;
 		struct MemoryPool mem_pool;
 
@@ -59,7 +62,7 @@ extern "C" {
 	void Client_Disconnect(struct Client* pTarget);
 	int Client_WriteTo(struct Client* pTarget, const char* buf, size_t len); //What the rest of the engine should use for client output
 	void Client_Sendf(struct Client* pTarget, const char* fmt, ...); //Uses WriteTo
-	struct Client* Client_Create(int sock, struct CmdDispatchThread*);
+	struct Client* Client_Create(int sock, struct Server*, struct CmdDispatchThread*);
 	void Client_Destroy(void* p);
 
 	size_t Client_GetRefCount(struct Client* client);

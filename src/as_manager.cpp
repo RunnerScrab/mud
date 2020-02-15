@@ -79,6 +79,12 @@ extern "C"
 		result = RegisterUUIDClass(manager);
 		RETURNFAIL_IF(result < 0);
 
+		result = pEngine->RegisterInterface("ICommand");
+		RETURNFAIL_IF(result < 0);
+
+		result = pEngine->RegisterInterfaceMethod("ICommand", "int opCall()");
+		RETURNFAIL_IF(result < 0);
+
 		result = RegisterPersistentObjProxyClass(pEngine, manager->main_module);
 		RETURNFAIL_IF(result < 0);
 
@@ -90,12 +96,6 @@ extern "C"
 
 		result = pEngine->RegisterObjectMethod("Server", "void SendToAll(string& in)",
 						asFUNCTION(ASAPI_SendToAll), asCALL_CDECL_OBJFIRST);
-		RETURNFAIL_IF(result < 0);
-
-		result = pEngine->RegisterInterface("ICommand");
-		RETURNFAIL_IF(result < 0);
-
-		result = pEngine->RegisterInterfaceMethod("ICommand", "int opCall()");
 		RETURNFAIL_IF(result < 0);
 
 		result = pEngine->RegisterObjectMethod("Server", "void QueueScriptCommand(ICommand@+ cmd, uint32 delay)",

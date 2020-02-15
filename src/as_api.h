@@ -15,6 +15,7 @@ std::string ASAPI_DebugObject(asIScriptObject* obj);
 
 void ASAPI_SendToAll(struct Server* server, std::string& message);
 void ASAPI_QueueScriptCommand(struct Server* server, asIScriptObject* obj, unsigned int delay);
+void ASAPI_QueueClientScriptCommand(struct Client* pClient, asIScriptObject* obj, unsigned int delay_s, unsigned int delay_ns);
 void ASAPI_Log(std::string& message);
 void ASAPI_TrimString(const std::string& in, std::string& out);
 void ASAPI_HashPassword(const std::string& password, std::string& out);
