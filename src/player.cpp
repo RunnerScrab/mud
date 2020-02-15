@@ -1,7 +1,9 @@
 #include "player.h"
-#include "as_manager.h"
 #include <cstring>
 #include <string>
+
+#include "uuid.h"
+#include "as_manager.h"
 #include "angelscript.h"
 
 static const char* playerscript =
@@ -26,6 +28,7 @@ static const char* playerscript =
 	"protected void SaveProperty(string name, int64 val){m_obj.SaveProperty(name, val);}"
 	"protected void SaveProperty(string name, float val){m_obj.SaveProperty(name, val);}"
 	"protected void SaveProperty(string name, double val){m_obj.SaveProperty(name, val);}"
+	"protected void SaveProperty(string name, uuid val){m_obj.SaveProperty(name, val);}"
 	"Player_t @opImplCast() {return @m_obj;}"
 	"private Player_t @m_obj;"
 	"}";
@@ -73,7 +76,7 @@ int LoadPlayerScript(asIScriptEngine* engine, asIScriptModule* module)
 
 
 template<class A, class B>
-	B* refCast(A* a)
+B* refCast(A* a)
 {
 	// If the handle already is a null handle, then just return the null handle
 	if( !a ) return 0;
@@ -148,6 +151,11 @@ int RegisterPlayerProxyClass(asIScriptEngine* engine, asIScriptModule* module)
 
 	if(engine->RegisterObjectMethod("Player_t", "void SaveProperty(string& in, double v)",
 						asMETHODPR(Player, SavePropertyDouble, (const std::string&, double), void),
+						asCALL_THISCALL) < 0)
+		return -1;
+
+	if(engine->RegisterObjectMethod("Player_t", "void SaveProperty(string& in, uuid& in)",
+						asMETHODPR(Player, SavePropertyUUID, (const std::string&, const UUID&), void),
 						asCALL_THISCALL) < 0)
 		return -1;
 

@@ -1,6 +1,7 @@
 #ifndef PERSISTENTOBJ_H_
 #define PERSISTENTOBJ_H_
 #include "as_refcountedobj.h"
+#include "uuid.h"
 #include <string>
 
 class asIScriptObject;
@@ -19,10 +20,10 @@ public:
 	void SavePropertyINT16(const std::string& name, short);
 	void SavePropertyINT32(const std::string& name, int);
 	void SavePropertyINT64(const std::string& name, long long);
-
 	void SavePropertyFloat(const std::string& name, float);
 	void SavePropertyDouble(const std::string& name, double);
-
+	void SavePropertyBlob(const std::string& name, const char* data, size_t len);
+	void SavePropertyUUID(const std::string& name, const UUID& uuid);
 	std::string LoadStringProperty(const std::string& name, const std::string& defaultvalue);
 	static PersistentObj* Factory();
 protected:

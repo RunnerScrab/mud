@@ -40,7 +40,7 @@ int RegisterUUIDClass(AngelScriptManager* manager)
 		< 0)
 		return -1;
 	if(pEngine->RegisterObjectMethod("uuid", "string ToString()",
-						asMETHODPR(UUID, ToString, (void), std::string), asCALL_THISCALL) < 0)
+						asMETHODPR(UUID, ToString, (void) const, std::string), asCALL_THISCALL) < 0)
 		return -1;
 	if(pEngine->RegisterObjectMethod("uuid", "void Generate()",
 						asMETHODPR(UUID, Generate, (void), void), asCALL_THISCALL) < 0)
@@ -77,7 +77,7 @@ int UUID::CopyToByteArray(char* out, size_t len)
 	return 0;
 }
 
-std::string UUID::ToString()
+std::string UUID::ToString() const
 {
 	std::string retval;
 	char temp[38] = {0};

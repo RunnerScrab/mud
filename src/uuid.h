@@ -41,7 +41,7 @@ public:
 
 	int CopyToByteArray(char* out, size_t len);
 	void GetAsInt128(struct Int128* out);
-	std::string ToString();
+	std::string ToString() const;
 
 	void Generate();
 	static void GenerateUUID(union UUIDunion* uuid);

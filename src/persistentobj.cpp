@@ -17,7 +17,7 @@ static const char* persistentobjscript =
 	"protected void SaveProperty(string name, int64 val){m_obj.SaveProperty(name, val);}"
 	"protected void SaveProperty(string name, float val){m_obj.SaveProperty(name, val);}"
 	"protected void SaveProperty(string name, double val){m_obj.SaveProperty(name, val);}"
-
+	"protected void SaveProperty(string name, uuid val){m_obj.SaveProperty(name, val);}"
 	"PersistentObj_t @opImplCast() {return m_obj;}"
 	"PersistentObj_t @m_obj;"
 	"};";
@@ -28,6 +28,18 @@ void PersistentObj::SaveProperty(const std::string& propname, const std::string&
 	asITypeInfo* typeinfo = m_obj->GetObjectType();
 	printf("SaveProperty called from instance of class %s with name: %s val %s\n",
 		typeinfo->GetName(), propname.c_str(), propval.c_str());
+}
+
+void PersistentObj::SavePropertyBlob(const std::string& name, const char* data, size_t len)
+{
+
+}
+
+void PersistentObj::SavePropertyUUID(const std::string& name, const UUID& uuid)
+{
+	asITypeInfo* typeinfo = m_obj->GetObjectType();
+	printf("SaveProperty (uuid) called from instance of class %s with name: %s val %s\n",
+		typeinfo->GetName(), name.c_str(), uuid.ToString().c_str());
 }
 
 void PersistentObj::SavePropertyUINT8(const std::string& propname, unsigned char byte)
@@ -187,6 +199,11 @@ int RegisterPersistentObjProxyClass(asIScriptEngine* engine, asIScriptModule* mo
 
 	if(engine->RegisterObjectMethod("PersistentObj_t", "void SaveProperty(string& in, double v)",
 						asMETHODPR(PersistentObj, SavePropertyDouble, (const std::string&, double), void),
+						asCALL_THISCALL) < 0)
+		return -1;
+
+	if(engine->RegisterObjectMethod("PersistentObj_t", "void SaveProperty(string& in, uuid& in)",
+						asMETHODPR(PersistentObj, SavePropertyUUID, (const std::string&, const UUID&), void),
 						asCALL_THISCALL) < 0)
 		return -1;
 
