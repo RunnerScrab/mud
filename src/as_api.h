@@ -18,7 +18,6 @@ void ASAPI_QueueScriptCommand(struct Server* server, asIScriptObject* obj, unsig
 void ASAPI_Log(std::string& message);
 void ASAPI_TrimString(const std::string& in, std::string& out);
 void ASAPI_HashPassword(const std::string& password, std::string& out);
-void ASAPI_GenerateUUID(std::string& out);
 
 void ASAPI_SetGameScriptPath(struct ServerConfig* config, std::string& path);
 void ASAPI_SetDatabasePathAndFile(struct ServerConfig* config, std::string& path, std::string& filename);

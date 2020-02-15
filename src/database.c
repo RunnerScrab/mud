@@ -41,7 +41,6 @@ int Database_Init(struct Database* asdb, const char* path)
 	return 0;
 }
 
-
 void Database_Release(struct Database* asdb)
 {
 	sqlite3_close(asdb->pDB);

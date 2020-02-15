@@ -19,21 +19,20 @@ class TestCommand : ICommand
 
 class Meower : PersistentObj
 {
+	uuid m_uuid;
 	Meower()
 	{
 		Log("Trying to make a meower. это - кошка!\n");
-		GenerateUUID(m_uuid);
-		Log("Meower uuid: " + m_uuid + "\n");
+		Log("Meower uuid: " + m_uuid.ToString() + "\n");
 	}
 	~Meower()
 	{
-		SaveProperty("uuid", m_uuid);
+
 	}
 	string GetUUID()
 	{
-		return m_uuid;
+		return m_uuid.ToString();
 	}
-	private string m_uuid;
 };
 
 enum PlayerGameState {LOGIN_MENU = 0,
@@ -122,9 +121,8 @@ void OnPlayerConnect(Player@ player)
 	{
 	player.Send("Hello!\r\n");
 	player.Send("Account: ");
-	string uuid;
-	GenerateUUID(uuid);
-	player.Send("\r\n" + uuid + "\r\n");
+	uuid newuuid;
+	player.Send("\r\n" + newuuid.ToString() + "\r\n");
 	g_meowers.insertLast(Meower());
 	player.SetMeower(g_meowers[g_meowers.length() - 1]);
 	g_players.insertLast(player);
@@ -180,9 +178,10 @@ void OnPlayerInput(Player@ player, string rawinput)
 	TrimString(rawinput, input);
 	if("makeuuid" == rawinput)
 	{
-		string uuid;
-		GenerateUUID(uuid);
-		player.Send("Generated: " + uuid + "\r\n");
+		uuid newuuid;
+		player.Send("Generated: " + newuuid.ToString() + "\r\n");
+		uuid uuid2 = newuuid;
+		player.Send("Copy has uuid " + uuid2.ToString() + "\r\n");
 	}
 	else if("debugvars" == rawinput)
 	{

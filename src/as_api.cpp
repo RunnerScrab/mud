@@ -207,17 +207,6 @@ void ASAPI_HashPassword(const std::string& password, std::string& out)
 	cv_destroy(&buf);
 }
 
-void ASAPI_GenerateUUID(std::string& out)
-{
-	cv_t buf;
-	union UUID uuid;
-	cv_init(&buf, 38);
-	GenerateUUID(&uuid);
-	UUIDToString(&uuid, &buf);
-	out.assign(buf.data);
-	cv_destroy(&buf);
-}
-
 void ASAPI_SetDatabasePathAndFile(struct ServerConfig* config, std::string& path, std::string& filename)
 {
 	std::string fullpath = path + filename;

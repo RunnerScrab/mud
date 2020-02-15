@@ -4,15 +4,20 @@
 #ifdef USEINTELINTRINSICS_
 #include <immintrin.h>
 #endif
+
+#include <string>
 #include <stdint.h>
 #include "charvector.h"
+#include "as_manager.h"
 
-union UUID
+struct Int128
 {
-	struct
-	{
-		u_int64_t halfone, halftwo;
-	} qw;
+	u_int64_t halfone, halftwo;
+};
+
+union UUIDunion
+{
+	struct Int128 qw;
 
 	struct
 	{
@@ -26,7 +31,22 @@ union UUID
 	u_int8_t bytes[16];
 };
 
-void GenerateUUID(union UUID* uuid);
-void UUIDToString(union UUID* uuid, cv_t* out);
+class UUID
+{
+	union UUIDunion m_data;
+public:
+	UUID(); //No arguments generates UUID
+	UUID(const UUID& other); //Copy constructor
+	UUID(u_int64_t half1, u_int64_t half2);
+
+	int CopyToByteArray(char* out, size_t len);
+	void GetAsInt128(struct Int128* out);
+	std::string ToString();
+
+	static void GenerateUUID(union UUIDunion* uuid);
+};
+
+int RegisterUUIDClass(AngelScriptManager* manager);
+
 
 #endif

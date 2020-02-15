@@ -8,6 +8,7 @@ extern "C"
 #include "as_api.h"
 #include "player.h"
 #include "persistentobj.h"
+#include "uuid.h"
 
 #include "as_addons/scriptstdstring.h"
 #include "as_addons/scriptarray.h"
@@ -75,6 +76,9 @@ extern "C"
 	{
 		int result = 0;
 		asIScriptEngine* pEngine = manager->engine;
+		result = RegisterUUIDClass(manager);
+		RETURNFAIL_IF(result < 0);
+
 		result = RegisterPersistentObjProxyClass(pEngine, manager->main_module);
 		RETURNFAIL_IF(result < 0);
 
@@ -119,12 +123,6 @@ extern "C"
 							asCALL_CDECL);
 
 		RETURNFAIL_IF(result < 0);
-
-		result = pEngine->RegisterGlobalFunction("void GenerateUUID(string& out)", asFUNCTION(ASAPI_GenerateUUID),
-							asCALL_CDECL);
-
-		RETURNFAIL_IF(result < 0);
-
 
 		return 0;
 	}
@@ -178,6 +176,31 @@ extern "C"
 		return 0;
 	}
 
+	int AngelScriptManager_PrepareScriptPersistenceLayer(AngelScriptManager* manager)
+	{
+		//TODO: Remove this - debug script class information
+		printf("-Class information-\n");
+		size_t idx = 0, object_type_count = manager->main_module->GetObjectTypeCount();
+		asITypeInfo* pPersistentType = manager->main_module->GetTypeInfoByName("PersistentObj");
+
+		if(!pPersistentType)
+		{
+			ServerLog(SERVERLOG_ERROR, "Could not find PersistentObj type!");
+			return -1;
+		}
+
+		for(; idx < object_type_count; ++idx)
+		{
+			asITypeInfo* pInfo = manager->main_module->GetObjectTypeByIndex(idx);
+			printf("Class %lu: %s\n", idx, pInfo->GetName());
+			if(pInfo->DerivesFrom(pPersistentType))
+			{
+				printf("\tClass derives from PersistentObj!\n");
+			}
+		}
+		return 0;
+	}
+
 	int AngelScriptManager_LoadScripts(AngelScriptManager* manager, const char* script_dir)
 	{
 		//TODO: May want to impose some kind of directory structure on scripts
@@ -201,18 +224,11 @@ extern "C"
 		RETURNFAIL_IF(LoadPlayerScript(manager->engine, manager->main_module));
 		RETURNFAIL_IF(manager->main_module->Build() < 0);
 
-		//TODO: Remove this - debug script class information
-		printf("-Class information-\n");
-		size_t idx = 0, object_type_count = manager->main_module->GetObjectTypeCount();
-		for(; idx < object_type_count; ++idx)
-		{
-			asITypeInfo* pInfo = manager->main_module->GetObjectTypeByIndex(idx);
-			printf("Class %lu: %s\n", idx, pInfo->GetName());
-		}
+		AngelScriptManager_PrepareScriptPersistenceLayer(manager);
 
 		size_t global_properties = manager->engine->GetGlobalPropertyCount();
 		printf("There are %lu global properties.\n", global_properties);
-		/////////////////////////////
+
 
 #ifdef __x86_64__
 		manager->jit->finalizePages();
