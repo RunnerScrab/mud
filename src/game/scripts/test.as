@@ -22,6 +22,7 @@ class Meower : PersistentObj
 	uuid m_uuid;
 	Meower()
 	{
+		m_uuid.Generate();
 		Log("Trying to make a meower. это - кошка!\n");
 		Log("Meower uuid: " + m_uuid.ToString() + "\n");
 	}
@@ -122,6 +123,7 @@ void OnPlayerConnect(Player@ player)
 	player.Send("Hello!\r\n");
 	player.Send("Account: ");
 	uuid newuuid;
+	newuuid.Generate();
 	player.Send("\r\n" + newuuid.ToString() + "\r\n");
 	g_meowers.insertLast(Meower());
 	player.SetMeower(g_meowers[g_meowers.length() - 1]);
@@ -179,8 +181,10 @@ void OnPlayerInput(Player@ player, string rawinput)
 	if("makeuuid" == rawinput)
 	{
 		uuid newuuid;
+		newuuid.Generate();
 		player.Send("Generated: " + newuuid.ToString() + "\r\n");
-		uuid uuid2 = newuuid;
+		uuid uuid2;
+		uuid2 = newuuid;
 		player.Send("Copy has uuid " + uuid2.ToString() + "\r\n");
 	}
 	else if("debugvars" == rawinput)

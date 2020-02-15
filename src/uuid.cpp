@@ -36,17 +36,22 @@ int RegisterUUIDClass(AngelScriptManager* manager)
 	if(pEngine->RegisterObjectBehaviour("uuid", asBEHAVE_CONSTRUCT,
 						"void f(const uuid& in)", asFUNCTION(CopyConstructUUID), asCALL_CDECL_OBJFIRST) < 0)
 		return -1;
+	if(pEngine->RegisterObjectMethod("uuid", "uuid& opAssign(const uuid& in)", asMETHODPR(UUID, operator=, (const UUID&), UUID&), asCALL_THISCALL)
+		< 0)
+		return -1;
 	if(pEngine->RegisterObjectMethod("uuid", "string ToString()",
 						asMETHODPR(UUID, ToString, (void), std::string), asCALL_THISCALL) < 0)
 		return -1;
-
+	if(pEngine->RegisterObjectMethod("uuid", "void Generate()",
+						asMETHODPR(UUID, Generate, (void), void), asCALL_THISCALL) < 0)
+		return -1;
 
 	return 0;
 }
 
 UUID::UUID()
 {
-	GenerateUUID(&m_data);
+	memset(&m_data, 0, sizeof(union UUIDunion));
 }
 
 UUID::UUID(const UUID& other)
@@ -97,6 +102,11 @@ std::string UUID::ToString()
 void UUID::GetAsInt128(struct Int128* out)
 {
 	*out = m_data.qw;
+}
+
+void UUID::Generate()
+{
+	GenerateUUID(&m_data);
 }
 
 void UUID::GenerateUUID(union UUIDunion* uuid)

@@ -43,6 +43,7 @@ public:
 	void GetAsInt128(struct Int128* out);
 	std::string ToString();
 
+	void Generate();
 	static void GenerateUUID(union UUIDunion* uuid);
 };
 

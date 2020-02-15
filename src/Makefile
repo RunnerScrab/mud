@@ -1,5 +1,5 @@
-CC = gcc
-CCXX = g++
+CC = clang
+CCXX = clang++
 
 SQLITECC = gcc
 OPTFLAG = -Og
