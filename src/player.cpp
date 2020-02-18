@@ -69,7 +69,7 @@ int LoadPlayerScript(asIScriptEngine* engine, asIScriptModule* module)
 	return module->AddScriptSection("game", playerscript, strlen(playerscript));
 }
 
-int RegisterPlayerProxyClass(asIScriptEngine* engine, asIScriptModule* module)
+int RegisterPlayerProxyClass(asIScriptEngine* engine)
 {
 	if(engine->RegisterObjectType("Player_t", 0, asOBJ_REF) < 0)
 		return -1;

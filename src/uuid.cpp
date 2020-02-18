@@ -65,6 +65,14 @@ UUID::UUID(u_int64_t half1, u_int64_t half2)
 	m_data.qw.halftwo = half2;
 }
 
+void UUID::CopyFromByteArray(const unsigned char* in, size_t len)
+{
+	if(16 == len)
+	{
+		memcpy(&m_data.qw, in, 16);
+	}
+}
+
 int UUID::CopyToByteArray(char* out, size_t len)
 {
 	if(len < 16)

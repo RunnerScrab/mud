@@ -26,6 +26,6 @@ protected:
 };
 
 int LoadPlayerScript(asIScriptEngine* engine, asIScriptModule* module);
-int RegisterPlayerProxyClass(asIScriptEngine* engine, asIScriptModule* module);
+int RegisterPlayerProxyClass(asIScriptEngine* engine);
 asIScriptObject* CreatePlayerProxy(AngelScriptManager* manager, struct Client* pClient);
 #endif

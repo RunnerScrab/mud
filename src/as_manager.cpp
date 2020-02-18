@@ -7,12 +7,13 @@ extern "C"
 }
 #include "as_api.h"
 #include "player.h"
-#include "persistentobj.h"
 #include "uuid.h"
+#include "objectstate.h"
 
 #include "as_addons/scriptstdstring.h"
 #include "as_addons/scriptarray.h"
 #include "as_addons/scripthelper.h"
+#include "as_addons/scripthandle.h"
 #include "./angelscriptsdk/sdk/angelscript/include/angelscript.h"
 #include "./angelscriptsdk/sdk/angelscript/source/as_jit.h"
 
@@ -54,6 +55,7 @@ extern "C"
 		manager->engine->SetEngineProperty(asEP_ALLOW_MULTILINE_STRINGS, true);
 		RegisterStdString(manager->engine);
 		RegisterScriptArray(manager->engine, true);
+		RegisterScriptHandle(manager->engine);
 		RegisterExceptionRoutines(manager->engine);
 		manager->engine->SetMessageCallback(asFUNCTION(as_MessageCallback), 0, asCALL_CDECL);
 #ifdef DEBUG
@@ -85,7 +87,10 @@ extern "C"
 		result = pEngine->RegisterInterfaceMethod("ICommand", "int opCall()");
 		RETURNFAIL_IF(result < 0);
 
-		result = RegisterPlayerProxyClass(pEngine, manager->main_module);
+		result = RegisterObjectStateClass(pEngine);
+		RETURNFAIL_IF(result < 0);
+
+		result = RegisterPlayerProxyClass(pEngine);
 		RETURNFAIL_IF(result < 0);
 
 		result = pEngine->RegisterObjectType("Server", 0, asOBJ_REF | asOBJ_NOCOUNT);
@@ -217,7 +222,6 @@ extern "C"
 		manager->main_module = manager->engine->GetModule("game_module", asGM_ALWAYS_CREATE);
 		RETURNFAIL_IF(manager->main_module->AddScriptSection("game", &script[0], len) < 0);
 
-		RETURNFAIL_IF(LoadPersistentObjScript(manager->engine, manager->main_module));
 		RETURNFAIL_IF(LoadPlayerScript(manager->engine, manager->main_module));
 		RETURNFAIL_IF(manager->main_module->Build() < 0);
 

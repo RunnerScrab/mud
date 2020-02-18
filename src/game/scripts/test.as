@@ -50,6 +50,8 @@ class Player : PlayerConnection
 	}
 	~Player()
 	{
+		ObjectState st(this);
+		st.SaveState();
 	}
 
 	PlayerGameState GetPlayerGameState()
@@ -114,6 +116,7 @@ void OnPlayerConnect(Player@ player)
 {
 //	try
 	{
+	//ref@ h = @player;
 	player.Send("Hello!\r\n");
 	player.Send("Account: ");
 	uuid newuuid;
