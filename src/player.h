@@ -1,7 +1,6 @@
 #ifndef PLAYER_H_
 #define PLAYER_H_
 #include "as_refcountedobj.h"
-#include "persistentobj.h"
 #include "client.h"
 #include "as_manager.h"
 
@@ -13,7 +12,7 @@ class asILockableSharedBool;
 class asIScriptEngine;
 class asIScriptModule;
 
-class Player : public PersistentObj
+class Player : public AS_RefCountedObj
 {
 public:
 	struct Client* m_pClient;

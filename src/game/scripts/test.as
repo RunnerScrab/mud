@@ -18,7 +18,7 @@ class TestCommand : ICommand
 	}
 };
 
-class Meower : PersistentObj
+class Meower
 {
 	uuid m_uuid;
 	Meower()
@@ -50,13 +50,6 @@ class Player : PlayerConnection
 	}
 	~Player()
 	{
-		//We shouldn't necessarily save in the destructor
-  		SaveProperty("meoweruuid", m_meower.GetUUID());
-		uint8 val = 255;
-		int64 number = 123456;
-		SaveProperty("thingies", val);
-		SaveProperty("testprop", number);
-		SaveProperty("somereal", 4.f);
 	}
 
 	PlayerGameState GetPlayerGameState()

@@ -85,9 +85,6 @@ extern "C"
 		result = pEngine->RegisterInterfaceMethod("ICommand", "int opCall()");
 		RETURNFAIL_IF(result < 0);
 
-		result = RegisterPersistentObjProxyClass(pEngine, manager->main_module);
-		RETURNFAIL_IF(result < 0);
-
 		result = RegisterPlayerProxyClass(pEngine, manager->main_module);
 		RETURNFAIL_IF(result < 0);
 
