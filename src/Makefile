@@ -1,7 +1,7 @@
-CC = clang
-CCXX = clang++
+CC = gcc
+CCXX = g++
 
-SQLITECC = gcc
+SQLITECC = ${CC}
 OPTFLAG = -Og
 DEBUGFLAGS = -g
 CFLAGS = -Wall ${OPTFLAG} ${DEBUGFLAGS}
