@@ -67,7 +67,7 @@ int GetTableColumns(sqlite3* pDB, const char* tablename, std::set<std::string>& 
 	return SQLITE_OK;
 }
 
-int CreateSQLiteTable(sqlite3* pDB, const char* createtablequery)
+int ExecSQLiteStatement(sqlite3* pDB, const char* createtablequery)
 {
 	sqlite3_stmt* query = 0;
 	int result = 0;
@@ -454,12 +454,20 @@ int SQLiteRow::StoreRow()
 	if(0 == result)
 	{
 		std::string querystr = "CREATE TABLE " + m_tablename + "(" + ProducePropertyNameList() + ");";
-		if(SQLITE_DONE != CreateSQLiteTable(m_pDB, querystr.c_str()))
+		if(SQLITE_DONE != ExecSQLiteStatement(m_pDB, querystr.c_str()))
 		{
 			printf("Failed to create table.\n");
 			return SQLITE_ERROR;
 		}
+		querystr = "CREATE UNIQUE INDEX idx_" + m_tablename + " ON " + m_tablename + " (" + m_primary_keycol->GetPropertyName()
+			+ ");";
+		if(SQLITE_DONE != ExecSQLiteQuery(m_pDB, querystr.c_str()))
+		{
+			printf("Failed to create table index.\n");
+			return SQLITE_ERROR;
+		}
 	}
+
 	else if(result < 0)
 	{
 		printf("Error executing sql statement to check table existence.\n");
@@ -634,16 +642,16 @@ void DebugPrintQueryResult(sqlite3_stmt* query)
 }
 
 /*
-int GetNameFromSQLTable(sqlite3* pDB, struct Int128* keydata)
-{
-	sqlite3_stmt* query = 0;
-	sqlite3_prepare_v2(pDB, "SELECT age FROM testtable WHERE uuid=$uuid;", -1, &query, 0);
-	sqlite3_bind_blob(query, 1, keydata, sizeof(struct Int128), 0);
-	int result = sqlite3_step(query);
-	DebugPrintQueryResult(query);
-	sqlite3_finalize(query);
-	return result;
-}
+  int GetNameFromSQLTable(sqlite3* pDB, struct Int128* keydata)
+  {
+  sqlite3_stmt* query = 0;
+  sqlite3_prepare_v2(pDB, "SELECT age FROM testtable WHERE uuid=$uuid;", -1, &query, 0);
+  sqlite3_bind_blob(query, 1, keydata, sizeof(struct Int128), 0);
+  int result = sqlite3_step(query);
+  DebugPrintQueryResult(query);
+  sqlite3_finalize(query);
+  return result;
+  }
 */
 int GetRowFromSQLTable(sqlite3* pDB, const char* uuid)
 {
