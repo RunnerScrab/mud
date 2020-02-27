@@ -4,6 +4,11 @@
 #include "charvector.h"
 #include <string.h>
 
+static int EnableForeignKeys(sqlite3* pDB)
+{
+	return sqlite3_exec(pDB, "PRAGMA foreign_keys=ON;", 0, 0, 0);
+}
+
 int Database_Init(struct Database* asdb, const char* path)
 {
 	strcpy(asdb->path, path);
@@ -14,6 +19,12 @@ int Database_Init(struct Database* asdb, const char* path)
 		return -1;
 	}
 
+	if(SQLITE_OK != EnableForeignKeys(asdb->pDB))
+	{
+		Database_Release(asdb);
+		ServerLog(SERVERLOG_ERROR, "Failed to enable sqlite foreign key constraints.");
+		return -1;
+	}
 	cv_t query;
 	cv_init(&query, 64);
 	cv_sprintf(&query,

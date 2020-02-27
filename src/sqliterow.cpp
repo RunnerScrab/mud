@@ -106,8 +106,10 @@ int AddColumnToSQLiteTable(sqlite3* pDB, const char* tablename, const char* coln
 	return result;
 }
 
-SQLiteRow::SQLiteRow(sqlite3* pDB, const char* tablename) : m_pDB(pDB), m_primary_keycol(0)
+SQLiteRow::SQLiteRow(sqlite3* pDB, const char* tablename, SQLiteRow* parenttablerow) : m_pDB(pDB), m_primary_keycol(0)
 {
+	m_foreign_keycol = 0;
+	m_parenttablerow = parenttablerow;
 	m_tablename = tablename;
 	SQLStripString(m_tablename);
 }
@@ -136,6 +138,10 @@ void SQLiteRow::AddColumn(SQLiteColumn* op)
 	if(op->IsPrimaryKey())
 	{
 		m_primary_keycol = op;
+	}
+	else if(op->IsForeignKey())
+	{
+		m_foreign_keycol = op;
 	}
 	m_columns[op->GetPropertyName()] = op;
 }
@@ -461,7 +467,7 @@ int SQLiteRow::StoreRow()
 		}
 		querystr = "CREATE UNIQUE INDEX idx_" + m_tablename + " ON " + m_tablename + " (" + m_primary_keycol->GetPropertyName()
 			+ ");";
-		if(SQLITE_DONE != ExecSQLiteQuery(m_pDB, querystr.c_str()))
+		if(SQLITE_DONE != ExecSQLiteStatement(m_pDB, querystr.c_str()))
 		{
 			printf("Failed to create table index.\n");
 			return SQLITE_ERROR;
@@ -524,7 +530,22 @@ int SQLiteRow::InsertSQLiteRow()
 
 	for(size_t idx = 0, len = m_operations.size(); idx < len; ++idx)
 	{
-		if(SQLITE_OK != m_operations[idx]->BindToSQLiteStatement(query, idx + 1))
+		SQLiteColumn* pcol = m_operations[idx];
+		if(pcol->IsForeignKey())
+		{
+			if(m_parenttablerow && m_parenttablerow->m_primary_keycol)
+			{
+				pcol->CopyOtherColumnValue(*(m_parenttablerow->m_primary_keycol));
+			}
+			else
+			{
+				printf("Table has a foreign key constraint but was not given a primary key column from the parent table\n");
+				sqlite3_finalize(query);
+				return SQLITE_ERROR;
+			}
+		}
+		if(SQLITE_OK !=
+			pcol->BindToSQLiteStatement(query, idx + 1))
 		{
 			sqlite3_finalize(query);
 			printf("Failed to bind value %lu\n", idx);
@@ -593,19 +614,33 @@ std::string SQLiteRow::ProducePropertyNameList()
 {
 	std::string buffer;
 	size_t idx = 0, len = m_operations.size();
+
 	for(; idx < len; ++idx)
 	{
-		buffer += m_operations[idx]->GetPropertyName() + " " + m_operations[idx]->GetTypeAsString();
-		if(m_operations[idx]->IsPrimaryKey())
+		SQLiteColumn* pcol = m_operations[idx];
+		if(pcol->IsForeignKey())
 		{
-			buffer.append(" PRIMARY KEY");
+			if(m_parenttablerow && m_parenttablerow->m_primary_keycol)
+			{
+				buffer += pcol->GetPropertyName() + " REFERENCES " +
+					m_parenttablerow->m_tablename;
+			}
 		}
+		else
+		{
+			buffer += pcol->GetPropertyName() + " " + pcol->GetTypeAsString();
+			if(pcol->IsPrimaryKey())
+			{
+				buffer.append(" PRIMARY KEY");
+			}
+		}
+
 		if(idx < len - 1)
 		{
 			buffer.append(", ");
 		}
 	}
-
+	printf("%s\n", buffer.c_str());
 	return buffer;
 }
 

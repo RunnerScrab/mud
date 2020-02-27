@@ -6,7 +6,7 @@
 #include <vector>
 #include <variant>
 #include <cstring>
-#include <sqlite3.h>
+#include "sqlite/sqlite3.h"
 
 class SQLiteVariant
 {
@@ -119,17 +119,26 @@ public:
 
 	SQLiteVariant& operator=(const SQLiteVariant& other)
 	{
-		m_datalen = other.m_datalen;
-		m_reservedlen = other.m_reservedlen;
-		m_storedtype = other.m_storedtype;
-
-		if(VARTEXT == m_storedtype || VARBLOB == m_storedtype)
+		if(VARTEXT == other.m_storedtype || VARBLOB == other.m_storedtype)
 		{
-			m_data.as_blob = (char*) malloc(m_reservedlen);
+			if(!m_data.as_blob)
+			{
+				m_data.as_blob = (char*) malloc(other.m_reservedlen);
+			}
+			else if(m_reservedlen < other.m_reservedlen)
+			{
+				m_data.as_blob = (char*) realloc(m_data.as_blob, other.m_reservedlen);
+			}
+			m_datalen = other.m_datalen;
+			m_reservedlen = other.m_reservedlen;
+			m_storedtype = other.m_storedtype;
 			memcpy(m_data.as_blob, other.m_data.as_blob, m_reservedlen);
 		}
 		else
 		{
+			m_datalen = other.m_datalen;
+			m_reservedlen = other.m_reservedlen;
+			m_storedtype = other.m_storedtype;
 			m_data = other.m_data;
 		}
 

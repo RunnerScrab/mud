@@ -11,13 +11,20 @@
 
 class SQLiteColumn
 {
+public:
+	typedef enum {KEY_NONE = 0, KEY_PRIMARY, KEY_AUTO_PRIMARY, KEY_FOREIGN} KeyType;
 protected:
-	bool m_bPrimaryKey;
+	KeyType m_keytype;
 	std::string m_property_name;
 	SQLiteVariant m_value;
 public:
-	SQLiteColumn(const std::string& str, SQLiteVariant::StoredType vartype, bool bIsPrimaryKey = false);
+	SQLiteColumn(const std::string& str, SQLiteVariant::StoredType vartype, KeyType keytype = KEY_NONE);
 	~SQLiteColumn();
+
+	void CopyOtherColumnValue(const SQLiteColumn& other)
+	{
+		m_value = other.m_value;
+	}
 
 	std::string GetPropertyName() const
 	{
@@ -31,7 +38,12 @@ public:
 
 	bool IsPrimaryKey() const
 	{
-		return m_bPrimaryKey;
+		return KEY_PRIMARY == m_keytype || KEY_AUTO_PRIMARY == m_keytype;
+	}
+
+	bool IsForeignKey() const
+	{
+		return KEY_FOREIGN == m_keytype;
 	}
 
 	int BindToSQLiteStatement(sqlite3_stmt* stmt, int pos);

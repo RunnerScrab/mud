@@ -1,8 +1,8 @@
 #include "sqlitecolumn.h"
 
-SQLiteColumn::SQLiteColumn(const std::string& str, SQLiteVariant::StoredType vartype, bool bIsPrimaryKey)
+SQLiteColumn::SQLiteColumn(const std::string& str, SQLiteVariant::StoredType vartype, KeyType keytype)
 {
-	m_bPrimaryKey = bIsPrimaryKey;
+	m_keytype = keytype;
 	m_property_name = str;
 	m_value.ForceSetType(vartype);
 }

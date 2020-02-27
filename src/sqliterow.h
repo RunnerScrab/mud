@@ -12,7 +12,7 @@
 #include "sqlitecolumn.h"
 #include "sqlite/sqlite3.h"
 
-//SQLiteRow really represents a SQL table schema which can be used to insert
+//SQLiteRow really represents a SQL table schema, though it can be used to insert
 //rows into it
 
 class SQLiteRow
@@ -21,11 +21,12 @@ class SQLiteRow
 	std::vector<SQLiteColumn*> m_operations;
 	std::map<std::string, SQLiteColumn*> m_columns;
 	sqlite3* m_pDB;
-	SQLiteColumn* m_primary_keycol;
+	SQLiteColumn* m_primary_keycol, *m_foreign_keycol;
+	SQLiteRow* m_parenttablerow;
 	std::string m_tablename;
 public:
 
-	SQLiteRow(sqlite3* pDB, const char* tablename);
+	SQLiteRow(sqlite3* pDB, const char* tablename, SQLiteRow* parent_table_row = 0);
 	~SQLiteRow();
 
 	void ClearValues();
