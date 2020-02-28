@@ -1,24 +1,18 @@
-#include "sqlitecolumn.h"
+#include "sqlitevariant.h"
+#include "sqlite/sqlite3.h"
 
-SQLiteColumn::SQLiteColumn(const std::string& str, SQLiteVariant::StoredType vartype, KeyType keytype)
+int BindVariantToStatement(sqlite3_stmt* stmt, const SQLiteVariant* value, int pos)
 {
-	m_keytype = keytype;
-	m_property_name = str;
-	m_value.ForceSetType(vartype);
-}
-
-SQLiteColumn::~SQLiteColumn()
-{
-
-}
-
-int SQLiteColumn::BindToSQLiteStatement(sqlite3_stmt* stmt, int pos)
-{
-	switch(m_value.GetType())
+	if(!value)
+	{
+		printf("Given a 0 variant pointer!\n");
+		return SQLITE_ERROR;
+	}
+	switch(value->GetType())
 	{
 	case SQLiteVariant::StoredType::VARINT:
 
-		switch(m_value.GetDataLength())
+		switch(value->GetDataLength())
 		{
 		case sizeof(unsigned char):
 		case sizeof(unsigned short):
@@ -27,7 +21,7 @@ int SQLiteColumn::BindToSQLiteStatement(sqlite3_stmt* stmt, int pos)
 			//sqlite only stores data as signed anyway so we just have to cast it back
 			//if we know that's what we want
 			unsigned int val = 0;
-			m_value.GetValue(val);
+			value->GetValue(val);
 			return sqlite3_bind_int(stmt, pos, val);
 
 		}
@@ -35,7 +29,7 @@ int SQLiteColumn::BindToSQLiteStatement(sqlite3_stmt* stmt, int pos)
 		case sizeof(unsigned long long):
 		{
 			unsigned long long val = 0;
-			m_value.GetValue(val);
+			value->GetValue(val);
 			return sqlite3_bind_int64(stmt, pos, val);
 			break;
 		}
@@ -45,25 +39,31 @@ int SQLiteColumn::BindToSQLiteStatement(sqlite3_stmt* stmt, int pos)
 		}
 		break;
 	case SQLiteVariant::StoredType::VARREAL:
-		if(sizeof(float) == m_value.GetDataLength())
+		if(sizeof(float) == value->GetDataLength())
 		{
 			float val = 0.f;
-			m_value.GetValue(val);
+			value->GetValue(val);
 			return sqlite3_bind_double(stmt, pos, static_cast<double>(val));
 		}
 		else
 		{
 			double val = 0.0;
-			m_value.GetValue(val);
+			value->GetValue(val);
 			return sqlite3_bind_double(stmt, pos, val);
 		}
 
 		break;
 	case SQLiteVariant::StoredType::VARTEXT:
-		return sqlite3_bind_text(stmt, pos, m_value.GetValueBlobPtr(), m_value.GetDataLength() - 1, 0);
+		return sqlite3_bind_text(stmt, pos, value->GetValueBlobPtr(), value->GetDataLength() - 1, 0);
 	case SQLiteVariant::StoredType::VARBLOB:
-		return sqlite3_bind_blob(stmt, pos, m_value.GetValueBlobPtr(), m_value.GetDataLength(), 0);
+		return sqlite3_bind_blob(stmt, pos, value->GetValueBlobPtr(), value->GetDataLength(), 0);
 	default:
 		return SQLITE_ERROR;
 	}
+}
+
+std::string VariantTypeToString(SQLiteVariant::StoredType type)
+{
+	static const char* typestrs[] = {"NULL", "INT", "REAL", "BLOB", "TEXT"};
+	return std::string(typestrs[static_cast<int>(type)]);
 }

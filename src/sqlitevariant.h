@@ -4,7 +4,7 @@
 #include <cstdio>
 #include <string>
 #include <vector>
-#include <variant>
+#include <algorithm>
 #include <cstring>
 #include "sqlite/sqlite3.h"
 
@@ -42,17 +42,17 @@ public:
 		m_storedtype = vartype;
 	}
 
-	bool HasType() const
+	bool HasType()
 	{
 		return VARNONE != m_storedtype;
 	}
 
-	StoredType GetType() const
+	const StoredType GetType() const
 	{
 		return m_storedtype;
 	}
 
-	std::string GetTypeAsString()
+	const std::string GetTypeAsString()
 	{
 		static const char* typestrs[] = {"NULL", "INT", "REAL", "BLOB", "TEXT"};
 		return std::string(typestrs[static_cast<int>(m_storedtype)]);
@@ -235,13 +235,13 @@ public:
 			{
 				if(len > m_reservedlen)
 				{
-					m_reservedlen = len << 1;
+					m_reservedlen = std::max((len << 1), (size_t) 4);
 					m_data.as_blob = (char*) realloc(m_data.as_blob, m_reservedlen);
 				}
 			}
 		}
 
-		m_datalen = len;
+		m_datalen = std::max(len, (size_t) 4);
 
 		if(!m_data.as_blob)
 		{
@@ -250,11 +250,14 @@ public:
 		}
 
 		memset(m_data.as_blob, 0, m_reservedlen);
-		memcpy(m_data.as_blob, data, m_datalen);
+		if(data)
+		{
+			memcpy(m_data.as_blob, data, m_datalen);
+		}
 		m_storedtype = VARBLOB;
 	}
 
-	bool GetValue(int& v)
+	bool GetValue(int& v) const
 	{
 		if(VARINT == m_storedtype && m_datalen == sizeof(int))
 		{
@@ -267,7 +270,7 @@ public:
 		}
 	}
 
-	bool GetValue(long long& v)
+	bool GetValue(long long& v) const
 	{
 		if(VARINT == m_storedtype && m_datalen == sizeof(long long))
 		{
@@ -280,7 +283,7 @@ public:
 		}
 	}
 
-	bool GetValue(unsigned int& v)
+	bool GetValue(unsigned int& v) const
 	{
 		if(VARINT == m_storedtype && m_datalen == sizeof(unsigned int))
 		{
@@ -293,7 +296,7 @@ public:
 		}
 	}
 
-	bool GetValue(unsigned long long& v)
+	bool GetValue(unsigned long long& v) const
 	{
 		if(VARINT == m_storedtype && m_datalen == sizeof(unsigned long long))
 		{
@@ -306,7 +309,7 @@ public:
 		}
 	}
 
-	bool GetValue(float& v)
+	bool GetValue(float& v) const
 	{
 		if(VARINT == m_storedtype && m_datalen == sizeof(float))
 		{
@@ -319,7 +322,7 @@ public:
 		}
 	}
 
-	bool GetValue(double& v)
+	bool GetValue(double& v) const
 	{
 		if(VARREAL == m_storedtype && m_datalen == sizeof(double))
 		{
@@ -332,7 +335,7 @@ public:
 		}
 	}
 
-	bool GetValue(std::string& v)
+	bool GetValue(std::string& v) const
 	{
 		if(VARTEXT == m_storedtype)
 		{
@@ -350,7 +353,7 @@ public:
 		return m_data.as_blob;
 	}
 
-	bool GetValue(std::vector<char>& v)
+	bool GetValue(std::vector<char>& v) const
 	{
 		if(VARBLOB == m_storedtype)
 		{
@@ -364,5 +367,8 @@ public:
 		}
 	}
 };
+
+std::string VariantTypeToString(SQLiteVariant::StoredType type);
+int BindVariantToStatement(sqlite3_stmt* stmt, const SQLiteVariant* value, int pos);
 
 #endif
