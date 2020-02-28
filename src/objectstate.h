@@ -6,6 +6,9 @@
 
 #include "as_addons/scripthandle.h"
 
+#include "sqlitetable.h"
+#include "sqliterow.h"
+
 class asIScriptObject;
 class asIScriptEngine;
 struct Database;
@@ -50,6 +53,19 @@ public:
 	void SavePropertyBlob(const std::string& name, const char* data, size_t len);
 	void SavePropertyUUID(const std::string& name, const UUID& uuid);
 
+	void LoadPropertyText(const std::string& name, std::string& v);
+	void LoadPropertyUINT8(const std::string& name, unsigned char& v);
+	void LoadPropertyUINT16(const std::string& name, unsigned short& v);
+	void LoadPropertyUINT32(const std::string& name, unsigned int& v);
+	void LoadPropertyUINT64(const std::string& name, unsigned long long& v);
+	void LoadPropertyINT8(const std::string& name, char& v);
+	void LoadPropertyINT16(const std::string& name, short& v);
+	void LoadPropertyINT32(const std::string& name, int& v);
+	void LoadPropertyINT64(const std::string& name, long long& v);
+	void LoadPropertyFloat(const std::string& name, float& v);
+	void LoadPropertyDouble(const std::string& name, double& v);
+	void LoadPropertyBlob(const std::string& name, const char* data, size_t len); //Not to be used directly from scripts
+	void LoadPropertyUUID(const std::string& name, UUID& uuid);
 };
 
 int RegisterObjectStateClass(asIScriptEngine* engine, struct Database* db);
