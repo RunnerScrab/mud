@@ -2,8 +2,11 @@
 #include "angelscript.h"
 #include "as_addons/scripthandle.h"
 #include "as_manager.h"
+#include "database.h"
 #include <cstdio>
 #include <string>
+
+struct Database* ObjectState::st_m_pDB = 0;
 
 ObjectState::ObjectState(CScriptHandle obj) : m_refCount(1)
 {
@@ -49,9 +52,14 @@ ObjectState* ObjectState::Factory(CScriptHandle obj)
 	return new ObjectState(obj);
 }
 
-int RegisterObjectStateClass(asIScriptEngine* engine)
+int RegisterObjectStateClass(asIScriptEngine* engine, struct Database* db)
 {
 	int result = 0;
+
+	//By default, SQLite uses serialized database connection access, which is safe to use from
+	//multiple threads. A mutex in the engine would only serve to do the same thing.
+
+	ObjectState::SetDBConnection(db);
 
 	if(engine->RegisterObjectType("ObjectState", 0, asOBJ_REF) < 0)
 		return -1;

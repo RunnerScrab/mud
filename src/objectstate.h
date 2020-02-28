@@ -8,13 +8,25 @@
 
 class asIScriptObject;
 class asIScriptEngine;
+struct Database;
 
 class ObjectState
 {
 private:
 	int m_refCount;
 	asITypeInfo* m_objtypeinfo;
+	static struct Database* st_m_pDB;
 public:
+	static void SetDBConnection(struct Database* db)
+	{
+		st_m_pDB = db;
+	}
+
+	static struct Database* GetDBConnection()
+	{
+		return st_m_pDB;
+	}
+
 	ObjectState(CScriptHandle obj);
 	virtual ~ObjectState();
 
@@ -40,6 +52,6 @@ public:
 
 };
 
-int RegisterObjectStateClass(asIScriptEngine* engine);
+int RegisterObjectStateClass(asIScriptEngine* engine, struct Database* db);
 
 #endif

@@ -43,7 +43,7 @@ extern "C"
 	{
 		MemoryPool_Init(&manager->mem_pool);
 		manager->engine = asCreateScriptEngine();
-
+		manager->engine->SetEngineProperty(asEP_BUILD_WITHOUT_LINE_CUES, true);
 #ifdef __x86_64__
 		ServerLog(SERVERLOG_STATUS, "x86_64 Build. Enabling Angelscript JIT module.");
 		manager->jit = new asCJITCompiler(0);
@@ -87,7 +87,7 @@ extern "C"
 		result = pEngine->RegisterInterfaceMethod("ICommand", "int opCall()");
 		RETURNFAIL_IF(result < 0);
 
-		result = RegisterObjectStateClass(pEngine);
+		result = RegisterObjectStateClass(pEngine, &server->db);
 		RETURNFAIL_IF(result < 0);
 
 		result = RegisterPlayerProxyClass(pEngine);
