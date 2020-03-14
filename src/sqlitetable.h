@@ -17,6 +17,7 @@ private:
 	SQLiteVariant::StoredType m_coltype;
 	std::string m_name;
 	KeyType m_keytype;
+
 public:
 	SQLiteColumn(const std::string& name, SQLiteVariant::StoredType vartype, KeyType keytype = KEY_NONE)
 	{
@@ -74,13 +75,26 @@ public:
 //using row data as input
 class SQLiteTable
 {
+public:
+	static sqlite3* m_static_pDB;
+	static void SetDBConnection(sqlite3* pDB);
+	static sqlite3* GetDBConnection();
+
+	void AddRef();
+	void Release();
+	static SQLiteTable* SubTableFactory(const char* tablename, SQLiteTable* parent_table);
+	static SQLiteTable* Factory(const char* tablename);
+private:
 	friend class SQLiteRow;
 	std::vector<SQLiteColumn*> m_columns;
 	SQLiteColumn* m_primary_keycol, *m_foreign_keycol;
 	SQLiteTable* m_parent_table;
 	std::string m_tablename;
 	sqlite3* m_pDB;
+
+	int m_refcount;
 public:
+
 	SQLiteTable(sqlite3* pDB, const char* tablename, SQLiteTable* parent_table = 0);
 	~SQLiteTable();
 
@@ -89,6 +103,8 @@ public:
 
 	int LoadRow(SQLiteRow* row);
 	int StoreRow(SQLiteRow* row, SQLiteRow* pParentRow = 0);
+
+	SQLiteRow* CreateRow();
 private:
 	int PerformUpsert(SQLiteRow* row, SQLiteRow* parent_row = 0);
 	//The a list of SQLite assignments to all the columns during an upsert (update/insert)

@@ -2,16 +2,64 @@
 #include "sqliterow.h"
 #include "sqliteutil.h"
 #include "sqlitevariant.h"
+#include "angelscript.h"
+
+sqlite3* SQLiteTable::m_static_pDB = 0;
+
+void SQLiteTable::SetDBConnection(sqlite3* pDB)
+{
+	m_static_pDB = pDB;
+}
+
+sqlite3* SQLiteTable::GetDBConnection()
+{
+	return m_static_pDB;
+}
 
 SQLiteTable::SQLiteTable(sqlite3* pDB, const char* tablename,
 			SQLiteTable* parent_table)
 {
+	m_refcount = 1;
 	m_pDB = pDB;
 	m_tablename = tablename;
 	m_parent_table = parent_table;
 	m_primary_keycol = 0;
 	m_foreign_keycol = 0;
 }
+
+void SQLiteTable::AddRef()
+{
+	asAtomicInc(m_refcount);
+}
+
+void SQLiteTable::Release()
+{
+	asAtomicDec(m_refcount);
+	if(!m_refcount)
+	{
+		delete this;
+	}
+}
+
+SQLiteTable* SQLiteTable::SubTableFactory(const char* tablename, SQLiteTable* parent_table)
+{
+	sqlite3* pdb = GetDBConnection();
+	if(pdb)
+	{
+		return new SQLiteTable(pdb, tablename, parent_table);
+	}
+	else
+	{
+		return 0;
+	}
+}
+
+SQLiteTable* SQLiteTable::Factory(const char* tablename)
+{
+	//A parent table is just a sub table with no parent
+	return SubTableFactory(tablename, 0);
+}
+
 
 SQLiteTable::~SQLiteTable()
 {
@@ -275,6 +323,11 @@ int SQLiteTable::StoreRow(SQLiteRow* pRow, SQLiteRow* pParentRow)
 	}
 
 	return PerformUpsert(pRow, pParentRow);
+}
+
+SQLiteRow* SQLiteTable::CreateRow()
+{
+	return new SQLiteRow(this);
 }
 
 int SQLiteTable::PerformUpsert(SQLiteRow* pRow, SQLiteRow* pParentRow)

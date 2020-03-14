@@ -3,15 +3,23 @@
 #include "sqlite/sqlite3.h"
 #include <stddef.h>
 
-struct Database
+#ifdef __cplusplus
+extern "C"
 {
-	sqlite3* pDB;
-	char path[256];
+#endif
+	struct Database
+	{
+		sqlite3* pDB;
+		char path[256];
+		size_t table_count;
 
-	size_t table_count;
-};
+		struct Server* pServer;
+	};
 
-int Database_Init(struct Database* asdb, const char* path);
-void Database_Release(struct Database* asdb);
+	int Database_Init(struct Database* asdb, struct Server* server, const char* path);
+	void Database_Release(struct Database* asdb);
+#ifdef __cplusplus
+}
+#endif
 
 #endif

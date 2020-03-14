@@ -21,11 +21,21 @@ class TestCommand : ICommand
 class Meower
 {
 	uuid m_uuid;
+	string m_name;
+
+	void Save()
+	{
+		Log("Saving meower.\n");
+	}
+
 	Meower()
 	{
+		Log("Meower constructing.\n");
+		m_name = "Meower";
 		m_uuid.Generate();
 		Log("Trying to make a meower. это - кошка!\n");
 		Log("Meower uuid: " + m_uuid.ToString() + "\n");
+		Meower::Save();
 	}
 	~Meower()
 	{
@@ -35,6 +45,22 @@ class Meower
 	{
 		return m_uuid.ToString();
 	}
+};
+
+class SuperMeower : Meower
+{
+	string m_superpowername;
+	SuperMeower()
+	{
+		Log("SuperMeower constructing.\n");
+		Save();
+		m_superpowername = "meowing";
+	}
+	void Save()
+	{
+
+	}
+
 };
 
 enum PlayerGameState {LOGIN_MENU = 0,
@@ -50,8 +76,6 @@ class Player : PlayerConnection
 	}
 	~Player()
 	{
-		ObjectState st(this);
-		st.SaveState();
 	}
 
 	PlayerGameState GetPlayerGameState()
@@ -122,7 +146,7 @@ void OnPlayerConnect(Player@ player)
 	uuid newuuid;
 	newuuid.Generate();
 	player.Send("\r\n" + newuuid.ToString() + "\r\n");
-	g_meowers.insertLast(Meower());
+	g_meowers.insertLast(SuperMeower());
 	player.SetMeower(g_meowers[g_meowers.length() - 1]);
 	g_players.insertLast(player);
 
@@ -188,6 +212,15 @@ void OnPlayerInput(Player@ player, string rawinput)
 	else if("debugvars" == rawinput)
 	{
 		game_server.DebugVariables(player);
+	}
+	else if ("testobj" == rawinput)
+	{
+		Log("CALLING TESTOBJ\r\n");
+		SuperMeower sm;
+		SuperMeower@ hsmeower = @sm;
+		Meower@ hmeower = @sm;
+		DebugObject(hsmeower);
+		DebugObject(hmeower);
 	}
 	else if("testcmd" == rawinput)
 	{

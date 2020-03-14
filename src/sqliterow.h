@@ -6,14 +6,22 @@
 
 #include "sqlitevariant.h"
 
+struct Database;
 class SQLiteTable;
 
 //Contains the values of the row
 class SQLiteRow
 {
+public:
+	void AddRef();
+	void Release();
+	static SQLiteRow* Factory(SQLiteTable*);
+private:
 	std::vector<SQLiteVariant*> m_values;
 	std::unordered_map<std::string, SQLiteVariant*> m_valuemap;
 	SQLiteTable* m_table;
+
+	int m_refcount;
 public:
 	SQLiteRow(SQLiteTable* table);
 	~SQLiteRow();
@@ -48,5 +56,7 @@ public:
 private:
 	void InitFromTable(SQLiteTable* table);
 };
+
+int RegisterDBRow(struct Database* db);
 
 #endif

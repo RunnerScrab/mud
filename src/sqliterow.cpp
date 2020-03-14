@@ -1,5 +1,43 @@
 #include "sqliterow.h"
 #include "sqlitetable.h"
+#include "angelscript.h"
+#include "database.h"
+#include "server.h"
+
+#define RETURNFAIL_IF(a) if(a){return -1;}
+
+int RegisterDBRow(struct Database* db)
+{
+	sqlite3* sqldb = db->pDB;
+	asIScriptEngine* engine = (db->pServer) ? db->pServer->as_manager.engine : 0;
+	if(!sqldb || !engine)
+	{
+		return -1;
+	}
+
+	int result = 0;
+	result = engine->RegisterObjectType("DBRow", 0, asOBJ_REF);
+	RETURNFAIL_IF(result < 0);
+
+	result = engine->RegisterObjectBehaviour("DBRow", asBEHAVE_ADDREF, "void f()", asMETHOD(SQLiteRow, AddRef),
+						asCALL_THISCALL);
+	RETURNFAIL_IF(result < 0);
+
+	result = engine->RegisterObjectBehaviour("DBRow", asBEHAVE_RELEASE, "void f()", asMETHOD(SQLiteRow, Release),
+						asCALL_THISCALL);
+	RETURNFAIL_IF(result < 0);
+
+	result = engine->RegisterObjectMethod("DBRow", "void SetColValue(const string& in, int v)",
+					asMETHODPR(SQLiteRow, SetColumnValue,
+						(const std::string&, int), void), asCALL_THISCALL);
+	RETURNFAIL_IF(result < 0);
+
+	result = engine->RegisterObjectMethod("DBRow", "void SetColValue(const string& in, int64 v)",
+					asMETHODPR(SQLiteRow, SetColumnValue,
+						(const std::string&, long long), void), asCALL_THISCALL);
+	RETURNFAIL_IF(result < 0);
+	return result;
+}
 
 void SQLiteRow::InitFromTable(SQLiteTable* table)
 {
@@ -32,8 +70,28 @@ void SQLiteRow::InitFromTable(SQLiteTable* table)
 	}
 }
 
+void SQLiteRow::AddRef()
+{
+	asAtomicInc(m_refcount);
+}
+
+void SQLiteRow::Release()
+{
+	asAtomicDec(m_refcount);
+	if(!m_refcount)
+	{
+		delete this;
+	}
+}
+
+SQLiteRow* SQLiteRow::Factory(SQLiteTable* table)
+{
+	return new SQLiteRow(table);
+}
+
 SQLiteRow::SQLiteRow(SQLiteTable* table)
 {
+	m_refcount = 1;
 	m_table = table;
 	InitFromTable(table);
 }

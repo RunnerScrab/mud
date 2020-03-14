@@ -7,11 +7,14 @@ extern "C"
 #include "server.h"
 }
 #include "player.h"
+
+#include "as_addons/scripthandle.h"
+
 #include <string>
 
 
 void ASAPI_DebugVariables(struct Server* server, Player* playerobj);
-std::string ASAPI_DebugObject(asIScriptObject* obj);
+void ASAPI_DebugObject(CScriptHandle obj);
 
 void ASAPI_SendToAll(struct Server* server, std::string& message);
 void ASAPI_QueueScriptCommand(struct Server* server, asIScriptObject* obj, unsigned int delay);

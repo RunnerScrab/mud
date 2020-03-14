@@ -8,7 +8,6 @@ extern "C"
 #include "as_api.h"
 #include "player.h"
 #include "uuid.h"
-#include "objectstate.h"
 
 #include "as_addons/scriptstdstring.h"
 #include "as_addons/scriptarray.h"
@@ -87,7 +86,17 @@ extern "C"
 		result = pEngine->RegisterInterfaceMethod("ICommand", "int opCall()");
 		RETURNFAIL_IF(result < 0);
 
-		result = RegisterObjectStateClass(pEngine, &server->db);
+		result = pEngine->RegisterInterface("IPersistent");
+		RETURNFAIL_IF(result < 0);
+
+		result = pEngine->RegisterInterfaceMethod("IPersistent", "void Save()");
+		RETURNFAIL_IF(result < 0);
+
+		result = pEngine->RegisterInterfaceMethod("IPersistent", "void Load(uuid key)");
+		RETURNFAIL_IF(result < 0);
+
+		result = pEngine->RegisterInterfaceMethod("IPersistent", "void DefineSchema()");
+
 		RETURNFAIL_IF(result < 0);
 
 		result = RegisterPlayerProxyClass(pEngine);
@@ -106,6 +115,9 @@ extern "C"
 
 		result = pEngine->RegisterObjectMethod("Server", "void DebugVariables(Player_t@ player)", asFUNCTION(ASAPI_DebugVariables),
 						asCALL_CDECL_OBJFIRST);
+		RETURNFAIL_IF(result < 0);
+
+		result = pEngine->RegisterGlobalFunction("void DebugObject(ref@ obj)", asFUNCTION(ASAPI_DebugObject), asCALL_CDECL);
 		RETURNFAIL_IF(result < 0);
 
 		result = pEngine->RegisterGlobalProperty("Server game_server", server);
@@ -177,7 +189,7 @@ extern "C"
 
 		return 0;
 	}
-
+/*
 	int AngelScriptManager_PrepareScriptPersistenceLayer(AngelScriptManager* manager)
 	{
 		//TODO: Remove this - debug script class information
@@ -202,7 +214,7 @@ extern "C"
 		}
 		return 0;
 	}
-
+*/
 	int AngelScriptManager_LoadScripts(AngelScriptManager* manager, const char* script_dir)
 	{
 		//TODO: May want to impose some kind of directory structure on scripts
@@ -224,8 +236,6 @@ extern "C"
 
 		RETURNFAIL_IF(LoadPlayerScript(manager->engine, manager->main_module));
 		RETURNFAIL_IF(manager->main_module->Build() < 0);
-
-		AngelScriptManager_PrepareScriptPersistenceLayer(manager);
 
 		size_t global_properties = manager->engine->GetGlobalPropertyCount();
 		printf("There are %lu global properties.\n", global_properties);
