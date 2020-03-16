@@ -132,15 +132,7 @@ static int Server_LoadConfiguration(struct Server* server)
 
 static int Server_LoadGame(struct Server* server)
 {
-	int result = AngelScriptManager_LoadScripts(&server->as_manager, server->configuration.scriptpath);
-	if(FAILURE(result))
-	{
-		ServerLog(SERVERLOG_ERROR, "Failed to load game scripts.\n");
-		return -1;
-	}
-	ServerLog(SERVERLOG_STATUS, "Game scripts loaded.");
-
-	result = Database_Init(&server->db, server, server->configuration.dbfilepath);
+	int result = Database_Init(&server->db, server, server->configuration.dbfilepath);
 	if(FAILURE(result))
 	{
 		ServerLog(SERVERLOG_ERROR, "FATAL: Failed to initialize database!");
@@ -148,6 +140,15 @@ static int Server_LoadGame(struct Server* server)
 		return -1;
 	}
 	ServerLog(SERVERLOG_STATUS, "Initialized database engine.");
+
+	result = AngelScriptManager_LoadScripts(&server->as_manager, server->configuration.scriptpath);
+	if(FAILURE(result))
+	{
+		ServerLog(SERVERLOG_ERROR, "Failed to load game scripts.\n");
+		return -1;
+	}
+	ServerLog(SERVERLOG_STATUS, "Game scripts loaded.");
+
 
 	Server_LoadMOTD(server);
 

@@ -39,7 +39,49 @@ int RegisterDBTable(sqlite3* sqldb, asIScriptEngine* sengine)
 
 	result = sengine->RegisterObjectMethod("DBTable", "DBRow@ MakeRow()",
 						asMETHODPR(SQLiteTable, CreateRow, (void), SQLiteRow*), asCALL_THISCALL);
+	RETURNFAIL_IF(result < 0);
 
+	result = sengine->RegisterEnum("DBColKeyType");
+	RETURNFAIL_IF(result < 0);
+
+	result = sengine->RegisterEnumValue("DBColKeyType", "COLKEYTYPE_NOTKEY",
+					SQLiteColumn::KeyType::KEY_NONE);
+	RETURNFAIL_IF(result < 0);
+	result = sengine->RegisterEnumValue("DBColKeyType", "COLKEYTYPE_PRIMARYKEY",
+					SQLiteColumn::KeyType::KEY_PRIMARY);
+	RETURNFAIL_IF(result < 0);
+	result = sengine->RegisterEnumValue("DBColKeyType",
+					"COLKEYTYPE_AUTOKEY",
+					SQLiteColumn::KeyType::KEY_AUTO_PRIMARY);
+	RETURNFAIL_IF(result < 0);
+	result = sengine->RegisterEnumValue("DBColKeyType", "COLKEYTYPE_FOREIGNKEY",
+					SQLiteColumn::KeyType::KEY_FOREIGN);
+	RETURNFAIL_IF(result < 0);
+
+	sengine->RegisterObjectMethod("DBTable",
+				"void AddIntColumn(const string& in, DBColKeyType keytype = COLKEYTYPE_NOTKEY)",
+				asMETHODPR(SQLiteTable, AddIntColumn,
+					(const std::string&, SQLiteColumn::KeyType), void), asCALL_THISCALL);
+	RETURNFAIL_IF(result < 0);
+
+	sengine->RegisterObjectMethod("DBTable",
+				"void AddRealColumn(const string& in, DBColKeyType keytype= COLKEYTYPE_NOTKEY)",
+				asMETHODPR(SQLiteTable, AddRealColumn,
+					(const std::string&, SQLiteColumn::KeyType), void), asCALL_THISCALL);
+	RETURNFAIL_IF(result < 0);
+
+	sengine->RegisterObjectMethod("DBTable",
+				"void AddTextColumn(const string& in, DBColKeyType keytype= COLKEYTYPE_NOTKEY)",
+				asMETHODPR(SQLiteTable, AddTextColumn,
+					(const std::string&, SQLiteColumn::KeyType), void), asCALL_THISCALL);
+	RETURNFAIL_IF(result < 0);
+
+
+	sengine->RegisterObjectMethod("DBTable",
+				"void AddUUIDColumn(const string& in, DBColKeyType keytype= COLKEYTYPE_NOTKEY)",
+				asMETHODPR(SQLiteTable, AddBlobColumn,
+					(const std::string&, SQLiteColumn::KeyType), void), asCALL_THISCALL);
+	RETURNFAIL_IF(result < 0);
 
 	return result;
 }
@@ -69,12 +111,12 @@ void SQLiteTable::Release()
 	}
 }
 
-SQLiteTable* SQLiteTable::SubTableFactory(const char* tablename, SQLiteTable* parent_table)
+SQLiteTable* SQLiteTable::SubTableFactory(const std::string& tablename, SQLiteTable* parent_table)
 {
 	sqlite3* pdb = GetDBConnection();
 	if(pdb)
 	{
-		return new SQLiteTable(pdb, tablename, parent_table);
+		return new SQLiteTable(pdb, tablename.c_str(), parent_table);
 	}
 	else
 	{
@@ -82,10 +124,10 @@ SQLiteTable* SQLiteTable::SubTableFactory(const char* tablename, SQLiteTable* pa
 	}
 }
 
-SQLiteTable* SQLiteTable::Factory(const char* tablename)
+SQLiteTable* SQLiteTable::Factory(const std::string& tablename)
 {
 	//A parent table is just a sub table with no parent
-	return SubTableFactory(tablename, 0);
+	return SubTableFactory(tablename.c_str(), 0);
 }
 
 
@@ -307,7 +349,7 @@ int SQLiteTable::StoreRow(SQLiteRow* pRow, SQLiteRow* pParentRow)
 		std::string querystr = "CREATE TABLE " + m_tablename + "(" + ProducePropertyNameList() + ");";
 		if(SQLITE_DONE != ExecSQLiteStatement(m_pDB, querystr.c_str()))
 		{
-			printf("Failed to create table.\n");
+			printf("Failed to create table. Query was: %s\n", querystr.c_str());
 			return SQLITE_ERROR;
 		}
 		querystr = "CREATE UNIQUE INDEX idx_" + m_tablename + " ON " + m_tablename + " (" + m_primary_keycol->GetName()

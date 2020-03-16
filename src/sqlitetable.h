@@ -84,8 +84,8 @@ public:
 
 	void AddRef();
 	void Release();
-	static SQLiteTable* SubTableFactory(const char* tablename, SQLiteTable* parent_table);
-	static SQLiteTable* Factory(const char* tablename);
+	static SQLiteTable* SubTableFactory(const std::string& tablename, SQLiteTable* parent_table);
+	static SQLiteTable* Factory(const std::string& tablename);
 private:
 	friend class SQLiteRow;
 	std::vector<SQLiteColumn*> m_columns;
@@ -102,6 +102,31 @@ public:
 
 	void AddColumn(const std::string& name, SQLiteVariant::StoredType vartype,
 		       SQLiteColumn::KeyType keytype = SQLiteColumn::KeyType::KEY_NONE);
+
+	void AddIntColumn(const std::string& name,
+			  SQLiteColumn::KeyType keytype = SQLiteColumn::KeyType::KEY_NONE)
+	{
+		AddColumn(name, SQLiteVariant::StoredType::VARINT, keytype);
+	}
+
+	void AddRealColumn(const std::string& name,
+			  SQLiteColumn::KeyType keytype = SQLiteColumn::KeyType::KEY_NONE)
+	{
+		AddColumn(name, SQLiteVariant::StoredType::VARREAL, keytype);
+	}
+
+	void AddTextColumn(const std::string& name,
+			  SQLiteColumn::KeyType keytype = SQLiteColumn::KeyType::KEY_NONE)
+	{
+		AddColumn(name, SQLiteVariant::StoredType::VARTEXT, keytype);
+	}
+
+	void AddBlobColumn(const std::string& name,
+			  SQLiteColumn::KeyType keytype = SQLiteColumn::KeyType::KEY_NONE)
+	{
+		AddColumn(name, SQLiteVariant::StoredType::VARBLOB, keytype);
+	}
+
 
 	int LoadRow(SQLiteRow* row);
 	int StoreRow(SQLiteRow* row, SQLiteRow* pParentRow = 0);

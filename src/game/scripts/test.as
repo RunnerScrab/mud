@@ -213,6 +213,18 @@ void OnPlayerDisconnect(Player@ player)
 */
 }
 
+void TestDatabase()
+{
+	DBTable testtable("testtable");
+	testtable.AddUUIDColumn("uuid", COLKEYTYPE_PRIMARYKEY);
+	testtable.AddTextColumn("name");
+	DBRow@ testrow = testtable.MakeRow();
+	uuid testuuid;
+	testuuid.Generate();
+	testrow.SetColValue("uuid", testuuid);
+	testrow.SetColValue("name", "meower");
+	testrow.StoreIntoDB();
+}
 
 void OnPlayerInput(Player@ player, string rawinput)
 {
@@ -230,6 +242,11 @@ void OnPlayerInput(Player@ player, string rawinput)
 	else if("debugvars" == rawinput)
 	{
 		game_server.DebugVariables(player);
+	}
+	else if ("testdb" == rawinput)
+	{
+		TestDatabase();
+		player.Send("Ran TestDatabase().\r\n");
 	}
 	else if ("testobj" == rawinput)
 	{
