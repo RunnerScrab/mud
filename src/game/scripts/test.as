@@ -18,7 +18,12 @@ class TestCommand : ICommand
 	}
 };
 
-class Meower
+interface TestInterface
+{
+	void TestInterfaceMethod();
+};
+
+class Meower : TestInterface
 {
 	uuid m_uuid;
 	string m_name;
@@ -28,9 +33,15 @@ class Meower
 		Log("Saving meower.\n");
 	}
 
+	void TestInterfaceMethod()
+	{
+		Log("Calling Meower's testinterface method.\n");
+	}
+
 	Meower()
 	{
 		Log("Meower constructing.\n");
+		TestInterfaceMethod();
 		m_name = "Meower";
 		m_uuid.Generate();
 		Log("Trying to make a meower. это - кошка!\n");
@@ -50,9 +61,16 @@ class Meower
 class SuperMeower : Meower
 {
 	string m_superpowername;
+
+	void TestInterfaceMethod()
+	{
+		Log("Calling SuperMeower's testinterface method.\n");
+		Meower::TestInterfaceMethod();
+	}
 	SuperMeower()
 	{
 		Log("SuperMeower constructing.\n");
+		TestInterfaceMethod();
 		Save();
 		m_superpowername = "meowing";
 	}

@@ -31,25 +31,10 @@ static int RegisterDatabaseAPI(struct Database* asdb)
 	SQLiteTable::SetDBConnection(sqldb);
 	int result = 0;
 
-	result = RegisterDBRow(asdb);
+	result = RegisterDBRow(sqldb, sengine);
 	RETURNFAIL_IF(result < 0);
 
-	result = sengine->RegisterObjectType("DBTable", 0, asOBJ_REF);
-	RETURNFAIL_IF(result < 0);
-	result = sengine->RegisterObjectBehaviour("DBTable", asBEHAVE_FACTORY, "DBTable@ f(string& in)",
-						asFUNCTION(SQLiteTable::Factory), asCALL_CDECL);
-	RETURNFAIL_IF(result < 0);
-
-	result = sengine->RegisterObjectBehaviour("DBTable", asBEHAVE_ADDREF, "void f()", asMETHOD(SQLiteTable, AddRef),
-						asCALL_THISCALL);
-	RETURNFAIL_IF(result < 0);
-
-	result = sengine->RegisterObjectBehaviour("DBTable", asBEHAVE_RELEASE, "void f()", asMETHOD(SQLiteTable, Release),
-						asCALL_THISCALL);
-
-	result = sengine->RegisterObjectMethod("DBTable", "DBRow@ MakeRow()",
-						asMETHODPR(SQLiteTable, CreateRow, (void), SQLiteRow*), asCALL_THISCALL);
-
+	result = RegisterDBTable(sqldb, sengine);
 	return result;
 }
 

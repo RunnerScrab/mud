@@ -3,6 +3,9 @@
 #include "sqliteutil.h"
 #include "sqlitevariant.h"
 #include "angelscript.h"
+#include "database.h"
+
+#define RETURNFAIL_IF(a) if(a){return -1;}
 
 sqlite3* SQLiteTable::m_static_pDB = 0;
 
@@ -14,6 +17,31 @@ void SQLiteTable::SetDBConnection(sqlite3* pDB)
 sqlite3* SQLiteTable::GetDBConnection()
 {
 	return m_static_pDB;
+}
+
+int RegisterDBTable(sqlite3* sqldb, asIScriptEngine* sengine)
+{
+	int result = 0;
+	result = sengine->RegisterObjectType("DBTable", 0, asOBJ_REF);
+
+	RETURNFAIL_IF(result < 0);
+	result = sengine->RegisterObjectBehaviour("DBTable", asBEHAVE_FACTORY, "DBTable@ f(string& in)",
+						asFUNCTION(SQLiteTable::Factory), asCALL_CDECL);
+	RETURNFAIL_IF(result < 0);
+
+	result = sengine->RegisterObjectBehaviour("DBTable", asBEHAVE_ADDREF, "void f()", asMETHOD(SQLiteTable, AddRef),
+						asCALL_THISCALL);
+	RETURNFAIL_IF(result < 0);
+
+	result = sengine->RegisterObjectBehaviour("DBTable", asBEHAVE_RELEASE, "void f()", asMETHOD(SQLiteTable, Release),
+						asCALL_THISCALL);
+	RETURNFAIL_IF(result < 0);
+
+	result = sengine->RegisterObjectMethod("DBTable", "DBRow@ MakeRow()",
+						asMETHODPR(SQLiteTable, CreateRow, (void), SQLiteRow*), asCALL_THISCALL);
+
+
+	return result;
 }
 
 SQLiteTable::SQLiteTable(sqlite3* pDB, const char* tablename,

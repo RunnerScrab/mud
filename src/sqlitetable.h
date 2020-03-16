@@ -4,6 +4,8 @@
 #include <string>
 #include "sqlitevariant.h"
 
+class asIScriptEngine;
+
 class SQLiteRow;
 
 //Contains column name, value type, key type, and may be used to
@@ -117,4 +119,5 @@ private:
 	std::string ProducePropertyNameList();
 };
 
+int RegisterDBTable(sqlite3* sqldb, asIScriptEngine* sengine);
 #endif

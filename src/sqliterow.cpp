@@ -6,15 +6,8 @@
 
 #define RETURNFAIL_IF(a) if(a){return -1;}
 
-int RegisterDBRow(struct Database* db)
+int RegisterDBRow(sqlite3* sqldb, asIScriptEngine* engine)
 {
-	sqlite3* sqldb = db->pDB;
-	asIScriptEngine* engine = (db->pServer) ? db->pServer->as_manager.engine : 0;
-	if(!sqldb || !engine)
-	{
-		return -1;
-	}
-
 	int result = 0;
 	result = engine->RegisterObjectType("DBRow", 0, asOBJ_REF);
 	RETURNFAIL_IF(result < 0);
@@ -57,12 +50,12 @@ int RegisterDBRow(struct Database* db)
 						(const std::string&, double), void), asCALL_THISCALL);
 	RETURNFAIL_IF(result < 0);
 
-	result = engine->RegisterObjectMethod("DBRow", "void SetColValue(const string& in, const string& v)",
+	result = engine->RegisterObjectMethod("DBRow", "void SetColValue(const string& in, const string& in)",
 					asMETHODPR(SQLiteRow, SetColumnValue,
 						(const std::string&, const std::string&), void), asCALL_THISCALL);
 	RETURNFAIL_IF(result < 0);
 
-	result = engine->RegisterObjectMethod("DBRow", "void SetColValue(const string& in, const uuid& v)",
+	result = engine->RegisterObjectMethod("DBRow", "void SetColValue(const string& in, const uuid& in)",
 					asMETHODPR(SQLiteRow, SetColumnValue,
 						(const std::string&, const UUID&), void), asCALL_THISCALL);
 	RETURNFAIL_IF(result < 0);

@@ -9,7 +9,8 @@
 
 struct Database;
 class SQLiteTable;
-
+class asIScriptEngine;
+struct sqlite3;
 //Contains the values of the row
 class SQLiteRow
 {
@@ -53,6 +54,8 @@ public:
 	bool GetColumnValue(const std::string& colname, std::string& out);
 	bool GetColumnValue(const std::string& colname, std::vector<char>& out);
 	bool GetColumnValue(const std::string& colname, UUID& uuidout);
+
+	//These load/store functions just wrap SQLiteTable's
 	bool LoadFromDB();
 	bool StoreIntoDB();
 	bool StoreChildRowIntoDB(SQLiteRow* parent_row = 0);
@@ -60,6 +63,6 @@ private:
 	void InitFromTable(SQLiteTable* table);
 };
 
-int RegisterDBRow(struct Database* db);
+int RegisterDBRow(sqlite3* sqldb, asIScriptEngine* sengine);
 
 #endif
