@@ -43,6 +43,16 @@ public:
 	void GetAsInt128(struct Int128* out);
 	std::string ToString() const;
 
+	const char* GetData() const
+	{
+		return reinterpret_cast<const char*>(m_data.bytes);
+	}
+
+	size_t GetDataSize() const
+	{
+		return 16;
+	}
+
 	void Generate();
 	static void GenerateUUID(union UUIDunion* uuid);
 };

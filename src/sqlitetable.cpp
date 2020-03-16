@@ -290,7 +290,6 @@ int SQLiteTable::StoreRow(SQLiteRow* pRow, SQLiteRow* pParentRow)
 			return SQLITE_ERROR;
 		}
 	}
-
 	else if(result < 0)
 	{
 		printf("Error executing sql statement to check table existence.\n");

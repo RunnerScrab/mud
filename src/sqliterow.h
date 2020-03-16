@@ -4,6 +4,7 @@
 #include <vector>
 #include <unordered_map>
 
+#include "uuid.h"
 #include "sqlitevariant.h"
 
 struct Database;
@@ -39,6 +40,7 @@ public:
 	void SetColumnValue(const std::string& colname, const double v);
 	void SetColumnValue(const std::string& colname, const std::string& v);
 	void SetColumnValue(const std::string& colname, const char* data, const size_t datalen);
+	void SetColumnValue(const std::string& colname, const UUID& uuid);
 
 	SQLiteVariant* GetColumnValue(const std::string& colname);
 
@@ -50,9 +52,10 @@ public:
 	bool GetColumnValue(const std::string& colname, double& out);
 	bool GetColumnValue(const std::string& colname, std::string& out);
 	bool GetColumnValue(const std::string& colname, std::vector<char>& out);
-
-	int Load();
-	int Store(SQLiteRow* parent_row = 0);
+	bool GetColumnValue(const std::string& colname, UUID& uuidout);
+	bool LoadFromDB();
+	bool StoreIntoDB();
+	bool StoreChildRowIntoDB(SQLiteRow* parent_row = 0);
 private:
 	void InitFromTable(SQLiteTable* table);
 };
