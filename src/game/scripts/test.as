@@ -213,7 +213,7 @@ void OnPlayerDisconnect(Player@ player)
 */
 }
 
-void TestDatabase()
+void TestDatabase(Player@ player)
 {
 	DBTable testtable("testtable");
 	testtable.AddUUIDColumn("uuid", COLKEYTYPE_PRIMARYKEY);
@@ -224,6 +224,11 @@ void TestDatabase()
 	testrow.SetColValue("uuid", testuuid);
 	testrow.SetColValue("name", "meower");
 	testrow.StoreIntoDB();
+	string uuidstr = testuuid.ToString();
+	player.Send("Generated guid: " + uuidstr + "\r\n");
+	uuid otheruuid;
+	otheruuid.FromString(uuidstr);
+	player.Send("Converted guid: " + otheruuid.ToString() + "\r\n");
 }
 
 void OnPlayerInput(Player@ player, string rawinput)
@@ -245,7 +250,7 @@ void OnPlayerInput(Player@ player, string rawinput)
 	}
 	else if ("testdb" == rawinput)
 	{
-		TestDatabase();
+		TestDatabase(player);
 		player.Send("Ran TestDatabase().\r\n");
 	}
 	else if ("testobj" == rawinput)

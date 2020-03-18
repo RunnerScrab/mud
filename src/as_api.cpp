@@ -1,6 +1,7 @@
 #include "as_api.h"
 extern "C"
 {
+#include "bitutils.h"
 #include "poolalloc.h"
 #include "crypto.h"
 #include "charvector.h"
@@ -214,9 +215,14 @@ void ASAPI_Log(std::string& message)
 
 void ASAPI_TrimString(const std::string& in, std::string& out)
 {
-	size_t idx = in.length() - 1;
-	for(; idx > 0 && isspace(in[idx]); --idx);
-	out = in.substr(0, idx + 1);
+	const char* pstr = in.c_str();
+	size_t strsize = in.size();
+	const char* begin = findfirstnonspace(pstr, strsize);
+	const char* end = lastnonspace(pstr, strsize);
+	if(begin && end)
+	{
+		out.assign(begin, end - begin + 1);
+	}
 }
 
 void ASAPI_HashPassword(const std::string& password, std::string& out)

@@ -42,6 +42,7 @@ public:
 	int CopyToByteArray(char* out, size_t len);
 	void GetAsInt128(struct Int128* out);
 	std::string ToString() const;
+	bool FromString(const std::string& str);
 
 	const char* GetData() const
 	{

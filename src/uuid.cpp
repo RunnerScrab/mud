@@ -40,8 +40,15 @@ int RegisterUUIDClass(AngelScriptManager* manager)
 		< 0)
 		return -1;
 	if(pEngine->RegisterObjectMethod("uuid", "string ToString()",
-						asMETHODPR(UUID, ToString, (void) const, std::string), asCALL_THISCALL) < 0)
+						asMETHODPR(UUID, ToString, (void) const, std::string),
+						asCALL_THISCALL) < 0)
 		return -1;
+
+	if(pEngine->RegisterObjectMethod("uuid", "bool FromString(const string& in)",
+						asMETHODPR(UUID, FromString, (const std::string&), bool),
+						asCALL_THISCALL) < 0)
+		return -1;
+
 	if(pEngine->RegisterObjectMethod("uuid", "void Generate()",
 						asMETHODPR(UUID, Generate, (void), void), asCALL_THISCALL) < 0)
 		return -1;
@@ -105,6 +112,50 @@ std::string UUID::ToString() const
 		m_data.fields.nodes[5]);
 	retval = temp;
 	return retval;
+}
+
+bool UUID::FromString(const std::string& str)
+{
+	const char* pstr = str.c_str();
+	size_t len = str.size();
+	if(36 != len ||
+		('-' != str[8] || '-' != str[13]
+			|| '-' != str[18]
+			|| '-' != str[23])
+		)
+	{
+		return false;
+	}
+
+	//8, 13, 18, 23
+	char first[9] = {0};
+	char second[5] = {0};
+	char third[5] = {0};
+	char fourth[5] = {0};
+	char fifth_a[9] = {0};
+	char fifth_b[5] = {0};
+
+	strncpy(first, pstr, 8);
+	strncpy(second, pstr + 9, 4);
+	strncpy(third, pstr + 14, 4);
+	strncpy(fourth, pstr + 19, 4);
+	strncpy(fifth_a, pstr + 24, 8);
+	strncpy(fifth_b, pstr + 32, 4);
+
+	m_data.fields.time_low = strtoul(first, 0, 16);
+	m_data.fields.time_mid = strtoul(second, 0, 16);
+	m_data.fields.time_hi_and_version = strtoul(third, 0, 16);
+	unsigned int fourthint = strtoul(fourth, 0, 16);
+	m_data.fields.clock_seq_hi_and_reserved = (fourthint >> 8) & 255;
+	m_data.fields.clock_seq_low = fourthint & 255;
+	unsigned int fifth_a_int = htonl(strtoul(fifth_a, 0, 16));
+	unsigned short fifth_b_int = htons(strtoul(fifth_b, 0, 16));
+
+	memcpy(&m_data.fields.nodes[0], &fifth_a_int, sizeof(unsigned int));
+	memcpy(&m_data.fields.nodes[sizeof(unsigned int)], &fifth_b_int, sizeof(unsigned short));
+
+	return true;
+
 }
 
 void UUID::GetAsInt128(struct Int128* out)
