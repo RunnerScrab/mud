@@ -99,6 +99,8 @@ extern "C"
 
 		RETURNFAIL_IF(result < 0);
 
+		ServerLog(SERVERLOG_STATUS, "Registered IPersistent interface.");
+
 		result = RegisterPlayerProxyClass(pEngine);
 		RETURNFAIL_IF(result < 0);
 
@@ -189,32 +191,36 @@ extern "C"
 
 		return 0;
 	}
-/*
+
 	int AngelScriptManager_PrepareScriptPersistenceLayer(AngelScriptManager* manager)
 	{
 		//TODO: Remove this - debug script class information
 		printf("-Class information-\n");
 		size_t idx = 0, object_type_count = manager->main_module->GetObjectTypeCount();
-		asITypeInfo* pPersistentType = manager->main_module->GetTypeInfoByName("PersistentObj");
+		asITypeInfo* pPersistentType = manager->engine->GetTypeInfoByName("IPersistent");
 
 		if(!pPersistentType)
 		{
-			ServerLog(SERVERLOG_ERROR, "Could not find PersistentObj type!");
+			ServerLog(SERVERLOG_ERROR, "Could not find IPersistent interface type!");
 			return -1;
+		}
+		else
+		{
+			ServerLog(SERVERLOG_DEBUG, "Found IPersistent interface type.");
 		}
 
 		for(; idx < object_type_count; ++idx)
 		{
 			asITypeInfo* pInfo = manager->main_module->GetObjectTypeByIndex(idx);
 			printf("Class %lu: %s\n", idx, pInfo->GetName());
-			if(pInfo->DerivesFrom(pPersistentType))
+			if(pInfo->Implements(pPersistentType))
 			{
-				printf("\tClass derives from PersistentObj!\n");
+				printf("\tClass implements IPersistent!\n");
 			}
 		}
 		return 0;
 	}
-*/
+
 	int AngelScriptManager_LoadScripts(AngelScriptManager* manager, const char* script_dir)
 	{
 		//TODO: May want to impose some kind of directory structure on scripts

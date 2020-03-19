@@ -23,10 +23,20 @@ interface TestInterface
 	void TestInterfaceMethod();
 };
 
-class Meower : TestInterface
+class Meower : TestInterface, IPersistent
 {
 	uuid m_uuid;
 	string m_name;
+
+	void Load(uuid key)
+	{
+
+	}
+
+	void DefineSchema()
+	{
+
+	}
 
 	void Save()
 	{
@@ -231,6 +241,21 @@ void TestDatabase(Player@ player)
 	player.Send("Converted guid: " + otheruuid.ToString() + "\r\n");
 }
 
+void TestDatabaseRead(Player@ player)
+{
+	DBTable testtable("testtable");
+	testtable.AddUUIDColumn("uuid", COLKEYTYPE_PRIMARYKEY);
+	testtable.AddTextColumn("name");
+	DBRow@ testrow = testtable.MakeRow();
+	uuid keyuuid;
+	keyuuid.FromString("0e6e8006-698a-46ec-8aa4-211fa6a1892c");
+	testrow.SetColValue("uuid", keyuuid);
+	testrow.LoadFromDB();
+	string name;
+	testrow.GetColValue("name", name);
+	player.Send("Loaded meower with name: '" + name + "' from database.\r\n");
+}
+
 void OnPlayerInput(Player@ player, string rawinput)
 {
 	string input;
@@ -252,6 +277,10 @@ void OnPlayerInput(Player@ player, string rawinput)
 	{
 		TestDatabase(player);
 		player.Send("Ran TestDatabase().\r\n");
+	}
+	else if("testdbread" == rawinput)
+	{
+		TestDatabaseRead(player);
 	}
 	else if ("testobj" == rawinput)
 	{

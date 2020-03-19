@@ -71,6 +71,8 @@ extern "C"
 	extern void AngelScriptManager_RunWorldTick(AngelScriptManager* manager);
 	extern void AngelScriptManager_ReleaseEngine(AngelScriptManager* manager);
 
+	extern int AngelScriptManager_PrepareScriptPersistenceLayer(AngelScriptManager* manager);
+
 	extern void AngelScriptManager_CallOnPlayerConnect(AngelScriptManager* manager, struct Client* pClient);
 	extern void AngelScriptManager_CallOnPlayerDisconnect(AngelScriptManager* manager, struct Client* pClient);
 	extern void AngelScriptManager_CallOnPlayerInput(AngelScriptManager* manager, struct Client* pClient,

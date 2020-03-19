@@ -26,6 +26,7 @@
 
 #include "tickthread.h"
 
+#include "as_manager.h"
 #include "as_cinterface.h"
 
 #define max(a, b) (a > b ? a : b)
@@ -144,11 +145,20 @@ static int Server_LoadGame(struct Server* server)
 	result = AngelScriptManager_LoadScripts(&server->as_manager, server->configuration.scriptpath);
 	if(FAILURE(result))
 	{
-		ServerLog(SERVERLOG_ERROR, "Failed to load game scripts.\n");
+		ServerLog(SERVERLOG_ERROR, "Failed to load game scripts.");
 		return -1;
 	}
 	ServerLog(SERVERLOG_STATUS, "Game scripts loaded.");
 
+	result = AngelScriptManager_PrepareScriptPersistenceLayer(&server->as_manager);
+	if(FAILURE(result))
+	{
+		ServerLog(SERVERLOG_ERROR, "Failed to start persistence layer!");
+	}
+	else
+	{
+		ServerLog(SERVERLOG_STATUS, "Persistence layer initialized.");
+	}
 
 	Server_LoadMOTD(server);
 
