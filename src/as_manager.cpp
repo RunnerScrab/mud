@@ -8,6 +8,7 @@ extern "C"
 #include "as_api.h"
 #include "player.h"
 #include "uuid.h"
+#include "sqlitetable.h"
 
 #include "as_addons/scriptstdstring.h"
 #include "as_addons/scriptarray.h"
@@ -85,21 +86,6 @@ extern "C"
 
 		result = pEngine->RegisterInterfaceMethod("ICommand", "int opCall()");
 		RETURNFAIL_IF(result < 0);
-
-		result = pEngine->RegisterInterface("IPersistent");
-		RETURNFAIL_IF(result < 0);
-
-		result = pEngine->RegisterInterfaceMethod("IPersistent", "void Save()");
-		RETURNFAIL_IF(result < 0);
-
-		result = pEngine->RegisterInterfaceMethod("IPersistent", "void Load(uuid key)");
-		RETURNFAIL_IF(result < 0);
-
-		result = pEngine->RegisterInterfaceMethod("IPersistent", "void DefineSchema()");
-
-		RETURNFAIL_IF(result < 0);
-
-		ServerLog(SERVERLOG_STATUS, "Registered IPersistent interface.");
 
 		result = RegisterPlayerProxyClass(pEngine);
 		RETURNFAIL_IF(result < 0);
@@ -192,10 +178,22 @@ extern "C"
 		return 0;
 	}
 
+
+	void AngelScriptManager_CleanTypeSchemaUserData(asITypeInfo* pType)
+	{
+		printf("In cleanup function for type %s\n", pType->GetName());
+		SQLiteTable* pTable = reinterpret_cast<SQLiteTable*>(pType->GetUserData(AS_USERDATA_TYPESCHEMA));
+		if(pTable)
+		{
+			printf("Freeing %s's userdata.\n", pType->GetName());
+			delete pTable;
+		}
+	}
+
 	int AngelScriptManager_PrepareScriptPersistenceLayer(AngelScriptManager* manager)
 	{
 		//TODO: Remove this - debug script class information
-		printf("-Class information-\n");
+		ServerLog(SERVERLOG_STATUS, "-Class information-\n");
 		size_t idx = 0, object_type_count = manager->main_module->GetObjectTypeCount();
 		asITypeInfo* pPersistentType = manager->engine->GetTypeInfoByName("IPersistent");
 
@@ -209,15 +207,41 @@ extern "C"
 			ServerLog(SERVERLOG_DEBUG, "Found IPersistent interface type.");
 		}
 
+		//Set the cleanup callback function for all the tables we'll
+		//store with their types
+
+
+
+		size_t ctxidx = ASContextPool_GetFreeContextIndex(&manager->ctx_pool);
+		asIScriptContext* ctx = ASContextPool_GetContextAt(&manager->ctx_pool, ctxidx);
+		sqlite3* pSQLiteDB = SQLiteTable::GetDBConnection();
+
 		for(; idx < object_type_count; ++idx)
 		{
 			asITypeInfo* pInfo = manager->main_module->GetObjectTypeByIndex(idx);
 			printf("Class %lu: %s\n", idx, pInfo->GetName());
 			if(pInfo->Implements(pPersistentType))
 			{
-				printf("\tClass implements IPersistent!\n");
+				//printf("\tClass implements IPersistent!\n");
+				//Do not get the virtual implementation
+				asIScriptFunction* pDSfun = pInfo->GetMethodByName("DefineSchema", false);
+				if(pDSfun)
+				{
+					ServerLog(SERVERLOG_STATUS, "Found %s's DefineSchema()", pInfo->GetName());
+					SQLiteTable* pTable = new SQLiteTable(pSQLiteDB, pInfo->GetName(), 0);
+					ctx->Prepare(pDSfun);
+					ctx->SetArgObject(0, pTable);
+					ctx->Execute();
+
+					pInfo->SetUserData((void*) pTable, AS_USERDATA_TYPESCHEMA);
+				}
+
 			}
 		}
+
+		ASContextPool_ReturnContextByIndex(&manager->ctx_pool, ctxidx);
+		manager->engine->SetTypeInfoUserDataCleanupCallback(AngelScriptManager_CleanTypeSchemaUserData,
+			AS_USERDATA_TYPESCHEMA);
 		return 0;
 	}
 
@@ -317,7 +341,10 @@ extern "C"
 
 	void AngelScriptManager_ReleaseEngine(AngelScriptManager* manager)
 	{
-		manager->world_tick_scriptcontext->Release();
+		if(manager->world_tick_scriptcontext)
+		{
+			manager->world_tick_scriptcontext->Release();
+		}
 		ASContextPool_Destroy(&manager->ctx_pool);
 		manager->engine->Release();
 

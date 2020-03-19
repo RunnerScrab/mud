@@ -33,8 +33,24 @@ static int RegisterDatabaseAPI(struct Database* asdb)
 
 	result = RegisterDBRow(sqldb, sengine);
 	RETURNFAIL_IF(result < 0);
-
+	ServerLog(SERVERLOG_STATUS, "Registered DBRow.");
 	result = RegisterDBTable(sqldb, sengine);
+	RETURNFAIL_IF(result < 0);
+	ServerLog(SERVERLOG_STATUS, "Registered DBTable.");
+
+	result = sengine->RegisterInterface("IPersistent");
+	RETURNFAIL_IF(result < 0);
+
+	result = sengine->RegisterInterfaceMethod("IPersistent", "void Save()");
+	RETURNFAIL_IF(result < 0);
+
+	result = sengine->RegisterInterfaceMethod("IPersistent", "void Load(uuid key)");
+	RETURNFAIL_IF(result < 0);
+
+	result = sengine->RegisterInterfaceMethod("IPersistent", "void DefineSchema(DBTable@ table)");
+
+	RETURNFAIL_IF(result < 0);
+
 	return result;
 }
 
@@ -42,6 +58,7 @@ extern "C"
 {
 	int Database_Init(struct Database* asdb, struct Server* server, const char* path)
 	{
+		ServerLog(SERVERLOG_STATUS, "Initializing database.");
 		asdb->pServer = server;
 		strcpy(asdb->path, path);
 		int resultcode = sqlite3_open(path, &asdb->pDB);

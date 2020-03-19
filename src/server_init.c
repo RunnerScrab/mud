@@ -133,16 +133,7 @@ static int Server_LoadConfiguration(struct Server* server)
 
 static int Server_LoadGame(struct Server* server)
 {
-	int result = Database_Init(&server->db, server, server->configuration.dbfilepath);
-	if(FAILURE(result))
-	{
-		ServerLog(SERVERLOG_ERROR, "FATAL: Failed to initialize database!");
-		Server_Stop(server);
-		return -1;
-	}
-	ServerLog(SERVERLOG_STATUS, "Initialized database engine.");
-
-	result = AngelScriptManager_LoadScripts(&server->as_manager, server->configuration.scriptpath);
+	int result = AngelScriptManager_LoadScripts(&server->as_manager, server->configuration.scriptpath);
 	if(FAILURE(result))
 	{
 		ServerLog(SERVERLOG_ERROR, "Failed to load game scripts.");
@@ -154,6 +145,7 @@ static int Server_LoadGame(struct Server* server)
 	if(FAILURE(result))
 	{
 		ServerLog(SERVERLOG_ERROR, "Failed to start persistence layer!");
+		return -1;
 	}
 	else
 	{
@@ -278,6 +270,15 @@ int Server_Start(struct Server* server)
 		return -1;
 	if(FAILURE(Server_InitializeScriptEngine(server)))
 		return -1;
+
+	if(FAILURE(Database_Init(&server->db, server, server->configuration.dbfilepath)))
+	{
+		ServerLog(SERVERLOG_ERROR, "FATAL: Failed to initialize database!");
+		Server_Stop(server);
+		return -1;
+	}
+	ServerLog(SERVERLOG_STATUS, "Initialized database engine.");
+
 	if(FAILURE(Server_LoadConfiguration(server)))
 		return -1;
 	if(FAILURE(Server_LoadGame(server)))

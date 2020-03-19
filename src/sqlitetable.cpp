@@ -133,6 +133,7 @@ SQLiteTable* SQLiteTable::Factory(const std::string& tablename)
 
 SQLiteTable::~SQLiteTable()
 {
+	printf("Sqlitetable destroyed!");
 	size_t idx = 0, len = m_columns.size();
 	for(; idx < len; ++idx)
 	{

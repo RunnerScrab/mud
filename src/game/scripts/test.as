@@ -33,7 +33,7 @@ class Meower : TestInterface, IPersistent
 
 	}
 
-	void DefineSchema()
+	void DefineSchema(DBTable@ table)
 	{
 
 	}
