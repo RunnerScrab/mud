@@ -35,12 +35,12 @@ class Meower : TestInterface, IPersistent
 
 	void DefineSchema(DBTable@ table)
 	{
-
+		Log("Calling Meower's DefineSchema()\n");
 	}
 
-	void Save()
+	void Save(DBRow@ row)
 	{
-		Log("Saving meower.\n");
+
 	}
 
 	void TestInterfaceMethod()
@@ -56,7 +56,6 @@ class Meower : TestInterface, IPersistent
 		m_uuid.Generate();
 		Log("Trying to make a meower. это - кошка!\n");
 		Log("Meower uuid: " + m_uuid.ToString() + "\n");
-		Meower::Save();
 	}
 	~Meower()
 	{
@@ -77,16 +76,34 @@ class SuperMeower : Meower
 		Log("Calling SuperMeower's testinterface method.\n");
 		Meower::TestInterfaceMethod();
 	}
+
+	void DefineSchema(DBTable@ table)
+	{
+		Log("Calling SuperMeower's DefineSchema()\n");
+	}
+
 	SuperMeower()
 	{
 		Log("SuperMeower constructing.\n");
 		TestInterfaceMethod();
-		Save();
 		m_superpowername = "meowing";
 	}
-	void Save()
+	void Save(DBRow@ row)
 	{
 
+	}
+
+};
+
+class MegaMeower : SuperMeower
+{
+	MegaMeower()
+	{
+
+	}
+	void DefineSchema(DBTable@ table)
+	{
+		Log("Calling MegaMeower's DefineSchema()");
 	}
 
 };

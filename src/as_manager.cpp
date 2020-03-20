@@ -115,13 +115,15 @@ extern "C"
 		RETURNFAIL_IF(result < 0);
 
 
-		result = pEngine->RegisterGlobalFunction("void TrimString(const string& in, string& out)", asFUNCTION(ASAPI_TrimString),
+		result = pEngine->RegisterGlobalFunction("void TrimString(const string& in, string& out)",
+							asFUNCTION(ASAPI_TrimString),
 							asCALL_CDECL);
 
 		RETURNFAIL_IF(result < 0);
 
 
-		result = pEngine->RegisterGlobalFunction("void HashPassword(const string& in, string& out)", asFUNCTION(ASAPI_HashPassword),
+		result = pEngine->RegisterGlobalFunction("void HashPassword(const string& in, string& out)",
+							asFUNCTION(ASAPI_HashPassword),
 							asCALL_CDECL);
 
 		RETURNFAIL_IF(result < 0);
@@ -216,32 +218,46 @@ extern "C"
 		asIScriptContext* ctx = ASContextPool_GetContextAt(&manager->ctx_pool, ctxidx);
 		sqlite3* pSQLiteDB = SQLiteTable::GetDBConnection();
 
+		manager->engine->SetTypeInfoUserDataCleanupCallback(AngelScriptManager_CleanTypeSchemaUserData,
+								AS_USERDATA_TYPESCHEMA);
+
 		for(; idx < object_type_count; ++idx)
 		{
 			asITypeInfo* pInfo = manager->main_module->GetObjectTypeByIndex(idx);
-			printf("Class %lu: %s\n", idx, pInfo->GetName());
+			ServerLog(SERVERLOG_DEBUG, "Class %lu: %s\n", idx, pInfo->GetName());
 			if(pInfo->Implements(pPersistentType))
 			{
-				//printf("\tClass implements IPersistent!\n");
-				//Do not get the virtual implementation
-				asIScriptFunction* pDSfun = pInfo->GetMethodByName("DefineSchema", false);
-				if(pDSfun)
+				SQLiteTable* pTable = new SQLiteTable(pSQLiteDB, pInfo->GetName(), 0);
+				pInfo->SetUserData((void*) pTable, AS_USERDATA_TYPESCHEMA);
+				//We want to reuse this table for every parent class of the type in pInfo.
+				///Every class and subclass will have its own table which includes all the
+				//columns of its parent classes.
+				while(pInfo)
 				{
-					ServerLog(SERVERLOG_STATUS, "Found %s's DefineSchema()", pInfo->GetName());
-					SQLiteTable* pTable = new SQLiteTable(pSQLiteDB, pInfo->GetName(), 0);
-					ctx->Prepare(pDSfun);
-					ctx->SetArgObject(0, pTable);
-					ctx->Execute();
-
-					pInfo->SetUserData((void*) pTable, AS_USERDATA_TYPESCHEMA);
+					//Do not get the virtual implementation
+					asIScriptFunction* pDSfun = pInfo->GetMethodByName("DefineSchema", false);
+					if(pDSfun)
+					{
+						ServerLog(SERVERLOG_DEBUG, "Found %s's DefineSchema()", pInfo->GetName());
+						ctx->Prepare(pDSfun);
+						ctx->SetArgObject(0, pTable);
+						ctx->Execute();
+					}
+					pInfo = pInfo->GetBaseType();
+					if(pInfo)
+					{
+						ServerLog(SERVERLOG_DEBUG, "Found base type %s", pInfo->GetName());
+					}
+					else
+					{
+						ServerLog(SERVERLOG_DEBUG, "Did not find base type.");
+					}
 				}
 
 			}
 		}
 
 		ASContextPool_ReturnContextByIndex(&manager->ctx_pool, ctxidx);
-		manager->engine->SetTypeInfoUserDataCleanupCallback(AngelScriptManager_CleanTypeSchemaUserData,
-			AS_USERDATA_TYPESCHEMA);
 		return 0;
 	}
 
