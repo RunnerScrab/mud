@@ -259,13 +259,14 @@ void* HandleUserInputTask(void* pArg)
 		for(; idx < z; ++idx)
 		{
 			register unsigned char ch = clientinput.data[idx];
-			if(ch)
+			if(ch || TELSTATE_SB == pClient->tel_stream.state)
 			{
 				bHadIAC |= TelnetStream_ProcessByte(&pClient->tel_stream, ch, &normchars);
 			}
 			else
 			{
-				//We received a 0 byte, which, outside of the TRANSMIT BINARY command (which we will not support),
+				printf("Received an unexpected null byte in telnet stream.\n");
+				//We received a 0 byte, which, outside of specific command sequences,
 				//is possibly shellcode.
 				pClient->tel_stream.state = TELSTATE_ERROR;
 				break;

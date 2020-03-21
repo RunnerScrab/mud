@@ -1,5 +1,8 @@
 #include "telnet.h"
 #include "iohelper.h"
+#include <string.h>
+
+#define max(a,b) ((a > b) ? a : b)
 
 #define IAC 255
 #define DONT 254
@@ -20,6 +23,7 @@
 #define SE 240
 #define TEST 60
 
+#define IS 0
 #define TB 0
 #define ECHO 1
 #define RECON 2
@@ -129,6 +133,12 @@ void Run3ByteCmd(TelnetStream* stream, unsigned char x)
 	char response[3] = {0};
 	switch(x)
 	{
+	case TT:
+	{
+		char req[6] = {(char) IAC, (char) SB, (char) TT, (char) ECHO, (char) IAC, (char) SE};
+		write_full_raw(stream->sock, req, 6);
+	}
+		break;
 	case MCCP2:
 		if(last_byte == DO)
 		{
@@ -192,6 +202,12 @@ void RunSubnegotiationCmd(TelnetStream* stream)
 		//it may be more complex than MCCP3's use of it
 		switch(stream->sb_args.data[0])
 		{
+		case TT:
+		{
+			strncpy(stream->opts.terminal_type, &stream->sb_args.data[2], max((len - 2), 41));
+			printf("Terminal type: %s\n", stream->opts.terminal_type);
+		}
+			break;
 		case MCCP3:
 			printf("Enabling MCCP3 from subopt negotiation\n");
 			stream->opts.b_mccp3 = 1;
@@ -208,11 +224,13 @@ void RunSubnegotiationCmd(TelnetStream* stream)
 int TelnetStream_SendPreamble(TelnetStream* stream)
 {
 	static const char preamble[] = {
+		(char)IAC, (char)DO, (char) TT,
 		(char)IAC, (char)WONT, (char)ECHO,
 		(char)IAC, (char)WONT, (char)SGA,
 		(char)IAC, (char)WILL, (char)MCCP2,
-		(char)IAC, (char)WILL, (char)MCCP3};
-	return write_full_raw(stream->sock, preamble, 12);
+		(char)IAC, (char)WILL, (char)MCCP3
+	};
+	return write_full_raw(stream->sock, preamble, 15);
 }
 
 int TelnetStream_ProcessByte(TelnetStream* stream, unsigned char x, cv_t* normal_char_dump)
@@ -268,9 +286,11 @@ int TelnetStream_ProcessByte(TelnetStream* stream, unsigned char x, cv_t* normal
 		else
 		{
 			//Begin collecting subnegotiation arguments
+			printf("Received subnegotiation char %d\n", x);
 			if(cv_pushlimited(&stream->sb_args, x) < 0)
 			{
 				//Client was sending an excessively long subnegotiation stream
+				printf("Received a subnegotiation stream longer than expected.\n");
 				SetTelnetState(curtelstate, TELSTATE_ERROR);
 			}
 		}
@@ -278,6 +298,7 @@ int TelnetStream_ProcessByte(TelnetStream* stream, unsigned char x, cv_t* normal
 	case TELSTATE_SE:
 		if(SE == x)
 		{
+			printf("Running subnegotiation.\n");
 			RunSubnegotiationCmd(stream);
 			SetTelnetState(curtelstate, TELSTATE_INPUT); //TODO: Check if we necessarily go back to input mode
 		}
