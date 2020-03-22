@@ -26,7 +26,7 @@ typedef struct
 
 	char terminal_type[42]; //Maximum terminal type name is 40 characters by RFC 930
 	unsigned short windowsize_rows, windowsize_cols;
-	unsigned short terminal_speed;
+	unsigned short terminal_txspeed, terminal_rxspeed;
 
 } TelnetOptions;
 

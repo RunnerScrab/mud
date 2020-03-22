@@ -1,8 +1,10 @@
 #include "telnet.h"
+#include "server.h"
 #include "iohelper.h"
 #include <string.h>
 
 #define max(a,b) ((a > b) ? a : b)
+#define min(a,b) ((a < b) ? a : b)
 
 #define IAC 255
 #define DONT 254
@@ -85,6 +87,7 @@ const unsigned char supported_options[] =
 	ECHO,
 	SGA,
 	STAT,
+	TS,
 	TT,
 	NAWS,
 	MCCP2,
@@ -133,28 +136,42 @@ void Run3ByteCmd(TelnetStream* stream, unsigned char x)
 	char response[3] = {0};
 	switch(x)
 	{
+	case TS:
+	{
+		static const char tsreq[6] = {(char) IAC, (char) SB, (char) TS, (char) ECHO, (char) IAC, (char) SE};
+		write_full_raw(stream->sock, tsreq, 6);
+	}
+	break;
 	case TT:
 	{
-		char req[6] = {(char) IAC, (char) SB, (char) TT, (char) ECHO, (char) IAC, (char) SE};
+		static const char req[6] = {(char) IAC, (char) SB, (char) TT, (char) ECHO, (char) IAC, (char) SE};
 		write_full_raw(stream->sock, req, 6);
 	}
-		break;
+	break;
 	case MCCP2:
 		if(last_byte == DO)
 		{
 			//DO MCCP2
 			printf("ENABLING MCCP2\n");
 			stream->opts.b_mccp2 = 1;
-			//﻿﻿﻿IAC SB MCCP2 IAC SE
-			char resp5[5] = {(char)IAC, (char)SB, (char)MCCP2, (char)IAC, (char)SE};
+			//IAC SB MCCP2 IAC SE
+			static const char resp5[5] = {(char)IAC, (char)SB, (char)MCCP2, (char)IAC, (char)SE};
 			write_full_raw(stream->sock, resp5, 5);
 			//MakeTelCmd(response, IAC, WILL, MCCP2);
+		}
+		else
+		{
+			printf("Client refuses MCCP2.\n");
 		}
 		break;
 	case MCCP3:
 		if(last_byte == DO)
 		{
 			printf("Awaiting MCCP3 Suboption Negotiation\n");
+		}
+		else
+		{
+			printf("Client refuses MCCP3.\n");
 		}
 		break;
 	case ECHO:
@@ -202,12 +219,36 @@ void RunSubnegotiationCmd(TelnetStream* stream)
 		//it may be more complex than MCCP3's use of it
 		switch(stream->sb_args.data[0])
 		{
+		case TS:
+		{
+			//Terminal speed is meaningless for MUD clients and pseudoterminals,
+			//which refuse to report it or otherwise transmit a very high value, like 38400
+			char tsinfo[42] = {0};
+			strncpy(tsinfo, &stream->sb_args.data[2], min(len - 2, 41));
+			char* divider = (char*) memchr(tsinfo, ',', 42);
+			if(divider)
+			{
+				char txstr[32] = {0};
+				char rxstr[32] = {0};
+				strncpy(txstr, tsinfo, divider - tsinfo);
+				strncpy(rxstr, divider + 1, min((len - 1), 41));
+				printf("Received terminal speed info: %s\n", tsinfo);
+				stream->opts.terminal_txspeed = (unsigned short) strtoul(txstr, 0, 10);
+				stream->opts.terminal_rxspeed = (unsigned short) strtoul(rxstr, 0, 10);
+				printf("Rx: %d; Tx: %d\n", stream->opts.terminal_txspeed, stream->opts.terminal_rxspeed);
+			}
+			else
+			{
+				ServerLog(SERVERLOG_STATUS, "Error receiving terminal tx/rx speed from client.");
+			}
+		}
+		break;
 		case TT:
 		{
 			strncpy(stream->opts.terminal_type, &stream->sb_args.data[2], max((len - 2), 41));
 			printf("Terminal type: %s\n", stream->opts.terminal_type);
 		}
-			break;
+		break;
 		case MCCP3:
 			printf("Enabling MCCP3 from subopt negotiation\n");
 			stream->opts.b_mccp3 = 1;
@@ -224,13 +265,14 @@ void RunSubnegotiationCmd(TelnetStream* stream)
 int TelnetStream_SendPreamble(TelnetStream* stream)
 {
 	static const char preamble[] = {
+		(char)IAC, (char)DO, (char) TS,
 		(char)IAC, (char)DO, (char) TT,
 		(char)IAC, (char)WONT, (char)ECHO,
 		(char)IAC, (char)WONT, (char)SGA,
 		(char)IAC, (char)WILL, (char)MCCP2,
 		(char)IAC, (char)WILL, (char)MCCP3
 	};
-	return write_full_raw(stream->sock, preamble, 15);
+	return write_full_raw(stream->sock, preamble, 18);
 }
 
 int TelnetStream_ProcessByte(TelnetStream* stream, unsigned char x, cv_t* normal_char_dump)
