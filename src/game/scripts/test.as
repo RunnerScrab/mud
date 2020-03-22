@@ -28,17 +28,17 @@ class Meower : TestInterface, IPersistent
 	uuid m_uuid;
 	string m_name;
 
-	void Load(uuid key)
+	void OnLoad(uuid key)
 	{
 
 	}
 
-	void DefineSchema(DBTable@ table)
+	void OnDefineSchema(DBTable@ table)
 	{
 		Log("Calling Meower's DefineSchema()\n");
 	}
 
-	void Save(DBRow@ row)
+	void OnSave(DBRow@ row)
 	{
 
 	}
@@ -79,7 +79,7 @@ class SuperMeower : Meower
 
 	void DefineSchema(DBTable@ table)
 	{
-		Log("Calling SuperMeower's DefineSchema()\n");
+		Log("Calling SuperMeower's OnDefineSchema()\n");
 	}
 
 	SuperMeower()
@@ -101,9 +101,9 @@ class MegaMeower : SuperMeower
 	{
 
 	}
-	void DefineSchema(DBTable@ table)
+	void OnDefineSchema(DBTable@ table)
 	{
-		Log("Calling MegaMeower's DefineSchema()");
+		Log("Calling MegaMeower's OnDefineSchema()");
 	}
 
 };

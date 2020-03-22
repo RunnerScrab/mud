@@ -43,7 +43,7 @@ bool ASAPI_SaveObject(asIScriptObject* obj)
 		std::unique_ptr<SQLiteRow> obj_row(type_table->CreateRow());
 		while(obj_ti)
 		{
-			asIScriptFunction* pSaveFun = obj_ti->GetMethodByName("Save", false);
+			asIScriptFunction* pSaveFun = obj_ti->GetMethodByName("OnSave", false);
 			if(pSaveFun)
 			{
 				ctx->Prepare(pSaveFun);
@@ -99,13 +99,13 @@ static int RegisterDatabaseAPI(struct Database* asdb)
 	result = sengine->RegisterInterface("IPersistent");
 	RETURNFAIL_IF(result < 0);
 
-	result = sengine->RegisterInterfaceMethod("IPersistent", "void Save(DBRow@ row)");
+	result = sengine->RegisterInterfaceMethod("IPersistent", "void OnSave(DBRow@ row)");
 	RETURNFAIL_IF(result < 0);
 
-	result = sengine->RegisterInterfaceMethod("IPersistent", "void Load(uuid key)");
+	result = sengine->RegisterInterfaceMethod("IPersistent", "void OnLoad(uuid key)");
 	RETURNFAIL_IF(result < 0);
 
-	result = sengine->RegisterInterfaceMethod("IPersistent", "void DefineSchema(DBTable@ table)");
+	result = sengine->RegisterInterfaceMethod("IPersistent", "void OnDefineSchema(DBTable@ table)");
 
 	RETURNFAIL_IF(result < 0);
 

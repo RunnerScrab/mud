@@ -235,10 +235,10 @@ extern "C"
 				while(pInfo)
 				{
 					//Do not get the virtual implementation
-					asIScriptFunction* pDSfun = pInfo->GetMethodByName("DefineSchema", false);
+					asIScriptFunction* pDSfun = pInfo->GetMethodByName("OnDefineSchema", false);
 					if(pDSfun)
 					{
-						ServerLog(SERVERLOG_DEBUG, "Found %s's DefineSchema()", pInfo->GetName());
+						ServerLog(SERVERLOG_DEBUG, "Found %s's OnDefineSchema()", pInfo->GetName());
 						ctx->Prepare(pDSfun);
 						ctx->SetArgObject(0, pTable);
 						ctx->Execute();
