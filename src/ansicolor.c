@@ -93,11 +93,16 @@ void ANSIColorizeString(const el_t* input, cv_t* output)
 				struct AnsiCode* found = (struct AnsiCode*) bsearch(symbol, color_codes, 9,
 								sizeof(struct AnsiCode), compcolsymbol);
 				if(found)
+				{
 					//strcat(output, found->code);
+
 					cv_appendstr(output, (el_t*) found->code);
+				}
 				else
+				{
 					//strncat(output, markerstart, markerend - markerstart + 1);
 					cv_append(output, markerstart, markerend - markerstart + 1);
+				}
 			}
 			break;
 			}

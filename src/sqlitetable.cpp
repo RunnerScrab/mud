@@ -44,41 +44,41 @@ int RegisterDBTable(sqlite3* sqldb, asIScriptEngine* sengine)
 	result = sengine->RegisterEnum("DBColKeyType");
 	RETURNFAIL_IF(result < 0);
 
-	result = sengine->RegisterEnumValue("DBColKeyType", "COLKEYTYPE_NOTKEY",
+	result = sengine->RegisterEnumValue("DBColKeyType", "DBKEYTYPE_NOTKEY",
 					SQLiteColumn::KeyType::KEY_NONE);
 	RETURNFAIL_IF(result < 0);
-	result = sengine->RegisterEnumValue("DBColKeyType", "COLKEYTYPE_PRIMARYKEY",
+	result = sengine->RegisterEnumValue("DBColKeyType", "DBKEYTYPE_PRIMARY",
 					SQLiteColumn::KeyType::KEY_PRIMARY);
 	RETURNFAIL_IF(result < 0);
 	result = sengine->RegisterEnumValue("DBColKeyType",
-					"COLKEYTYPE_AUTOKEY",
+					"DBKEYTYPE_AUTO",
 					SQLiteColumn::KeyType::KEY_AUTO_PRIMARY);
 	RETURNFAIL_IF(result < 0);
-	result = sengine->RegisterEnumValue("DBColKeyType", "COLKEYTYPE_FOREIGNKEY",
+	result = sengine->RegisterEnumValue("DBColKeyType", "DBKEYTYPE_FOREIGN",
 					SQLiteColumn::KeyType::KEY_FOREIGN);
 	RETURNFAIL_IF(result < 0);
 
 	sengine->RegisterObjectMethod("DBTable",
-				"void AddIntColumn(const string& in, DBColKeyType keytype = COLKEYTYPE_NOTKEY)",
+				"void AddIntCol(const string& in, DBColKeyType keytype = DBKEYTYPE_NOTKEY)",
 				asMETHODPR(SQLiteTable, AddIntColumn,
 					(const std::string&, SQLiteColumn::KeyType), void), asCALL_THISCALL);
 	RETURNFAIL_IF(result < 0);
 
 	sengine->RegisterObjectMethod("DBTable",
-				"void AddRealColumn(const string& in, DBColKeyType keytype= COLKEYTYPE_NOTKEY)",
+				"void AddRealCol(const string& in, DBColKeyType keytype= DBKEYTYPE_NOTKEY)",
 				asMETHODPR(SQLiteTable, AddRealColumn,
 					(const std::string&, SQLiteColumn::KeyType), void), asCALL_THISCALL);
 	RETURNFAIL_IF(result < 0);
 
 	sengine->RegisterObjectMethod("DBTable",
-				"void AddTextColumn(const string& in, DBColKeyType keytype= COLKEYTYPE_NOTKEY)",
+				"void AddTextCol(const string& in, DBColKeyType keytype= DBKEYTYPE_NOTKEY)",
 				asMETHODPR(SQLiteTable, AddTextColumn,
 					(const std::string&, SQLiteColumn::KeyType), void), asCALL_THISCALL);
 	RETURNFAIL_IF(result < 0);
 
 
 	sengine->RegisterObjectMethod("DBTable",
-				"void AddUUIDColumn(const string& in, DBColKeyType keytype= COLKEYTYPE_NOTKEY)",
+				"void AddUUIDCol(const string& in, DBColKeyType keytype= DBKEYTYPE_NOTKEY)",
 				asMETHODPR(SQLiteTable, AddBlobColumn,
 					(const std::string&, SQLiteColumn::KeyType), void), asCALL_THISCALL);
 	RETURNFAIL_IF(result < 0);

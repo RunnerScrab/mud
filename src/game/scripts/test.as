@@ -28,7 +28,7 @@ class Meower : TestInterface, IPersistent
 	uuid m_uuid;
 	string m_name;
 
-	void OnLoad(uuid key)
+	void OnLoad(DBRow@ row)
 	{
 
 	}
@@ -36,6 +36,7 @@ class Meower : TestInterface, IPersistent
 	void OnDefineSchema(DBTable@ table)
 	{
 		Log("Calling Meower's DefineSchema()\n");
+		table.AddTextCol("keystr", DBKEYTYPE_PRIMARY);
 	}
 
 	void OnSave(DBRow@ row)
@@ -243,8 +244,8 @@ void OnPlayerDisconnect(Player@ player)
 void TestDatabase(Player@ player)
 {
 	DBTable testtable("testtable");
-	testtable.AddUUIDColumn("uuid", COLKEYTYPE_PRIMARYKEY);
-	testtable.AddTextColumn("name");
+	testtable.AddUUIDCol("uuid", DBKEYTYPE_PRIMARY);
+	testtable.AddTextCol("name");
 	DBRow@ testrow = testtable.MakeRow();
 	uuid testuuid;
 	testuuid.Generate();
@@ -261,8 +262,8 @@ void TestDatabase(Player@ player)
 void TestDatabaseRead(Player@ player)
 {
 	DBTable testtable("testtable");
-	testtable.AddUUIDColumn("uuid", COLKEYTYPE_PRIMARYKEY);
-	testtable.AddTextColumn("name");
+	testtable.AddUUIDCol("uuid", DBKEYTYPE_PRIMARY);
+	testtable.AddTextCol("name");
 	DBRow@ testrow = testtable.MakeRow();
 	uuid keyuuid;
 	keyuuid.FromString("0e6e8006-698a-46ec-8aa4-211fa6a1892c");
@@ -271,6 +272,24 @@ void TestDatabaseRead(Player@ player)
 	string name;
 	testrow.GetColValue("name", name);
 	player.Send("Loaded meower with name: '" + name + "' from database.\r\n");
+	SuperMeower meower;
+
+	try
+	{
+	if(LoadObject(@meower, 1))
+	{
+	player.Send("Successfully loaded meower with key 'testkey'.\r\n");
+	}
+	else
+	{
+	player.Send("Failed to load SuperMeower with key 'testkey'.\r\n");
+	}
+	}
+	catch
+	{
+		player.Send("`red`" + getExceptionInfo() + "`default`\r\n");
+	}
+
 }
 
 void OnPlayerInput(Player@ player, string rawinput)
@@ -289,6 +308,10 @@ void OnPlayerInput(Player@ player, string rawinput)
 	else if("debugvars" == rawinput)
 	{
 		game_server.DebugVariables(player);
+	}
+	else if ("testcolor" == rawinput)
+	{
+		player.Send(" `red`Testing color!`default`\r\n");
 	}
 	else if ("testdb" == rawinput)
 	{
