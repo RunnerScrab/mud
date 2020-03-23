@@ -271,6 +271,9 @@ int Server_Start(struct Server* server)
 	if(FAILURE(Server_InitializeScriptEngine(server)))
 		return -1;
 
+	if(FAILURE(Server_LoadConfiguration(server)))
+		return -1;
+
 	if(FAILURE(Database_Init(&server->db, server, server->configuration.dbfilepath)))
 	{
 		ServerLog(SERVERLOG_ERROR, "FATAL: Failed to initialize database!");
@@ -279,8 +282,6 @@ int Server_Start(struct Server* server)
 	}
 	ServerLog(SERVERLOG_STATUS, "Initialized database engine.");
 
-	if(FAILURE(Server_LoadConfiguration(server)))
-		return -1;
 	if(FAILURE(Server_LoadGame(server)))
 		return -1;
 	if(FAILURE(Server_InitializeThreads(server)))

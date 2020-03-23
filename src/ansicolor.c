@@ -83,9 +83,7 @@ void ANSIColorizeString(const el_t* input, cv_t* output)
 				snprintf(twentyfourbitansi, sizeof(el_t) * 31, "\x1b[%d;2;%d;%d;%dm",
 					(symbol[0] == '#'? 38 : 48),r, g, b);
 
-				//strncat(output, twentyfourbitansi, strlen(twentyfourbitansi));
 				cv_appendstr(output, twentyfourbitansi);
-
 			}
 			break;
 			default:
@@ -94,13 +92,10 @@ void ANSIColorizeString(const el_t* input, cv_t* output)
 								sizeof(struct AnsiCode), compcolsymbol);
 				if(found)
 				{
-					//strcat(output, found->code);
-
 					cv_appendstr(output, (el_t*) found->code);
 				}
 				else
 				{
-					//strncat(output, markerstart, markerend - markerstart + 1);
 					cv_strncat(output, markerstart, markerend - markerstart + 1);
 				}
 			}
@@ -110,12 +105,9 @@ void ANSIColorizeString(const el_t* input, cv_t* output)
 		}
 		else
 		{
-			cv_strcpy(output, pInput);
 			break;
 		}
 	}
-//	strcat(output, pInput);
+
 	cv_appendstr(output, pInput);
-	//printf("%s\n", output);
-	//free(output);
 }

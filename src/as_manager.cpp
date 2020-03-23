@@ -240,6 +240,7 @@ extern "C"
 					{
 						ServerLog(SERVERLOG_DEBUG, "Found %s's OnDefineSchema()", pInfo->GetName());
 						ctx->Prepare(pDSfun);
+						ctx->SetObject(0);
 						ctx->SetArgObject(0, pTable);
 						ctx->Execute();
 					}

@@ -1,7 +1,7 @@
 class TestCommand : ICommand
 {
 	private int a;
-	private int b;
+		     private int b;
 
 	TestCommand(int a, int b)
 	{
@@ -30,18 +30,29 @@ class Meower : TestInterface, IPersistent
 
 	void OnLoad(DBRow@ row)
 	{
-
+		row.GetColValue("uuid", m_uuid);
+		row.GetColValue("name", m_name);
 	}
 
 	void OnDefineSchema(DBTable@ table)
 	{
 		Log("Calling Meower's DefineSchema()\n");
-		table.AddTextCol("keystr", DBKEYTYPE_PRIMARY);
+		table.AddUUIDCol("uuid", DBKEYTYPE_PRIMARY);
+		table.AddTextCol("name");
 	}
 
 	void OnSave(DBRow@ row)
 	{
-
+		Log("Calling Meower OnSave().\r\n");
+		if(@row !is null)
+		{
+			row.SetColValue("uuid", m_uuid);
+			row.SetColValue("name", m_name);
+		}
+		else
+		{
+			Log("OnSave was passed a null pointer.\n");
+		}
 	}
 
 	void TestInterfaceMethod()
@@ -78,9 +89,10 @@ class SuperMeower : Meower
 		Meower::TestInterfaceMethod();
 	}
 
-	void DefineSchema(DBTable@ table)
+	void OnDefineSchema(DBTable@ table)
 	{
 		Log("Calling SuperMeower's OnDefineSchema()\n");
+		table.AddTextCol("superpower");
 	}
 
 	SuperMeower()
@@ -89,9 +101,14 @@ class SuperMeower : Meower
 		TestInterfaceMethod();
 		m_superpowername = "meowing";
 	}
-	void Save(DBRow@ row)
+	void OnSave(DBRow@ row)
 	{
-
+		Log("Calling SuperMeower OnSave().\r\n");
+		row.SetColValue("superpower", m_superpowername);
+	}
+	void OnLoad(DBRow@ row)
+	{
+		row.GetColValue("superpower", m_superpowername);
 	}
 
 };
@@ -110,13 +127,13 @@ class MegaMeower : SuperMeower
 };
 
 enum PlayerGameState {LOGIN_MENU = 0,
-ACCOUNT_NAME_ENTRY, ACCOUNT_PASSWORD_ENTRY };
+		      ACCOUNT_NAME_ENTRY, ACCOUNT_PASSWORD_ENTRY };
 class Player : PlayerConnection
 {
 
 	Player()
 	{
-		super();
+		//super();
 		m_gamestate = PlayerGameState::LOGIN_MENU;
 
 	}
@@ -155,8 +172,8 @@ class Player : PlayerConnection
 	}
 
 	private PlayerGameState m_gamestate;
-	private string m_name;
-	private Meower@ m_meower;
+					   private string m_name;
+								private Meower@ m_meower;
 };
 
 TestCommand tc(1, 2);
@@ -186,17 +203,17 @@ void OnPlayerConnect(Player@ player)
 {
 //	try
 	{
-	//ref@ h = @player;
-	player.Send("Hello!\r\n");
-	player.Send("Account: ");
-	uuid newuuid;
-	newuuid.Generate();
-	player.Send("\r\n" + newuuid.ToString() + "\r\n");
-	g_meowers.insertLast(SuperMeower());
-	player.SetMeower(g_meowers[g_meowers.length() - 1]);
-	g_players.insertLast(player);
+		//ref@ h = @player;
+		player.Send("Hello!\r\n");
+		player.Send("Account: ");
+		uuid newuuid;
+		newuuid.Generate();
+		player.Send("\r\n" + newuuid.ToString() + "\r\n");
+		g_meowers.insertLast(SuperMeower());
+		player.SetMeower(g_meowers[g_meowers.length() - 1]);
+		g_players.insertLast(player);
 
-	game_server.SendToAll("\r\nSomeone has connected. There are " + g_players.length() + " players connected.\r\n");
+		game_server.SendToAll("\r\nSomeone has connected. There are " + g_players.length() + " players connected.\r\n");
 	}
 //	catch
 //	{
@@ -257,6 +274,17 @@ void TestDatabase(Player@ player)
 	uuid otheruuid;
 	otheruuid.FromString(uuidstr);
 	player.Send("Converted guid: " + otheruuid.ToString() + "\r\n");
+	SuperMeower meower;
+	SuperMeower@ hMeower = @meower;
+	if(SaveObject(@hMeower))
+	{
+		player.Send("Successfully saved meower to database.\r\n");
+	}
+	else
+	{
+		player.Send("Failed to save meower to database.\r\n");
+	}
+	player.Send("meower guid: " + meower.m_uuid.ToString() + "\r\n");
 }
 
 void TestDatabaseRead(Player@ player)
@@ -274,20 +302,24 @@ void TestDatabaseRead(Player@ player)
 	player.Send("Loaded meower with name: '" + name + "' from database.\r\n");
 	SuperMeower meower;
 
-	try
+	if(keyuuid.FromString("0f778a4b-71fb-4030-9da6-6a322a102033"))
 	{
-	if(LoadObject(@meower, 1))
-	{
-	player.Send("Successfully loaded meower with key 'testkey'.\r\n");
-	}
-	else
-	{
-	player.Send("Failed to load SuperMeower with key 'testkey'.\r\n");
-	}
-	}
-	catch
-	{
-		player.Send("`red`" + getExceptionInfo() + "`default`\r\n");
+		try
+		{
+			if(LoadObject(@meower, keyuuid))
+			{
+				player.Send("Successfully loaded meower with key 'testkey'.\r\n");
+				player.Send("Meower power: " + meower.m_superpowername);
+			}
+			else
+			{
+				player.Send("Failed to load SuperMeower with key 'testkey'.\r\n");
+			}
+		}
+		catch
+		{
+			player.Send("`red`" + getExceptionInfo() + "`default`\r\n");
+		}
 	}
 
 }

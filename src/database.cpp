@@ -44,6 +44,7 @@ static bool LoadObject(asIScriptObject* obj, asITypeInfo* obj_type,
 			if(pLoadFun)
 			{
 				ctx->Prepare(pLoadFun);
+				ctx->SetObject(obj);
 				ctx->SetArgObject(0, obj_row);
 				ctx->Execute();
 			}
@@ -192,6 +193,7 @@ template<typename T> bool ASAPI_LoadObjectIntKey(asIScriptObject* obj, const T k
 
 bool ASAPI_SaveObject(asIScriptObject* obj)
 {
+	printf("Calling SaveObject()!\n");
 	if(obj)
 	{
 		asITypeInfo* obj_ti = obj->GetObjectType();
@@ -212,15 +214,28 @@ bool ASAPI_SaveObject(asIScriptObject* obj)
 
 		//Call the Save function of each part of the object's class hierarchy,
 		//then commit the changes to the row to the database
-		std::unique_ptr<SQLiteRow> obj_row(type_table->CreateRow());
+		SQLiteRow* obj_row = new SQLiteRow(type_table);////type_table->CreateRow();
+		if(!obj_row)
+		{
+			if(ctx->SetException("Unable to create row from table.") < 0)
+				ServerLog(SERVERLOG_ERROR, "Couldn't set a row failure exception.");
+			ctx->PopState();
+			obj->Release();
+			return false;
+		}
 		while(obj_ti)
 		{
 			asIScriptFunction* pSaveFun = obj_ti->GetMethodByName("OnSave", false);
 			if(pSaveFun)
 			{
 				ctx->Prepare(pSaveFun);
-				ctx->SetArgObject(0, obj_row.get());
+				ctx->SetObject(obj);
+				ctx->SetArgObject(0, (void*) obj_row);
 				ctx->Execute();
+			}
+			else
+			{
+				ServerLog(SERVERLOG_ERROR, "Class didn't have expected OnSave event.");
 			}
 			obj_ti = obj_ti->GetBaseType();
 		}
@@ -232,6 +247,8 @@ bool ASAPI_SaveObject(asIScriptObject* obj)
 				ServerLog(SERVERLOG_ERROR, "Couldn't set exception for db storage error.");
 			}
 			obj->Release();
+			delete obj_row;
+			ctx->PopState();
 			return false;
 		}
 
@@ -241,10 +258,12 @@ bool ASAPI_SaveObject(asIScriptObject* obj)
 			{
 				ServerLog(SERVERLOG_ERROR, "Couldn't set exception for context restoration error.");
 			}
+			delete obj_row;
 			obj->Release();
 			return false;
 		}
 
+		delete obj_row;
 		obj->Release();
 		return true;
 	}
@@ -330,10 +349,11 @@ extern "C"
 		strcpy(asdb->path, path);
 		int resultcode = sqlite3_open(path, &asdb->pDB);
 
-		if(resultcode < 0)
+		if(SQLITE_OK != resultcode)
 		{
 			return -1;
 		}
+		ServerLog(SERVERLOG_STATUS, "Opened database at path '%s'.", asdb->path);
 
 		if(SQLITE_OK != EnableForeignKeys(asdb->pDB))
 		{

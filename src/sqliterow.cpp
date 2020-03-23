@@ -20,6 +20,10 @@ int RegisterDBRow(sqlite3* sqldb, asIScriptEngine* engine)
 						asCALL_THISCALL);
 	RETURNFAIL_IF(result < 0);
 
+	result = engine->RegisterObjectBehaviour("DBRow", asBEHAVE_FACTORY, "DBRow@ f()",
+						asFUNCTION(SQLiteRow::Factory), asCALL_CDECL);
+	RETURNFAIL_IF(result < 0);
+
 	result = engine->RegisterObjectMethod("DBRow", "void SetColValue(const string& in, int v)",
 					asMETHODPR(SQLiteRow, SetColumnValue,
 						(const std::string&, int), void), asCALL_THISCALL);
