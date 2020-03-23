@@ -103,6 +103,7 @@ int Client_WriteTo(struct Client* pTarget, const char* buf, size_t len)
 	cv_t color_buf;
 	cv_init(&color_buf, len);
 	ANSIColorizeString(buf, &color_buf);
+
 	pthread_mutex_lock(&pTarget->connection_state_mtx);
 	switch(pTarget->tel_stream.opts.b_mccp2)
 	{

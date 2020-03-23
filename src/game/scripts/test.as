@@ -311,7 +311,7 @@ void OnPlayerInput(Player@ player, string rawinput)
 	}
 	else if ("testcolor" == rawinput)
 	{
-		player.Send(" `red`Testing color!`default`\r\n");
+		player.Send("`red`Testing color!`default`\r\n");
 	}
 	else if ("testdb" == rawinput)
 	{

@@ -70,7 +70,7 @@ void ANSIColorizeString(const el_t* input, cv_t* output)
 		{
 			strncpy(symbol, markerstart + 1, markerend - markerstart - 1);
 			//strncat(output, pInput, markerstart - pInput);
-			cv_append(output, pInput, markerstart - pInput);
+			cv_strncat(output, pInput, markerstart - pInput);
 			switch(symbol[0])
 			{
 			case '@':
@@ -101,7 +101,7 @@ void ANSIColorizeString(const el_t* input, cv_t* output)
 				else
 				{
 					//strncat(output, markerstart, markerend - markerstart + 1);
-					cv_append(output, markerstart, markerend - markerstart + 1);
+					cv_strncat(output, markerstart, markerend - markerstart + 1);
 				}
 			}
 			break;
@@ -110,6 +110,7 @@ void ANSIColorizeString(const el_t* input, cv_t* output)
 		}
 		else
 		{
+			cv_strcpy(output, pInput);
 			break;
 		}
 	}
