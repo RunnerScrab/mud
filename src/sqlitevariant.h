@@ -259,7 +259,7 @@ public:
 
 	bool GetValue(int& v) const
 	{
-		if(VARINT == m_storedtype && m_datalen == sizeof(int))
+		if(VARINT == m_storedtype)// && m_datalen == sizeof(int))
 		{
 			v = m_data.as_int;
 			return true;
@@ -272,7 +272,7 @@ public:
 
 	bool GetValue(long long& v) const
 	{
-		if(VARINT == m_storedtype && m_datalen == sizeof(long long))
+		if(VARINT == m_storedtype)// && m_datalen == sizeof(long long))
 		{
 			v = m_data.as_int64;
 			return true;
@@ -285,7 +285,7 @@ public:
 
 	bool GetValue(unsigned int& v) const
 	{
-		if(VARINT == m_storedtype && m_datalen == sizeof(unsigned int))
+		if(VARINT == m_storedtype)// && m_datalen == sizeof(unsigned int))
 		{
 			v = m_data.as_uint;
 			return true;
@@ -298,7 +298,7 @@ public:
 
 	bool GetValue(unsigned long long& v) const
 	{
-		if(VARINT == m_storedtype && m_datalen == sizeof(unsigned long long))
+		if(VARINT == m_storedtype)// && m_datalen == sizeof(unsigned long long))
 		{
 			v = m_data.as_uint64;
 			return true;
@@ -311,7 +311,7 @@ public:
 
 	bool GetValue(float& v) const
 	{
-		if(VARINT == m_storedtype && m_datalen == sizeof(float))
+		if(VARREAL == m_storedtype)// && m_datalen == sizeof(float))
 		{
 			v = static_cast<float>(m_data.as_double);
 			return true;
@@ -324,7 +324,7 @@ public:
 
 	bool GetValue(double& v) const
 	{
-		if(VARREAL == m_storedtype && m_datalen == sizeof(double))
+		if(VARREAL == m_storedtype)// && m_datalen == sizeof(double))
 		{
 			v = m_data.as_double;
 			return true;
