@@ -2,6 +2,7 @@
 #include <cstring>
 #include <string>
 
+#include "utils.h"
 #include "uuid.h"
 #include "as_api.h"
 #include "as_manager.h"
@@ -34,7 +35,7 @@ Player::~Player()
 
 void Player::Send(std::string& str)
 {
-	printf("Trying to send: %s\n", str.c_str());
+	dbgprintf("Trying to send: %s\n", str.c_str());
 	Client_WriteTo(m_pClient, str.c_str(), str.length());
 }
 
@@ -104,7 +105,7 @@ asIScriptObject* CreatePlayerProxy(AngelScriptManager* manager, struct Client* p
 	}
 	else
 	{
-		printf("Failed to find script player class.\n");
+		ServerLog(SERVERLOG_ERROR, "Failed to find script player class.");
 	}
 	return obj;
 }

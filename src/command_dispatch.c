@@ -1,4 +1,5 @@
 #include "command_dispatch.h"
+#include "utils.h"
 #include "server.h"
 #include "as_cinterface.h"
 #include <sys/time.h>
@@ -112,25 +113,23 @@ void* UserCommandDispatchThreadFn(void* pArgs)
 		struct timespec wait_ts;
 		if(IsTsNonZero(&min_delay_ts))
 		{
-			printf("min_delay_ts is nonzero\n");
 			wait_ts = min_delay_ts;
 		}
 		else
 		{
-			printf("min_delay_ts is zero\n");
 			//We should wait indefinitely if there are no user commands queued,
 			//but an hour is just as good in CPU thread time
 			wait_ts.tv_sec = (current_ts.tv_sec + 3600);
 			wait_ts.tv_nsec = current_ts.tv_nsec;
 		}
-		printf("current_ts: %ld ; %ld - wait_ts: %ld; %ld\n",
-			current_ts.tv_sec, current_ts.tv_nsec,
-			wait_ts.tv_sec, wait_ts.tv_nsec);
+
+		  dbgprintf("current_ts: %ld ; %ld - wait_ts: %ld; %ld\n", current_ts.tv_sec,
+			current_ts.tv_nsec, wait_ts.tv_sec, wait_ts.tv_nsec);
 
 
 		pthread_cond_timedwait(&pThreadData->wakecond, &pThreadData->wakecondmtx, &wait_ts);
 
-		printf("WAKING: Wait done at %ld ; %ld\n", wait_ts.tv_sec, wait_ts.tv_nsec);
+		dbgprintf("WAKING: Wait done at %ld ; %ld\n", wait_ts.tv_sec, wait_ts.tv_nsec);
 
 	}
 	ServerLog(SERVERLOG_STATUS, "Command Dispatch thread exiting.");

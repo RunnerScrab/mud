@@ -1,6 +1,7 @@
 #include "as_api.h"
 extern "C"
 {
+#include "utils.h"
 #include "bitutils.h"
 #include "poolalloc.h"
 #include "crypto.h"
@@ -44,7 +45,7 @@ void* ASAPI_RunScriptCommand(void* pArgs)
 	context->SetObject(pPkg->cmd);
 	context->Execute();
 	ASContextPool_ReturnContextByIndex(pctx_pool, context_handle);
-	printf("Running script function\n");
+	dbgprintf("Running script function\n");
 	MemoryPool_Free(pPkg->pMemPool, sizeof(struct RunScriptCmdPkg), pArgs);
 	pPkg->cmd->Release();
 	return (void*) 0;
@@ -108,8 +109,10 @@ const char* GetASTypeName(int type)
 
 void ASAPI_DebugObject(CScriptHandle obj)
 {
+	#ifdef DEBUG
 	asITypeInfo* typeinfo = obj.GetType();
-	printf("Object has type %s\n", typeinfo->GetName());
+	dbgprintf("Object has type %s\n", typeinfo->GetName());
+	#endif
 }
 
 void ASAPI_DebugVariables(struct Server* server, Player* playerobj)
@@ -160,11 +163,11 @@ void ASAPI_DebugVariables(struct Server* server, Player* playerobj)
 
 void ASAPI_QueueScriptCommand(struct Server* server, asIScriptObject* obj, unsigned int delay)
 {
-	printf("Attempting to queue script command.\n");
+	dbgprintf("Attempting to queue script command.\n");
 	if(obj)
 	{
 		obj->AddRef();
-		printf("Queueing script command.\n");
+		dbgprintf("Queueing script command.\n");
 		struct RunScriptCmdPkg* pkg = (struct RunScriptCmdPkg*) MemoryPool_Alloc(
 			&server->as_manager.mem_pool, sizeof(struct RunScriptCmdPkg));
 		pkg->cmd = obj;
@@ -179,11 +182,11 @@ void ASAPI_QueueScriptCommand(struct Server* server, asIScriptObject* obj, unsig
 
 void ASAPI_QueueClientScriptCommand(struct Client* pClient, asIScriptObject* obj, unsigned int delay_s, unsigned int delay_ns)
 {
-	printf("Attempting to queue client command.\n");
+	dbgprintf("Attempting to queue client command.\n");
 	if(obj)
 	{
 		obj->AddRef();
-		printf("Queueing client script command.\n");
+		dbgprintf("Queueing client script command.\n");
 
 		struct RunScriptCmdPkg* pkg = (struct RunScriptCmdPkg*) MemoryPool_Alloc(
 			&pClient->mem_pool, sizeof(struct RunScriptCmdPkg));
@@ -229,15 +232,15 @@ void ASAPI_HashPassword(const std::string& password, std::string& out)
 {
 	cv_t buf;
 	cv_init(&buf, 256);
-	printf("Received '%s' to hash.\n", password.c_str());
+	dbgprintf("Received '%s' to hash.\n", password.c_str());
 	if(CryptoManager_HashPassword(password.c_str(), password.length(), &buf) >= 0)
 	{
-		printf("Hash successful. Result: '%s'\n", buf.data);
+		dbgprintf("Hash successful. Result: '%s'\n", buf.data);
 		out.assign(buf.data);
 	}
 	else
 	{
-		printf("Hashing FAILED!\n");
+		dbgprintf("Hashing FAILED!\n");
 	}
 	cv_destroy(&buf);
 }

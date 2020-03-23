@@ -2,6 +2,7 @@
 extern "C"
 {
 #include "server.h"
+#include "utils.h"
 #include "sqlite/sqlite3.h"
 #include "charvector.h"
 }
@@ -193,7 +194,7 @@ template<typename T> bool ASAPI_LoadObjectIntKey(asIScriptObject* obj, const T k
 
 bool ASAPI_SaveObject(asIScriptObject* obj)
 {
-	printf("Calling SaveObject()!\n");
+	dbgprintf("Calling SaveObject()!\n");
 	if(obj)
 	{
 		asITypeInfo* obj_ti = obj->GetObjectType();

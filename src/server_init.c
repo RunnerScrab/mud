@@ -1,4 +1,5 @@
 #include "server.h"
+#include "utils.h"
 #include <sys/sysinfo.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
@@ -28,8 +29,6 @@
 
 #include "as_manager.h"
 #include "as_cinterface.h"
-
-#define max(a, b) (a > b ? a : b)
 
 static int Server_InitializeADTs(struct Server* server);
 static int Server_InitializeScriptEngine(struct Server* server);

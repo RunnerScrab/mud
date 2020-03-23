@@ -1,4 +1,5 @@
 #include "sqliteutil.h"
+#include "utils.h"
 #include "sqlite/sqlite3.h"
 #include "sqlitevariant.h"
 
@@ -57,7 +58,7 @@ int GetTableColumns(sqlite3* pDB, const char* tablename, std::set<std::string>& 
 
 	if(SQLITE_OK != sqlite3_prepare_v2(pDB, columnquerystr.c_str(), -1, &columnquery, 0))
 	{
-		printf("Failed to prepare sql statement\n");
+		dbgprintf("Failed to prepare sql statement\n");
 		return -1;
 	}
 
@@ -78,7 +79,7 @@ int ExecSQLiteStatement(sqlite3* pDB, const char* createtablequery)
 	result = sqlite3_prepare_v2(pDB, createtablequery, -1, &query, 0);
 	if(SQLITE_OK != result)
 	{
-		printf("Failed preparing create table sql statement.\n");
+		dbgprintf("Failed preparing create table sql statement.\n");
 		return result;
 	}
 	result = sqlite3_step(query);
@@ -89,7 +90,7 @@ int ExecSQLiteStatement(sqlite3* pDB, const char* createtablequery)
 
 int AddColumnToSQLiteTable(sqlite3* pDB, const char* tablename, const char* colname, const char* coltype)
 {
-	printf("Trying to add column %s with type %s to table %s\n", colname, coltype, tablename);
+	dbgprintf("Trying to add column %s with type %s to table %s\n", colname, coltype, tablename);
 	sqlite3_stmt* query = 0;
 	int result = 0;
 
@@ -101,7 +102,7 @@ int AddColumnToSQLiteTable(sqlite3* pDB, const char* tablename, const char* coln
 	result = sqlite3_prepare_v2(pDB, atqstr.c_str(), -1, &query, 0);
 	if(SQLITE_OK != result)
 	{
-		printf("Add Column Prepare failed: %d\n", result);
+		dbgprintf("Add Column Prepare failed: %d\n", result);
 		return result;
 	}
 

@@ -81,7 +81,7 @@ int main(int argc, char** argv)
 					char buf[256] = {0};
 					size_t bread = read(server.cmd_pipe[0], buf, 256);
 					buf[bread - 1] = 0;
-					printf("Received on cmd pipe: %s\n", buf);
+					ServerLog(SERVERLOG_DEBUG, "Received on cmd pipe: %s\n", buf);
 					if(strstr(buf, "kill"))
 					{
 						Server_SendAllClients(&server, "\r\nServer going down!\r\n");
@@ -101,6 +101,6 @@ int main(int argc, char** argv)
 
 	ServerLog(SERVERLOG_STATUS, "Server shutting down.");
 	Server_Stop(&server);
-	printf("%d unfreed allocations.\n", toutstanding_allocs());
+	ServerLog(SERVERLOG_DEBUG, "%d unfreed allocations.\n", toutstanding_allocs());
 	return 0;
 }

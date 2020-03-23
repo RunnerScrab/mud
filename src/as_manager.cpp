@@ -2,6 +2,7 @@
 extern "C"
 {
 #include "server.h"
+#include "utils.h"
 #include "serverconfig.h"
 #include "talloc.h"
 }
@@ -141,7 +142,7 @@ extern "C"
 		std::string scriptpath = "./server.cfg";
 		FILE* fp = fopen(scriptpath.c_str(), "rb");
 		RETURNFAIL_IF(!fp);
-		printf("Opened server.cfg\n");
+		dbgprintf("Opened server.cfg\n");
 
 		size_t len = GetFileLength(fp);
 
@@ -183,11 +184,11 @@ extern "C"
 
 	void AngelScriptManager_CleanTypeSchemaUserData(asITypeInfo* pType)
 	{
-		printf("In cleanup function for type %s\n", pType->GetName());
+		dbgprintf("In cleanup function for type %s\n", pType->GetName());
 		SQLiteTable* pTable = reinterpret_cast<SQLiteTable*>(pType->GetUserData(AS_USERDATA_TYPESCHEMA));
 		if(pTable)
 		{
-			printf("Freeing %s's userdata.\n", pType->GetName());
+			dbgprintf("Freeing %s's userdata.\n", pType->GetName());
 			delete pTable;
 		}
 	}
@@ -284,9 +285,10 @@ extern "C"
 		RETURNFAIL_IF(LoadPlayerScript(manager->engine, manager->main_module));
 		RETURNFAIL_IF(manager->main_module->Build() < 0);
 
+#ifdef DEBUG
 		size_t global_properties = manager->engine->GetGlobalPropertyCount();
-		printf("There are %lu global properties.\n", global_properties);
-
+		dbgprintf("There are %lu global properties.\n", global_properties);
+#endif
 
 #ifdef __x86_64__
 		manager->jit->finalizePages();
@@ -311,7 +313,7 @@ extern "C"
 
 	void AngelScriptManager_CallOnPlayerDisconnect(AngelScriptManager* manager, struct Client* pClient)
 	{
-		printf("Calling on player disconnect.\n");
+		dbgprintf("Calling on player disconnect.\n");
 		size_t idx = ASContextPool_GetFreeContextIndex(&manager->ctx_pool);
 		asIScriptContext* ctx = ASContextPool_GetContextAt(&manager->ctx_pool, idx);
 		ctx->Prepare(manager->on_player_disconnect_func);

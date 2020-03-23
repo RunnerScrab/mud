@@ -1,4 +1,5 @@
 #include "server.h"
+#include "utils.h"
 #include <sys/sysinfo.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
@@ -31,19 +32,12 @@ const int SERVERLOG_DEBUG = 0;
 const int SERVERLOG_STATUS = 1;
 const int SERVERLOG_ERROR = 2;
 
-#ifndef max
-#define max(a, b) (a > b ? a : b)
-#endif
-#ifndef min
-#define min(a, b) (a < b ? a : b)
-#endif
-
-
 //Nonnegative if OK, -1 if player is clocked sending too much too fast
 int Server_ClockPlayer(struct Server* pServer, struct Client* pClient, size_t data_sent);
 
 void ServerLog(unsigned int code, const char* fmt, ...)
 {
+	//TODO: Make this more efficient
 	va_list arglist;
 	va_start(arglist, fmt);
 	printf("%s: ", g_ServerLogTypes[code]);
@@ -124,9 +118,7 @@ void Server_HandleClientDisconnect(struct Server* pServer,
 			ServerLog(SERVERLOG_DEBUG, "Removing client from client vector.");
 			//This should actually be done automatically, according to man epoll
 			epoll_ctl(pServer->epfd, EPOLL_CTL_DEL, pClient->sock, 0);
-			printf("Client vec size: %lu\n", Vector_Count(&pServer->clients));
 			Vector_Remove(&pServer->clients, foundkey);
-			printf("Client vec size after remove: %lu\n", Vector_Count(&pServer->clients));
 		}
 		pthread_rwlock_unlock(&pServer->clients_rwlock);
 	}
@@ -182,7 +174,7 @@ void DebugPrintCV(cv_t* buf)
 	size_t idx = 0, z = buf->capacity;
 	for(; idx < z; ++idx)
 	{
-		printf(idx < z - 1 ? "%d," : "%d\n", 255 & cv_at(buf, idx));
+		dbgprintf(idx < z - 1 ? "%d," : "%d\n", 255 & cv_at(buf, idx));
 	}
 }
 
@@ -265,7 +257,7 @@ void* HandleUserInputTask(void* pArg)
 			}
 			else
 			{
-				printf("Received an unexpected null byte in telnet stream.\n");
+				ServerLog(SERVERLOG_ERROR, "Received an unexpected null byte in telnet stream.");
 				//We received a 0 byte, which, outside of specific command sequences,
 				//is possibly shellcode.
 				pClient->tel_stream.state = TELSTATE_ERROR;
@@ -298,7 +290,7 @@ void* HandleUserInputTask(void* pArg)
 	unsigned char inputcomplete = 0;
 	cv_t* cbuf = &(pClient->input_buffer);
 	cv_appendcv(cbuf, &clientinput);
-	printf("Received %lu bytes.\n", bytes_read);
+	dbgprintf("Received %lu bytes.\n", bytes_read);
 	//DebugPrintCV(&clientinput);
 	if(cbuf->length >= 2)
 	{
@@ -328,8 +320,7 @@ void* HandleUserInputTask(void* pArg)
 	if(bytes_read > 0 && inputcomplete)
 	{
 		//At this point, we have a complete user command and can process it
-		/* DEMO CODE */
-		printf("Attemping to process: %s\n", cbuf->data);
+		dbgprintf("Attemping to process: %s\n", cbuf->data);
 		char out[64] = {0};
 		if(!inet_ntop(pClient->addr.sin_family, (void*) &pClient->addr.sin_addr, out, sizeof(char) * 64))
 		{

@@ -24,7 +24,6 @@ void Client_AddRef(struct Client* client)
 {
 	pthread_rwlock_wrlock(&client->refcount_rwlock);
 	++client->refcount;
-	printf("Client refval incremented to %u\n", client->refcount);
 	pthread_rwlock_unlock(&client->refcount_rwlock);
 }
 
@@ -32,7 +31,6 @@ void Client_ReleaseRef(struct Client* client)
 {
 	pthread_rwlock_wrlock(&client->refcount_rwlock);
 	--client->refcount;
-	printf("Client refval decremented to %u\n", client->refcount);
 	pthread_rwlock_unlock(&client->refcount_rwlock);
 }
 

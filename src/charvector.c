@@ -1,12 +1,11 @@
 #include "charvector.h"
+#include "utils.h"
 #include "talloc.h"
 #include <stdarg.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
 
-#define min(a, b) (a < b ? a : b)
-#define max(a, b) (a > b ? a : b)
 #define MINALLOC 8
 
 void cv_sprintf(cv_t* pcv, const char* fmt, ...)

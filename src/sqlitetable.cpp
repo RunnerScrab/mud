@@ -1,4 +1,7 @@
 #include "sqlitetable.h"
+
+#include "utils.h"
+
 #include "sqliterow.h"
 #include "sqliteutil.h"
 #include "sqlitevariant.h"
@@ -161,7 +164,7 @@ void SQLiteTable::AddColumn(const std::string& name, SQLiteVariant::StoredType v
 		if(!m_primary_keycol)
 		{
 			//Only use the first provided primary key if the user for some reason is a numbskull
-			printf("Setting primary key for column %s\n", name.c_str());
+			dbgprintf("Setting primary key for column %s\n", name.c_str());
 			m_primary_keycol = m_columns.back();
 		}
 		break;
@@ -278,24 +281,24 @@ int SQLiteTable::LoadRow(SQLiteRow* pRow)
 	sqlite3_stmt* query = 0;
 	std::string selectquerystr = "select " + ProduceInsertValuesNameList() + " from " +
 		m_tablename + " where " + m_primary_keycol->GetName() + "=$" + m_primary_keycol->GetName() + ";";
-	printf("Query: %s\n", selectquerystr.c_str());
+	dbgprintf("Query: %s\n", selectquerystr.c_str());
 	result = sqlite3_prepare_v2(m_pDB, selectquerystr.c_str(), -1, &query, 0);
 	if(SQLITE_OK != result)
 	{
-		printf("LoadRow prepare statement failure.\n");
+		dbgprintf("LoadRow prepare statement failure.\n");
 		return result;
 	}
 
 	if(SQLITE_OK != BindVariantToStatement(query, pRow->GetColumnValue(m_primary_keycol->GetName()), 1))
 	{
-		printf("Failed to bind key value to sqlite statement.\n");
+		dbgprintf("Failed to bind key value to sqlite statement.\n");
 		sqlite3_finalize(query);
 		return result;
 	}
 	result = sqlite3_step(query);
 	if(SQLITE_ROW != result)
 	{
-		printf("sqlite step had no result: %d\n", result);
+		dbgprintf("sqlite step had no result: %d\n", result);
 		sqlite3_finalize(query);
 		return result;
 	}
@@ -325,7 +328,7 @@ int SQLiteTable::LoadRow(SQLiteRow* pRow)
 		}
 		break;
 		default:
-			printf("Unknown?\n");
+			dbgprintf("Unknown?\n");
 			break;
 		}
 	}
@@ -339,7 +342,7 @@ int SQLiteTable::StoreRow(SQLiteRow* pRow, SQLiteRow* pParentRow)
 {
 	if(!m_primary_keycol)
 	{
-		printf("No primary key.\n");
+		dbgprintf("No primary key.\n");
 		return SQLITE_ERROR;
 	}
 
@@ -349,20 +352,20 @@ int SQLiteTable::StoreRow(SQLiteRow* pRow, SQLiteRow* pParentRow)
 		std::string querystr = "CREATE TABLE " + m_tablename + "(" + ProducePropertyNameList() + ");";
 		if(SQLITE_DONE != ExecSQLiteStatement(m_pDB, querystr.c_str()))
 		{
-			printf("Failed to create table. Query was: %s\n", querystr.c_str());
+			dbgprintf("Failed to create table. Query was: %s\n", querystr.c_str());
 			return SQLITE_ERROR;
 		}
 		querystr = "CREATE UNIQUE INDEX idx_" + m_tablename + " ON " + m_tablename + " (" + m_primary_keycol->GetName()
 			+ ");";
 		if(SQLITE_DONE != ExecSQLiteStatement(m_pDB, querystr.c_str()))
 		{
-			printf("Failed to create table index.\n");
+			dbgprintf("Failed to create table index.\n");
 			return SQLITE_ERROR;
 		}
 	}
 	else if(result < 0)
 	{
-		printf("Error executing sql statement to check table existence.\n");
+		dbgprintf("Error executing sql statement to check table existence.\n");
 		return SQLITE_ERROR;
 	}
 
@@ -376,16 +379,16 @@ int SQLiteTable::StoreRow(SQLiteRow* pRow, SQLiteRow* pParentRow)
 	{
 		if(columnset.end() == columnset.find(pcol->GetName()))
 		{
-			printf("Table does not contain column %s\n", pcol->GetName().c_str());
+			dbgprintf("Table does not contain column %s\n", pcol->GetName().c_str());
 			if(SQLITE_DONE == AddColumnToSQLiteTable(m_pDB, m_tablename.c_str(),
 									pcol->GetName().c_str(),
 									pcol->GetTypeAsString().c_str()))
 			{
-				printf("Added column %s successfully\n", pcol->GetName().c_str());
+				dbgprintf("Added column %s successfully\n", pcol->GetName().c_str());
 			}
 			else
 			{
-				printf("Failed to add column.\n");
+				dbgprintf("Failed to add column.\n");
 				return SQLITE_ERROR;
 			}
 		}
@@ -407,17 +410,17 @@ int SQLiteTable::PerformUpsert(SQLiteRow* pRow, SQLiteRow* pParentRow)
 	insertstr += m_primary_keycol->GetName() +") DO UPDATE SET ";
 	insertstr += ProduceUpdateList() + ";";
 
-	printf("Insert str: %s\n", insertstr.c_str());
+	dbgprintf("Insert str: %s\n", insertstr.c_str());
 	sqlite3_stmt* query = 0;
 	if(SQLITE_OK != sqlite3_prepare_v2(m_pDB, insertstr.c_str(), insertstr.length(),  &query, 0))
 	{
-		printf("Failed to prepare insert statement\n");
+		dbgprintf("Failed to prepare insert statement\n");
 		return SQLITE_ERROR;
 	}
 
 	if(SQLITE_OK != sqlite3_bind_text(query, 1, m_tablename.c_str(), m_tablename.length(), 0))
 	{
-		printf("Failed to bind tablename\n");
+		dbgprintf("Failed to bind tablename\n");
 		sqlite3_finalize(query);
 		return SQLITE_ERROR;
 	}
@@ -435,21 +438,21 @@ int SQLiteTable::PerformUpsert(SQLiteRow* pRow, SQLiteRow* pParentRow)
 				std::string foreignkeyname = m_foreign_keycol->GetName();
 				std::string parentcolvalue;
 				pParentRow->GetColumnValue(m_parent_table->m_primary_keycol->GetName(), parentcolvalue);
-				printf("Setting column value for foreign keycol %s to %s\n", foreignkeyname.c_str(), parentcolvalue.c_str());
+				dbgprintf("Setting column value for foreign keycol %s to %s\n", foreignkeyname.c_str(), parentcolvalue.c_str());
 				pRow->SetColumnValue(foreignkeyname, parentcolvalue);
 				var = pRow->GetColumnValue(foreignkeyname);
 			}
 			else
 			{
-				printf("Table has a foreign key constraint but was not given primary key data from the parent table\n");
+				dbgprintf("Table has a foreign key constraint but was not given primary key data from the parent table\n");
 				if(!m_parent_table)
-					printf("\tDidn't have parent table\n");
+					dbgprintf("\tDidn't have parent table\n");
 				if(!m_parent_table->m_primary_keycol)
-					printf("\tParent table didn't have primary keycol set.\n");
+					dbgprintf("\tParent table didn't have primary keycol set.\n");
 				if(!pParentRow)
-					printf("\tWasn't given the row from the parent table.\n");
+					dbgprintf("\tWasn't given the row from the parent table.\n");
 				if(!m_foreign_keycol)
-					printf("\tDidn't have a foreign keycol set.\n");
+					dbgprintf("\tDidn't have a foreign keycol set.\n");
 				sqlite3_finalize(query);
 				return SQLITE_ERROR;
 			}
@@ -458,7 +461,7 @@ int SQLiteTable::PerformUpsert(SQLiteRow* pRow, SQLiteRow* pParentRow)
 		if(SQLITE_OK != BindVariantToStatement(query, var, idx + 1))
 		{
 			sqlite3_finalize(query);
-			printf("Failed to bind value %lu for column %s\n", idx, pcol->GetName().c_str());
+			dbgprintf("Failed to bind value %lu for column %s\n", idx, pcol->GetName().c_str());
 			return SQLITE_ERROR;
 		}
 	}
