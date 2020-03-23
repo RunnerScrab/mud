@@ -249,12 +249,11 @@ void RunSubnegotiationCmd(TelnetStream* stream)
 		case TT:
 		{
 			strncpy(stream->opts.terminal_type, &stream->sb_args.data[2], max((len - 2), 41));
-			ServerLog(SERVERLOG_DEBUG, "Terminal type: %s\n", stream->opts.terminal_type);
+			dbgprintf("Terminal type: %s\n", stream->opts.terminal_type);
 		}
 		break;
 		case MCCP3:
-			ServerLog(SERVERLOG_DEBUG,
-				  "Enabling MCCP3 from subopt negotiation\n");
+			dbgprintf("Enabling MCCP3 from subopt negotiation\n");
 			stream->opts.b_mccp3 = 1;
 			break;
 		default:

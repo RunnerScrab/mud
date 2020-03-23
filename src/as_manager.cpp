@@ -196,7 +196,7 @@ extern "C"
 	int AngelScriptManager_PrepareScriptPersistenceLayer(AngelScriptManager* manager)
 	{
 		//TODO: Remove this - debug script class information
-		ServerLog(SERVERLOG_STATUS, "-Class information-\n");
+		dbgprintf("-Class information-\n");
 		size_t idx = 0, object_type_count = manager->main_module->GetObjectTypeCount();
 		asITypeInfo* pPersistentType = manager->engine->GetTypeInfoByName("IPersistent");
 
@@ -207,7 +207,7 @@ extern "C"
 		}
 		else
 		{
-			ServerLog(SERVERLOG_DEBUG, "Found IPersistent interface type.");
+			dbgprintf("Found IPersistent interface type.");
 		}
 
 		//Set the cleanup callback function for all the tables we'll
@@ -225,7 +225,7 @@ extern "C"
 		for(; idx < object_type_count; ++idx)
 		{
 			asITypeInfo* pInfo = manager->main_module->GetObjectTypeByIndex(idx);
-			ServerLog(SERVERLOG_DEBUG, "Class %lu: %s\n", idx, pInfo->GetName());
+			dbgprintf("Class %lu: %s\n", idx, pInfo->GetName());
 			if(pInfo->Implements(pPersistentType))
 			{
 				SQLiteTable* pTable = new SQLiteTable(pSQLiteDB, pInfo->GetName(), 0);
@@ -239,7 +239,7 @@ extern "C"
 					asIScriptFunction* pDSfun = pInfo->GetMethodByName("OnDefineSchema", false);
 					if(pDSfun)
 					{
-						ServerLog(SERVERLOG_DEBUG, "Found %s's OnDefineSchema()", pInfo->GetName());
+						dbgprintf("Found %s's OnDefineSchema()", pInfo->GetName());
 						ctx->Prepare(pDSfun);
 						ctx->SetObject(0);
 						ctx->SetArgObject(0, pTable);
@@ -248,11 +248,11 @@ extern "C"
 					pInfo = pInfo->GetBaseType();
 					if(pInfo)
 					{
-						ServerLog(SERVERLOG_DEBUG, "Found base type %s", pInfo->GetName());
+						dbgprintf("Found base type %s", pInfo->GetName());
 					}
 					else
 					{
-						ServerLog(SERVERLOG_DEBUG, "Did not find base type.");
+						dbgprintf("Did not find base type.");
 					}
 				}
 
