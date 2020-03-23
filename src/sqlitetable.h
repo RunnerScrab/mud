@@ -45,7 +45,7 @@ public:
 		return m_coltype;
 	}
 
-	std::string& GetName()
+	const std::string& GetName()
 	{
 		return m_name;
 	}
@@ -100,6 +100,16 @@ public:
 	SQLiteTable(sqlite3* pDB, const char* tablename, SQLiteTable* parent_table = 0);
 	~SQLiteTable();
 
+	SQLiteColumn* GetPrimaryKeyCol()
+	{
+		return m_primary_keycol;
+	}
+
+	SQLiteColumn* GetForeignKeyCol()
+	{
+		return m_foreign_keycol;
+	}
+
 	void AddColumn(const std::string& name, SQLiteVariant::StoredType vartype,
 		       SQLiteColumn::KeyType keytype = SQLiteColumn::KeyType::KEY_NONE);
 
@@ -110,19 +120,19 @@ public:
 	}
 
 	void AddRealColumn(const std::string& name,
-			  SQLiteColumn::KeyType keytype = SQLiteColumn::KeyType::KEY_NONE)
+			   SQLiteColumn::KeyType keytype = SQLiteColumn::KeyType::KEY_NONE)
 	{
 		AddColumn(name, SQLiteVariant::StoredType::VARREAL, keytype);
 	}
 
 	void AddTextColumn(const std::string& name,
-			  SQLiteColumn::KeyType keytype = SQLiteColumn::KeyType::KEY_NONE)
+			   SQLiteColumn::KeyType keytype = SQLiteColumn::KeyType::KEY_NONE)
 	{
 		AddColumn(name, SQLiteVariant::StoredType::VARTEXT, keytype);
 	}
 
 	void AddBlobColumn(const std::string& name,
-			  SQLiteColumn::KeyType keytype = SQLiteColumn::KeyType::KEY_NONE)
+			   SQLiteColumn::KeyType keytype = SQLiteColumn::KeyType::KEY_NONE)
 	{
 		AddColumn(name, SQLiteVariant::StoredType::VARBLOB, keytype);
 	}

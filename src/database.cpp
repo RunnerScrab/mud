@@ -19,6 +19,87 @@ static int EnableForeignKeys(sqlite3* pDB)
 	return sqlite3_exec(pDB, "PRAGMA foreign_keys=ON;", 0, 0, 0);
 }
 
+
+static bool LoadObject(asIScriptObject* obj, SQLiteVariant::StoredType keytype)
+{
+
+}
+
+bool ASAPI_LoadObject(asIScriptObject* obj, const UUID& key)
+{
+	if(obj)
+	{
+		asITypeInfo* obj_ti = obj->GetObjectType();
+		SQLiteTable* type_table = reinterpret_cast<SQLiteTable*>(obj_ti->GetUserData(AS_USERDATA_TYPESCHEMA));
+		SQLiteColumn* primary_keycol = type_table->GetPrimaryKeyCol();
+		//Use the calling context
+		asIScriptContext* ctx = asGetActiveContext();
+		std::unique_ptr<SQLiteRow> obj_row(type_table->CreateRow());
+		obj_row->SetColumnValue(primary_keycol->GetName(), key);
+
+		if(!primary_keycol)
+		{
+			if(ctx->SetException("Table has no primary key set.") < 0)
+			{
+				ServerLog(SERVERLOG_ERROR, "Couldn't set a primary key exception.");
+			}
+			return false;
+		}
+
+		if(SQLiteVariant::VARBLOB != primary_keycol->GetType())
+		{
+			if(ctx->SetException("Key type mismatch.") < 0)
+			{
+				ServerLog(SERVERLOG_ERROR, "Couldn't set a key type mismatch exception.");
+			}
+			return false;
+		}
+
+		if(ctx->PushState() < 0)
+		{
+			//Couldn't push state
+			if(ctx->SetException("Out of memory error.") < 0)
+			{
+				ServerLog(SERVERLOG_ERROR, "Couldn't set an out of memory exception.");
+			}
+			return false;
+		}
+
+		//Call the Save function of each part of the object's class hierarchy,
+		//then commit the changes to the row to the database
+
+		if(obj_row->LoadFromDB())
+		{
+
+			while(obj_ti)
+			{
+				asIScriptFunction* pLoadFun = obj_ti->GetMethodByName("OnLoad", false);
+				if(pLoadFun)
+				{
+					ctx->Prepare(pLoadFun);
+					ctx->SetArgObject(0, obj_row.get());
+					ctx->Execute();
+				}
+				obj_ti = obj_ti->GetBaseType();
+			}
+
+
+		}
+		if(ctx->PopState() < 0)
+		{
+			if(ctx->SetException("Couldn't restore context state.") < 0)
+			{
+				ServerLog(SERVERLOG_ERROR, "Couldn't set exception for context restoration error.");
+			}
+			return false;
+		}
+
+		return true;
+	}
+	return false;
+
+}
+
 bool ASAPI_SaveObject(asIScriptObject* obj)
 {
 	if(obj)
@@ -102,7 +183,7 @@ static int RegisterDatabaseAPI(struct Database* asdb)
 	result = sengine->RegisterInterfaceMethod("IPersistent", "void OnSave(DBRow@ row)");
 	RETURNFAIL_IF(result < 0);
 
-	result = sengine->RegisterInterfaceMethod("IPersistent", "void OnLoad(uuid key)");
+	result = sengine->RegisterInterfaceMethod("IPersistent", "void OnLoad(DBRow@ row)");
 	RETURNFAIL_IF(result < 0);
 
 	result = sengine->RegisterInterfaceMethod("IPersistent", "void OnDefineSchema(DBTable@ table)");
@@ -111,6 +192,12 @@ static int RegisterDatabaseAPI(struct Database* asdb)
 
 	result = sengine->RegisterGlobalFunction("bool SaveObject(IPersistent@ obj)",
 						asFUNCTION(ASAPI_SaveObject), asCALL_CDECL);
+
+	RETURNFAIL_IF(result < 0);
+
+	result = sengine->RegisterGlobalFunction("bool LoadObject(IPersistent@ obj, const uuid& in)",
+						asFUNCTION(ASAPI_LoadObject), asCALL_CDECL);
+
 	return result;
 }
 
