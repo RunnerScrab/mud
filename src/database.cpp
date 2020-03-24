@@ -192,6 +192,18 @@ template<typename T> bool ASAPI_LoadObjectIntKey(asIScriptObject* obj, const T k
 	return false;
 }
 
+SQLiteTable* ASAPI_GetClassTable(asIScriptObject* obj)
+{
+	if(obj)
+	{
+		asITypeInfo* obj_ti = obj->GetObjectType();
+		SQLiteTable* type_table = reinterpret_cast<SQLiteTable*>(obj_ti->GetUserData(AS_USERDATA_TYPESCHEMA));
+		obj->Release();
+		return type_table;
+	}
+	return 0;
+}
+
 bool ASAPI_SaveObject(asIScriptObject* obj)
 {
 	dbgprintf("Calling SaveObject()!\n");
@@ -304,39 +316,41 @@ static int RegisterDatabaseAPI(struct Database* asdb)
 
 	RETURNFAIL_IF(result < 0);
 
-	result = sengine->RegisterGlobalFunction("bool SaveObject(IPersistent@ obj)",
+	result = sengine->RegisterGlobalFunction("bool DBSaveObject(IPersistent@ obj)",
 						asFUNCTION(ASAPI_SaveObject), asCALL_CDECL);
 
 	RETURNFAIL_IF(result < 0);
 
-	result = sengine->RegisterGlobalFunction("bool LoadObject(IPersistent@ obj, const uuid& in)",
+	result = sengine->RegisterGlobalFunction("bool DBLoadObject(IPersistent@ obj, const uuid& in)",
 						asFUNCTION(ASAPI_LoadObjectUUIDKey), asCALL_CDECL);
 	RETURNFAIL_IF(result < 0);
-	result = sengine->RegisterGlobalFunction("bool LoadObject(IPersistent@ obj, const string& in)",
+	result = sengine->RegisterGlobalFunction("bool DBLoadObject(IPersistent@ obj, const string& in)",
 						asFUNCTION(ASAPI_LoadObjectStrKey), asCALL_CDECL);
 	RETURNFAIL_IF(result < 0);
-	result = sengine->RegisterGlobalFunction("bool LoadObject(IPersistent@ obj, const int key)",
+	result = sengine->RegisterGlobalFunction("bool DBLoadObject(IPersistent@ obj, const int key)",
 						asFUNCTIONPR(ASAPI_LoadObjectIntKey, (asIScriptObject*, const int), bool),
 						asCALL_CDECL);
 	RETURNFAIL_IF(result < 0);
-	result = sengine->RegisterGlobalFunction("bool LoadObject(IPersistent@ obj, const uint32 key)",
+	result = sengine->RegisterGlobalFunction("bool DBLoadObject(IPersistent@ obj, const uint32 key)",
 						asFUNCTIONPR(ASAPI_LoadObjectIntKey,
 							(asIScriptObject*, const unsigned int), bool),
 						asCALL_CDECL);
 	RETURNFAIL_IF(result < 0);
 
-	result = sengine->RegisterGlobalFunction("bool LoadObject(IPersistent@ obj, const int64 key)",
+	result = sengine->RegisterGlobalFunction("bool DBLoadObject(IPersistent@ obj, const int64 key)",
 						asFUNCTIONPR(ASAPI_LoadObjectIntKey,
 							(asIScriptObject*, const long long), bool),
 						asCALL_CDECL);
 	RETURNFAIL_IF(result < 0);
 
-	result = sengine->RegisterGlobalFunction("bool LoadObject(IPersistent@ obj, const uint64 key)",
+	result = sengine->RegisterGlobalFunction("bool DBLoadObject(IPersistent@ obj, const uint64 key)",
 						asFUNCTIONPR(ASAPI_LoadObjectIntKey,
 							(asIScriptObject*, const unsigned long long), bool),
 						asCALL_CDECL);
 	RETURNFAIL_IF(result < 0);
 
+	result = sengine->RegisterGlobalFunction("const DBTable@ DBGetClassTable(IPersistent@ obj)",
+						asFUNCTION(ASAPI_GetClassTable), asCALL_CDECL);
 
 	return result;
 }

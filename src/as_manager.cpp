@@ -228,7 +228,7 @@ extern "C"
 			dbgprintf("Class %lu: %s\n", idx, pInfo->GetName());
 			if(pInfo->Implements(pPersistentType))
 			{
-				SQLiteTable* pTable = new SQLiteTable(pSQLiteDB, pInfo->GetName(), 0);
+				SQLiteTable* pTable = new SQLiteTable(pSQLiteDB, pInfo->GetName());
 				pInfo->SetUserData((void*) pTable, AS_USERDATA_TYPESCHEMA);
 				//We want to reuse this table for every parent class of the type in pInfo.
 				///Every class and subclass will have its own table which includes all the

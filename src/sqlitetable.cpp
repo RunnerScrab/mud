@@ -10,6 +10,35 @@
 
 #define RETURNFAIL_IF(a) if(a){return -1;}
 
+SQLiteColumn::SQLiteColumn(const std::string& name, SQLiteVariant::StoredType vartype,
+			KeyType keytype, SQLiteTable* foreigntable)
+{
+	m_name = name;
+	m_coltype = vartype;
+	m_keytype = keytype;
+	m_foreigntable = foreigntable;
+	if(foreigntable)
+	{
+		foreigntable->AddRef();
+	}
+}
+
+SQLiteColumn::~SQLiteColumn()
+{
+	if(m_foreigntable)
+	{
+		m_foreigntable->Release();
+	}
+}
+
+SQLiteColumn::SQLiteColumn(SQLiteColumn&& other)
+{
+	m_coltype = std::move(other.m_coltype);
+	m_name = std::move(other.m_name);
+	m_keytype = std::move(other.m_keytype);
+	m_foreigntable = std::move(other.m_foreigntable);
+}
+
 sqlite3* SQLiteTable::m_static_pDB = 0;
 
 void SQLiteTable::SetDBConnection(sqlite3* pDB)
@@ -41,7 +70,7 @@ int RegisterDBTable(sqlite3* sqldb, asIScriptEngine* sengine)
 	RETURNFAIL_IF(result < 0);
 
 	result = sengine->RegisterObjectMethod("DBTable", "DBRow@ MakeRow()",
-						asMETHODPR(SQLiteTable, CreateRow, (void), SQLiteRow*), asCALL_THISCALL);
+					asMETHODPR(SQLiteTable, CreateRow, (void), SQLiteRow*), asCALL_THISCALL);
 	RETURNFAIL_IF(result < 0);
 
 	result = sengine->RegisterEnum("DBColKeyType");
@@ -61,43 +90,47 @@ int RegisterDBTable(sqlite3* sqldb, asIScriptEngine* sengine)
 					SQLiteColumn::KeyType::KEY_FOREIGN);
 	RETURNFAIL_IF(result < 0);
 
+	sengine->RegisterObjectMethod("DBTable", "string GetName() const",
+				asMETHODPR(SQLiteTable, GetName, (void) const, std::string), asCALL_THISCALL);
+	RETURNFAIL_IF(result < 0);
+
 	sengine->RegisterObjectMethod("DBTable",
-				"void AddIntCol(const string& in, DBColKeyType keytype = DBKEYTYPE_NOTKEY)",
+				"void AddIntCol(const string& in, DBColKeyType keytype"
+				" = DBKEYTYPE_NOTKEY, DBTable@ foreign_table = null)",
 				asMETHODPR(SQLiteTable, AddIntColumn,
-					(const std::string&, SQLiteColumn::KeyType), void), asCALL_THISCALL);
+					(const std::string&, SQLiteColumn::KeyType, SQLiteTable*), bool), asCALL_THISCALL);
 	RETURNFAIL_IF(result < 0);
 
 	sengine->RegisterObjectMethod("DBTable",
-				"void AddRealCol(const string& in, DBColKeyType keytype= DBKEYTYPE_NOTKEY)",
+				"void AddRealCol(const string& in, DBColKeyType keytype"
+				" = DBKEYTYPE_NOTKEY, DBTable@ foreign_table = null)",
 				asMETHODPR(SQLiteTable, AddRealColumn,
-					(const std::string&, SQLiteColumn::KeyType), void), asCALL_THISCALL);
+					(const std::string&, SQLiteColumn::KeyType, SQLiteTable*), bool), asCALL_THISCALL);
 	RETURNFAIL_IF(result < 0);
 
 	sengine->RegisterObjectMethod("DBTable",
-				"void AddTextCol(const string& in, DBColKeyType keytype= DBKEYTYPE_NOTKEY)",
+				"void AddTextCol(const string& in, DBColKeyType keytype"
+				" = DBKEYTYPE_NOTKEY, DBTable@ foreign_table = null)",
 				asMETHODPR(SQLiteTable, AddTextColumn,
-					(const std::string&, SQLiteColumn::KeyType), void), asCALL_THISCALL);
+					(const std::string&, SQLiteColumn::KeyType, SQLiteTable*), bool), asCALL_THISCALL);
 	RETURNFAIL_IF(result < 0);
 
-
 	sengine->RegisterObjectMethod("DBTable",
-				"void AddUUIDCol(const string& in, DBColKeyType keytype= DBKEYTYPE_NOTKEY)",
+				"void AddUUIDCol(const string& in, DBColKeyType keytype"
+				" = DBKEYTYPE_NOTKEY, DBTable@ foreign_table = null)",
 				asMETHODPR(SQLiteTable, AddBlobColumn,
-					(const std::string&, SQLiteColumn::KeyType), void), asCALL_THISCALL);
+					(const std::string&, SQLiteColumn::KeyType, SQLiteTable*), bool), asCALL_THISCALL);
 	RETURNFAIL_IF(result < 0);
 
 	return result;
 }
 
-SQLiteTable::SQLiteTable(sqlite3* pDB, const char* tablename,
-			SQLiteTable* parent_table)
+SQLiteTable::SQLiteTable(sqlite3* pDB, const char* tablename)
 {
 	m_refcount = 1;
 	m_pDB = pDB;
 	m_tablename = tablename;
-	m_parent_table = parent_table;
 	m_primary_keycol = 0;
-	m_foreign_keycol = 0;
 }
 
 void SQLiteTable::AddRef()
@@ -114,23 +147,9 @@ void SQLiteTable::Release()
 	}
 }
 
-SQLiteTable* SQLiteTable::SubTableFactory(const std::string& tablename, SQLiteTable* parent_table)
-{
-	sqlite3* pdb = GetDBConnection();
-	if(pdb)
-	{
-		return new SQLiteTable(pdb, tablename.c_str(), parent_table);
-	}
-	else
-	{
-		return 0;
-	}
-}
-
 SQLiteTable* SQLiteTable::Factory(const std::string& tablename)
 {
-	//A parent table is just a sub table with no parent
-	return SubTableFactory(tablename.c_str(), 0);
+	return new SQLiteTable(SQLiteTable::GetDBConnection(), tablename.c_str());
 }
 
 
@@ -145,9 +164,10 @@ SQLiteTable::~SQLiteTable()
 
 
 
-void SQLiteTable::AddColumn(const std::string& name, SQLiteVariant::StoredType vartype, SQLiteColumn::KeyType keytype)
+bool SQLiteTable::AddColumn(const std::string& name, SQLiteVariant::StoredType vartype,
+			SQLiteColumn::KeyType keytype, SQLiteTable* foreigntable)
 {
-	m_columns.push_back(new SQLiteColumn(name, vartype, keytype));
+	m_columns.push_back(new SQLiteColumn(name, vartype, keytype, foreigntable));
 	switch(keytype)
 	{
 	case SQLiteColumn::KeyType::KEY_NONE:
@@ -169,14 +189,15 @@ void SQLiteTable::AddColumn(const std::string& name, SQLiteVariant::StoredType v
 		}
 		break;
 	case SQLiteColumn::KeyType::KEY_FOREIGN:
-		if(!m_foreign_keycol)
+		if(!foreigntable)
 		{
-			m_foreign_keycol = m_columns.back();
+			return false;
 		}
 		break;
 	default:
 		break;
 	}
+	return true;
 }
 
 std::string SQLiteTable::ProduceUpdateList()
@@ -237,10 +258,12 @@ std::string SQLiteTable::ProducePropertyNameList()
 		SQLiteColumn* pcol = m_columns[idx];
 		if(pcol->IsForeignKey())
 		{
-			if(m_parent_table && m_parent_table->m_primary_keycol)
+			SQLiteTable* foreigntable = pcol->GetForeignTable();
+			if(foreigntable && foreigntable->GetPrimaryKeyCol())
 			{
-				buffer += pcol->GetName() + " REFERENCES " +
-					m_parent_table->m_tablename;
+				buffer += "FOREIGN KEY(" + pcol->GetName() + ") REFERENCES " +
+					foreigntable->m_tablename + "("
+					+ foreigntable->GetPrimaryKeyCol()->GetName() + ")";
 			}
 			//If we can't get the information here, the name list will omit a required
 			//value and the sqlite statement will fail execution.
@@ -349,6 +372,7 @@ int SQLiteTable::StoreRow(SQLiteRow* pRow, SQLiteRow* pParentRow)
 	int result = DoesSQLiteTableExist(m_pDB, m_tablename.c_str());
 	if(0 == result)
 	{
+		//Create table if it does not already exist
 		std::string querystr = "CREATE TABLE " + m_tablename + "(" + ProducePropertyNameList() + ");";
 		if(SQLITE_DONE != ExecSQLiteStatement(m_pDB, querystr.c_str()))
 		{
@@ -432,27 +456,22 @@ int SQLiteTable::PerformUpsert(SQLiteRow* pRow, SQLiteRow* pParentRow)
 
 		if(pcol->IsForeignKey() && !var)
 		{
-			if((m_parent_table && m_parent_table->m_primary_keycol)
-				&& pParentRow && m_foreign_keycol)
+			SQLiteTable* foreigntable = pcol->GetForeignTable();
+			if(foreigntable && foreigntable->GetPrimaryKeyCol() && pParentRow)
 			{
-				std::string foreignkeyname = m_foreign_keycol->GetName();
+				std::string foreignkeyname = foreigntable->GetPrimaryKeyCol()->GetName();
 				std::string parentcolvalue;
-				pParentRow->GetColumnValue(m_parent_table->m_primary_keycol->GetName(), parentcolvalue);
-				dbgprintf("Setting column value for foreign keycol %s to %s\n", foreignkeyname.c_str(), parentcolvalue.c_str());
+				pParentRow->GetColumnValue(foreignkeyname, parentcolvalue);
+				dbgprintf("Setting column value for foreign keycol %s to %s\n",
+					foreignkeyname.c_str(), parentcolvalue.c_str());
 				pRow->SetColumnValue(foreignkeyname, parentcolvalue);
 				var = pRow->GetColumnValue(foreignkeyname);
 			}
 			else
 			{
-				dbgprintf("Table has a foreign key constraint but was not given primary key data from the parent table\n");
-				if(!m_parent_table)
-					dbgprintf("\tDidn't have parent table\n");
-				if(!m_parent_table->m_primary_keycol)
-					dbgprintf("\tParent table didn't have primary keycol set.\n");
-				if(!pParentRow)
-					dbgprintf("\tWasn't given the row from the parent table.\n");
-				if(!m_foreign_keycol)
-					dbgprintf("\tDidn't have a foreign keycol set.\n");
+				dbgprintf("Table has a foreign key constraint"
+					" but was not given a foreign table.\n");
+
 				sqlite3_finalize(query);
 				return SQLITE_ERROR;
 			}

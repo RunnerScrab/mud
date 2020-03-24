@@ -276,7 +276,7 @@ void TestDatabase(Player@ player)
 	player.Send("Converted guid: " + otheruuid.ToString() + "\r\n");
 	SuperMeower meower;
 	SuperMeower@ hMeower = @meower;
-	if(SaveObject(@hMeower))
+	if(DBSaveObject(@hMeower))
 	{
 		player.Send("Successfully saved meower to database.\r\n");
 	}
@@ -306,10 +306,10 @@ void TestDatabaseRead(Player@ player)
 	{
 		try
 		{
-			if(LoadObject(@meower, keyuuid))
+			if(DBLoadObject(@meower, keyuuid))
 			{
 				player.Send("Successfully loaded meower with key 'testkey'.\r\n");
-				player.Send("Meower power: " + meower.m_superpowername);
+				player.Send("Meower power: " + meower.m_superpowername + "\r\n");
 			}
 			else
 			{
@@ -322,6 +322,11 @@ void TestDatabaseRead(Player@ player)
 		}
 	}
 
+	const DBTable@ hTable = DBGetClassTable(meower);
+	if(hTable !is null)
+	{
+		player.Send("Acquired table name: " + hTable.GetName() + "\r\n");
+	}
 }
 
 void OnPlayerInput(Player@ player, string rawinput)
