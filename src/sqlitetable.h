@@ -1,6 +1,7 @@
 #ifndef SQLITETABLE_H_
 #define SQLITETABLE_H_
 #include <vector>
+#include <map>
 #include <string>
 #include "sqlitevariant.h"
 
@@ -86,6 +87,10 @@ public:
 private:
 	friend class SQLiteRow;
 	std::vector<SQLiteColumn*> m_columns;
+	//A subtable is simply another table whose foreign key is set to the
+	//primary key of the primary table
+	std::map<const std::string, SQLiteTable*> m_subtablemap;
+
 	SQLiteColumn* m_primary_keycol;
 	std::string m_tablename;
 	sqlite3* m_pDB;
@@ -105,6 +110,9 @@ public:
 	{
 		return m_primary_keycol;
 	}
+
+	SQLiteTable* CreateSubTable(const std::string& name);
+	SQLiteTable* GetSubTable(const std::string& name);
 
 	bool AddColumn(const std::string& name, SQLiteVariant::StoredType vartype,
 		       SQLiteColumn::KeyType keytype = SQLiteColumn::KeyType::KEY_NONE,

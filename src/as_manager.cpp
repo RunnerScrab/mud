@@ -25,8 +25,6 @@ extern "C"
 #include <pthread.h>
 #include <memory>
 
-#define RETURNFAIL_IF(x) if(x){return -1;}
-
 extern "C"
 {
 	void as_MessageCallback(const asSMessageInfo* msg, void* param)

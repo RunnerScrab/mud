@@ -8,8 +8,6 @@
 #include "angelscript.h"
 #include "database.h"
 
-#define RETURNFAIL_IF(a) if(a){return -1;}
-
 SQLiteColumn::SQLiteColumn(const std::string& name, SQLiteVariant::StoredType vartype,
 			KeyType keytype, SQLiteTable* foreigntable)
 {
@@ -90,39 +88,55 @@ int RegisterDBTable(sqlite3* sqldb, asIScriptEngine* sengine)
 					SQLiteColumn::KeyType::KEY_FOREIGN);
 	RETURNFAIL_IF(result < 0);
 
-	sengine->RegisterObjectMethod("DBTable", "string GetName() const",
+	result = sengine->RegisterObjectMethod("DBTable", "string GetName() const",
 				asMETHODPR(SQLiteTable, GetName, (void) const, std::string), asCALL_THISCALL);
 	RETURNFAIL_IF(result < 0);
 
-	sengine->RegisterObjectMethod("DBTable",
+	result = sengine->RegisterObjectMethod("DBTable",
 				"void AddIntCol(const string& in, DBColKeyType keytype"
 				" = DBKEYTYPE_NOTKEY, DBTable@ foreign_table = null)",
 				asMETHODPR(SQLiteTable, AddIntColumn,
 					(const std::string&, SQLiteColumn::KeyType, SQLiteTable*), bool), asCALL_THISCALL);
 	RETURNFAIL_IF(result < 0);
 
-	sengine->RegisterObjectMethod("DBTable",
+	result = sengine->RegisterObjectMethod("DBTable",
 				"void AddRealCol(const string& in, DBColKeyType keytype"
 				" = DBKEYTYPE_NOTKEY, DBTable@ foreign_table = null)",
 				asMETHODPR(SQLiteTable, AddRealColumn,
 					(const std::string&, SQLiteColumn::KeyType, SQLiteTable*), bool), asCALL_THISCALL);
 	RETURNFAIL_IF(result < 0);
 
-	sengine->RegisterObjectMethod("DBTable",
+	result = sengine->RegisterObjectMethod("DBTable",
 				"void AddTextCol(const string& in, DBColKeyType keytype"
 				" = DBKEYTYPE_NOTKEY, DBTable@ foreign_table = null)",
 				asMETHODPR(SQLiteTable, AddTextColumn,
 					(const std::string&, SQLiteColumn::KeyType, SQLiteTable*), bool), asCALL_THISCALL);
 	RETURNFAIL_IF(result < 0);
 
-	sengine->RegisterObjectMethod("DBTable",
+	result = sengine->RegisterObjectMethod("DBTable",
 				"void AddUUIDCol(const string& in, DBColKeyType keytype"
 				" = DBKEYTYPE_NOTKEY, DBTable@ foreign_table = null)",
 				asMETHODPR(SQLiteTable, AddBlobColumn,
 					(const std::string&, SQLiteColumn::KeyType, SQLiteTable*), bool), asCALL_THISCALL);
 	RETURNFAIL_IF(result < 0);
 
+	result = sengine->RegisterObjectMethod("DBTable", "DBTable@ CreateSubTable(const string& in)",
+				asMETHODPR(SQLiteTable, CreateSubTable, (const std::string&), SQLiteTable*),
+				asCALL_THISCALL);
+	RETURNFAIL_IF(result < 0);
 	return result;
+}
+
+SQLiteTable* SQLiteTable::CreateSubTable(const std::string& name)
+{
+	SQLiteTable* subtable = new SQLiteTable(GetDBConnection(), name.c_str());
+	m_subtablemap[GetName() + "_" + name] = subtable;
+	return subtable;
+}
+
+SQLiteTable* SQLiteTable::GetSubTable(const std::string& name)
+{
+	return m_subtablemap[GetName() + "_" + name];
 }
 
 SQLiteTable::SQLiteTable(sqlite3* pDB, const char* tablename)
@@ -131,6 +145,21 @@ SQLiteTable::SQLiteTable(sqlite3* pDB, const char* tablename)
 	m_pDB = pDB;
 	m_tablename = tablename;
 	m_primary_keycol = 0;
+}
+
+SQLiteTable::~SQLiteTable()
+{
+	size_t idx = 0, len = m_columns.size();
+	for(; idx < len; ++idx)
+	{
+		delete m_columns[idx];
+	}
+
+	for(std::map<const std::string, SQLiteTable*>::iterator it = m_subtablemap.begin();
+	    it != m_subtablemap.end(); ++it)
+	{
+		delete it->second;
+	}
 }
 
 void SQLiteTable::AddRef()
@@ -151,18 +180,6 @@ SQLiteTable* SQLiteTable::Factory(const std::string& tablename)
 {
 	return new SQLiteTable(SQLiteTable::GetDBConnection(), tablename.c_str());
 }
-
-
-SQLiteTable::~SQLiteTable()
-{
-	size_t idx = 0, len = m_columns.size();
-	for(; idx < len; ++idx)
-	{
-		delete m_columns[idx];
-	}
-}
-
-
 
 bool SQLiteTable::AddColumn(const std::string& name, SQLiteVariant::StoredType vartype,
 			SQLiteColumn::KeyType keytype, SQLiteTable* foreigntable)

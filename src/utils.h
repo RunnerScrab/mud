@@ -15,4 +15,6 @@
 #define dbgprintf(...) do{}while(0)
 #endif
 
+#define RETURNFAIL_IF(a) if(a){return -1;}
+
 #endif
