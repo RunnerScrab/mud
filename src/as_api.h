@@ -9,12 +9,14 @@ extern "C"
 #include "player.h"
 
 #include "as_addons/scripthandle.h"
+#include "as_addons/scriptarray.h"
 
 #include <string>
 
 
 void ASAPI_DebugVariables(struct Server* server, Player* playerobj);
 void ASAPI_DebugObject(CScriptHandle obj);
+void ASAPI_DebugArray(CScriptArray& arr);
 
 void ASAPI_SendToAll(struct Server* server, std::string& message);
 void ASAPI_QueueScriptCommand(struct Server* server, asIScriptObject* obj, unsigned int delay);

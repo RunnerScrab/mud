@@ -21,7 +21,7 @@ static int EnableForeignKeys(sqlite3* pDB)
 }
 
 
-static bool LoadObject(asIScriptObject* obj, asITypeInfo* obj_type,
+static bool LoadObject(SQLiteTable* type_table, asIScriptObject* obj, asITypeInfo* obj_type,
 		asIScriptContext* ctx, SQLiteRow* obj_row)
 {
 	if(ctx->PushState() < 0)
@@ -34,8 +34,7 @@ static bool LoadObject(asIScriptObject* obj, asITypeInfo* obj_type,
 		return false;
 	}
 
-	//Call the Load function of each part of the object's class hierarchy,
-	//then commit the changes to the row to the database
+	//Call the Load function of each part of the object's class hierarchy
 	if(obj_row->LoadFromDB())
 	{
 		asITypeInfo* obj_ti = obj_type;
@@ -46,7 +45,8 @@ static bool LoadObject(asIScriptObject* obj, asITypeInfo* obj_type,
 			{
 				ctx->Prepare(pLoadFun);
 				ctx->SetObject(obj);
-				ctx->SetArgObject(0, obj_row);
+				ctx->SetArgObject(0, type_table);
+				ctx->SetArgObject(1, obj_row);
 				ctx->Execute();
 			}
 			obj_ti = obj_ti->GetBaseType();
@@ -109,7 +109,7 @@ bool ASAPI_LoadObjectStrKey(asIScriptObject* obj, const std::string& key)
 
 		std::unique_ptr<SQLiteRow> obj_row(type_table->CreateRow());
 		obj_row->SetColumnValue(primary_keycol->GetName(), key);
-		bool result = LoadObject(obj, obj_ti, ctx, obj_row.get());
+		bool result = LoadObject(type_table, obj, obj_ti, ctx, obj_row.get());
 		obj->Release();
 		return result;
 	}
@@ -146,7 +146,7 @@ bool ASAPI_LoadObjectUUIDKey(asIScriptObject* obj, const UUID& key)
 
 		std::unique_ptr<SQLiteRow> obj_row(type_table->CreateRow());
 		obj_row->SetColumnValue(primary_keycol->GetName(), key);
-		bool result = LoadObject(obj, obj_ti, ctx, obj_row.get());
+		bool result = LoadObject(type_table, obj, obj_ti, ctx, obj_row.get());
 		obj->Release();
 		return result;
 	}
@@ -185,7 +185,7 @@ template<typename T> bool ASAPI_LoadObjectIntKey(asIScriptObject* obj, const T k
 
 		std::unique_ptr<SQLiteRow> obj_row(type_table->CreateRow());
 		obj_row->SetColumnValue(primary_keycol->GetName(), key);
-		bool result = LoadObject(obj, obj_ti, ctx, obj_row.get());
+		bool result = LoadObject(type_table, obj, obj_ti, ctx, obj_row.get());
 		obj->Release();
 		return result;
 	}
@@ -243,7 +243,8 @@ bool ASAPI_SaveObject(asIScriptObject* obj)
 			{
 				ctx->Prepare(pSaveFun);
 				ctx->SetObject(obj);
-				ctx->SetArgObject(0, (void*) obj_row);
+				ctx->SetArgObject(0, (void*) type_table);
+				ctx->SetArgObject(1, (void*) obj_row);
 				ctx->Execute();
 			}
 			else
@@ -306,10 +307,10 @@ static int RegisterDatabaseAPI(struct Database* asdb)
 	result = sengine->RegisterInterface("IPersistent");
 	RETURNFAIL_IF(result < 0);
 
-	result = sengine->RegisterInterfaceMethod("IPersistent", "void OnSave(DBRow@ row)");
+	result = sengine->RegisterInterfaceMethod("IPersistent", "void OnSave(DBTable@ table, DBRow@ row)");
 	RETURNFAIL_IF(result < 0);
 
-	result = sengine->RegisterInterfaceMethod("IPersistent", "void OnLoad(DBRow@ row)");
+	result = sengine->RegisterInterfaceMethod("IPersistent", "void OnLoad(DBTable@ table, DBRow@ row)");
 	RETURNFAIL_IF(result < 0);
 
 	result = sengine->RegisterInterfaceMethod("IPersistent", "void OnDefineSchema(DBTable@ table)");

@@ -6,6 +6,7 @@
 #include "sqlitevariant.h"
 
 class asIScriptEngine;
+class CScriptArray;
 
 class SQLiteRow;
 class SQLiteTable;
@@ -91,10 +92,16 @@ private:
 	//primary key of the primary table
 	std::map<const std::string, SQLiteTable*> m_subtablemap;
 
-	SQLiteColumn* m_primary_keycol;
+	//A table may have multiple foreign keys, however,
+	//m_subtableforeign key is the key to the owning table for a table
+	//representing an array
+	std::vector<SQLiteColumn*> m_primary_keycols;
+	std::vector<SQLiteColumn*> m_foreign_keycols;
+
+	SQLiteColumn* m_primary_keycol, *m_subtableforeignkey;
 	std::string m_tablename;
 	sqlite3* m_pDB;
-
+	bool m_bIsSubTable;
 	int m_refcount;
 public:
 
@@ -146,7 +153,7 @@ public:
 		return AddColumn(name, SQLiteVariant::StoredType::VARBLOB, keytype, foreigntable);
 	}
 
-
+	bool LoadSubTable(SQLiteRow* parent_row, CScriptArray* resultarray);
 	int LoadRow(SQLiteRow* row);
 	int StoreRow(SQLiteRow* row, SQLiteRow* pParentRow = 0);
 
@@ -161,6 +168,8 @@ private:
 	std::string ProduceInsertValuesNameList();
 	//The names of all the columns along with type declarations, for CREATE operation
 	std::string ProducePropertyNameList();
+	std::string GetPrimaryKeyStringList();
+	std::string GetForeignKeyStringList();
 };
 
 int RegisterDBTable(sqlite3* sqldb, asIScriptEngine* sengine);

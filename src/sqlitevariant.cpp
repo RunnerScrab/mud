@@ -3,6 +3,7 @@
 
 int BindVariantToStatement(sqlite3_stmt* stmt, const SQLiteVariant* value, int pos)
 {
+	//pos is the position of the argument in the select statement
 	if(!value)
 	{
 		printf("Given a 0 variant pointer!\n");

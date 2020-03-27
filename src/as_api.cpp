@@ -11,6 +11,7 @@ extern "C"
 }
 #include "player.h"
 #include "angelscript.h"
+#include "as_addons/scriptarray.h"
 #include <ctype.h>
 
 void ASAPI_SendToAll(struct Server* server, std::string& message)
@@ -113,6 +114,12 @@ void ASAPI_DebugObject(CScriptHandle obj)
 	asITypeInfo* typeinfo = obj.GetType();
 	dbgprintf("Object has type %s\n", typeinfo->GetName());
 	#endif
+}
+
+void ASAPI_DebugArray(CScriptArray& arr)
+{
+	asITypeInfo* arrtype = arr.GetArrayObjectType();
+	ServerLog(SERVERLOG_DEBUG, "Array has type of %s\n", arrtype->GetName());
 }
 
 void ASAPI_DebugVariables(struct Server* server, Player* playerobj)

@@ -23,12 +23,24 @@ interface TestInterface
 	void TestInterfaceMethod();
 };
 
+class TestPOD
+{
+	string m_name;
+	string m_ability;
+	TestPOD(string name, string ability)
+	{
+		m_name = name;
+		m_ability = ability;
+	}
+};
+
 class Meower : TestInterface, IPersistent
 {
 	uuid m_uuid;
 	string m_name;
+	array<TestPOD@> m_testpods;
 
-	void OnLoad(DBRow@ row)
+	void OnLoad(DBTable@ table, DBRow@ row)
 	{
 		row.GetColValue("uuid", m_uuid);
 		row.GetColValue("name", m_name);
@@ -39,15 +51,31 @@ class Meower : TestInterface, IPersistent
 		Log("Calling Meower's DefineSchema()\n");
 		table.AddUUIDCol("uuid", DBKEYTYPE_PRIMARY);
 		table.AddTextCol("name");
+		DBTable@ testpodtable = table.CreateSubTable("testpodarray");
+		testpodtable.AddTextCol("name");
+		testpodtable.AddTextCol("ability");
 	}
 
-	void OnSave(DBRow@ row)
+	void OnSave(DBTable@ table, DBRow@ row)
 	{
 		Log("Calling Meower OnSave().\r\n");
 		if(@row !is null)
 		{
 			row.SetColValue("uuid", m_uuid);
 			row.SetColValue("name", m_name);
+			DBTable@ testpodtable = table.GetSubTable("testpodarray");
+
+			DBRow@ tptrow = testpodtable.MakeRow();
+			for(int i = 0, len = m_testpods.length();
+				i < len; ++i)
+				{
+					tptrow.ClearValues();
+					TestPOD@ thispod = m_testpods[i];
+					tptrow.SetColValue("name", thispod.m_name);
+					tptrow.SetColValue("ability", thispod.m_ability);
+					tptrow.StoreIntoDB();
+				}
+
 		}
 		else
 		{
@@ -101,12 +129,12 @@ class SuperMeower : Meower
 		TestInterfaceMethod();
 		m_superpowername = "meowing";
 	}
-	void OnSave(DBRow@ row)
+	void OnSave(DBTable@ table, DBRow@ row)
 	{
 		Log("Calling SuperMeower OnSave().\r\n");
 		row.SetColValue("superpower", m_superpowername);
 	}
-	void OnLoad(DBRow@ row)
+	void OnLoad(DBTable@ table, DBRow@ row)
 	{
 		row.GetColValue("superpower", m_superpowername);
 	}
