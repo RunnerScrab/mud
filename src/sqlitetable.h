@@ -100,7 +100,6 @@ public:
 #endif
 
 private:
-
 	std::vector<SQLiteColumn*> m_columns;
 
 	std::map<const std::string, SQLiteTable*> m_subtablemap;
@@ -162,6 +161,7 @@ public:
 
 	SQLiteTable* CreateSubTable(const std::string& name);
 	SQLiteTable* GetSubTable(const std::string& name);
+	SQLiteRow* MakeSubTableRow();
 #ifndef TESTING_
 	bool LoadSubTable(SQLiteRow* parent_row, CScriptArray* resultarray);
 #else

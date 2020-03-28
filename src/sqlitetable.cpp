@@ -149,6 +149,7 @@ int RegisterDBTable(sqlite3* sqldb, asIScriptEngine* sengine)
 	result = sengine->RegisterObjectMethod("DBTable", "DBTable@ GetSubTable(const string& in)",
 					asMETHODPR(SQLiteTable, GetSubTable, (const std::string&), SQLiteTable*),
 					asCALL_THISCALL);
+
 	return result;
 }
 #endif
@@ -601,7 +602,6 @@ bool SQLiteTable::LoadSubTable(SQLiteRow* parent_row, CScriptArray* resultarray)
 
 }
 
-
 int SQLiteTable::LoadRow(SQLiteRow* pRow)
 {
 	if(!pRow)
@@ -735,6 +735,7 @@ int SQLiteTable::StoreRow(SQLiteRow* pRow, SQLiteRow* pParentRow)
 	std::set<std::string> columnset;
 	if(SQLITE_OK != GetTableColumns(m_pDB, m_tablename.c_str(), columnset))
 	{
+		dbgprintf("Couldn't get table columns.\n");
 		return SQLITE_ERROR;
 	}
 
@@ -783,10 +784,12 @@ int SQLiteTable::PerformUpsert(SQLiteRow* pRow, SQLiteRow* pParentRow)
 	sqlite3_stmt* query = 0;
 	if(SQLITE_OK != sqlite3_prepare_v2(m_pDB, insertstr.c_str(), insertstr.length(),  &query, 0))
 	{
-		dbgprintf("Failed to prepare insert statement\n");
+		dbgprintf("Failed to prepare insert statement: %s\n",
+			sqlite3_errmsg(m_pDB));
 		return SQLITE_ERROR;
 	}
 
+/*
 	if(SQLITE_OK != sqlite3_bind_text(query, 1, m_tablename.c_str(), m_tablename.length(), 0))
 	{
 		dbgprintf("Failed to bind tablename\n");
@@ -794,6 +797,7 @@ int SQLiteTable::PerformUpsert(SQLiteRow* pRow, SQLiteRow* pParentRow)
 		return SQLITE_ERROR;
 	}
 
+*/
 	for(size_t idx = 0, len = m_columns.size(); idx < len; ++idx)
 	{
 		SQLiteColumn* pcol = m_columns[idx];
@@ -801,17 +805,38 @@ int SQLiteTable::PerformUpsert(SQLiteRow* pRow, SQLiteRow* pParentRow)
 
 		if(pcol && pcol->IsForeignKey() && !var)
 		{
+			dbgprintf("Found foreign keycol '%s'\n", pcol->GetName().c_str());
 			SQLiteTable* foreigntable = pcol->GetForeignTable();
+			if(!foreigntable)
+			{
+				dbgprintf("Foreign Key Column %s didn't have a foreign table set!\n",
+					pcol->GetName().c_str());
+			}
 			if(foreigntable && pParentRow)
 			{
 				std::string foreignkeyname = pcol->GetForeignName();
-				std::string parentcolvalue;
-				pParentRow->GetColumnValue(foreignkeyname, parentcolvalue);
-				dbgprintf("Table %s: Setting column value for foreign keycol '%s' ('%s' locally) to %s\n",
-					GetName().c_str(), foreignkeyname.c_str(), pcol->GetName().c_str(),
-					parentcolvalue.c_str());
-				pRow->SetColumnValue(pcol->GetName(), parentcolvalue);
-				var = pRow->GetColumnValue(pcol->GetName());
+				SQLiteVariant* parentcolvalue = pParentRow->GetColumnValue(foreignkeyname);
+				if(parentcolvalue)
+				{
+					dbgprintf("Table %s: Setting column value for foreign keycol "
+						"'%s' of table %s ('%s' locally).\n",
+						GetName().c_str(), foreignkeyname.c_str(), foreigntable->GetName().c_str(),
+						pcol->GetName().c_str());
+
+					pRow->SetColumnValue(pcol->GetName(), parentcolvalue);
+					var = pRow->GetColumnValue(pcol->GetName());
+					if(SQLiteVariant::StoredType::VARBLOB == var->GetType())
+					{
+						UUID uuid;
+						uuid.CopyFromByteArray((const unsigned char*)
+								var->GetValueBlobPtr(), var->GetDataLength());
+						dbgprintf("Copied UUID value %s\n", uuid.ToString().c_str());
+					}
+				}
+				else
+				{
+					dbgprintf("Failed to get foreign key value for row!\n");
+				}
 			}
 			else
 			{
@@ -833,6 +858,7 @@ int SQLiteTable::PerformUpsert(SQLiteRow* pRow, SQLiteRow* pParentRow)
 
 	if(SQLITE_DONE != sqlite3_step(query))
 	{
+		dbgprintf("Sqlite step error: %s\n", sqlite3_errmsg(m_pDB));
 		sqlite3_finalize(query);
 		return SQLITE_ERROR;
 	}

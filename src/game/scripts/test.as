@@ -65,18 +65,24 @@ class Meower : TestInterface, IPersistent
 			row.SetColValue("name", m_name);
 			DBTable@ testpodtable = table.GetSubTable("testpodarray");
 
-			DBRow@ tptrow = testpodtable.MakeRow();
+/*
 			for(int i = 0, len = m_testpods.length();
 				i < len; ++i)
 				{
 					//tptrow.ClearValues();
 					TestPOD@ thispod = m_testpods[i];
+					DBRow@ tptrow = testpodtable.MakeSubTableRow();
 					tptrow.SetColValue("subtable_index", i);
 					tptrow.SetColValue("name", thispod.m_name);
 					tptrow.SetColValue("ability", thispod.m_ability);
-					tptrow.StoreIntoDB();
+					//SubTables must be saved after the main row because of
+					//foreign key constraints!
+					//if(!tptrow.StoreChildRowIntoDB(row))
+					//{
+					//	Log("Storing subtable row FAILED!\r\n");
+					//}
 				}
-
+*/
 		}
 		else
 		{

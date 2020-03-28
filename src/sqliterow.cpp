@@ -212,6 +212,11 @@ void SQLiteRow::ClearValues()
 
 void SQLiteRow::SetColumnValue(const std::string& colname, const SQLiteVariant* value)
 {
+	if(!m_valuemap[colname])
+	{
+		m_valuemap[colname] = new SQLiteVariant();
+	}
+
 	*(m_valuemap[colname]) = *value;
 }
 
