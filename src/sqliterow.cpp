@@ -1,11 +1,14 @@
 #include "sqliterow.h"
 #include "sqlitetable.h"
+#ifndef TESTING_
 #include "angelscript.h"
 #include "database.h"
 #include "server.h"
+#endif
 
 #define RETURNFAIL_IF(a) if(a){return -1;}
 
+#ifndef TESTING_
 int RegisterDBRow(sqlite3* sqldb, asIScriptEngine* engine)
 {
 	int result = 0;
@@ -104,6 +107,11 @@ int RegisterDBRow(sqlite3* sqldb, asIScriptEngine* engine)
 						(const std::string&, UUID&), bool), asCALL_THISCALL);
 	RETURNFAIL_IF(result < 0);
 
+	result = engine->RegisterObjectMethod("DBRow", "void ClearValues()",
+					asMETHODPR(SQLiteRow, ClearValues, (void), void),
+					asCALL_THISCALL);
+	RETURNFAIL_IF(result < 0);
+
 	result = engine->RegisterObjectMethod("DBRow", "bool LoadFromDB()",
 					asMETHODPR(SQLiteRow, LoadFromDB,
 						(void), bool), asCALL_THISCALL);
@@ -119,15 +127,17 @@ int RegisterDBRow(sqlite3* sqldb, asIScriptEngine* engine)
 						(SQLiteRow*), bool), asCALL_THISCALL);
 	return result;
 }
+#endif
 
 void SQLiteRow::InitFromTable(SQLiteTable* table)
 {
 	for(SQLiteColumn* col : table->m_columns)
 	{
-		if(SQLiteColumn::KeyType::KEY_NONE != col->GetKeyType())
+		if(!col || SQLiteColumn::KeyType::KEY_NONE != col->GetKeyType())
 		{
-			//Don't set a default value for a key type so we can tell
-			//easily if one was not provided by the user
+			//Don't set a default value for a key type (what we're
+			//doing below) so we can tell easily if one was not
+			//provided by the user
 			continue;
 		}
 
@@ -151,6 +161,7 @@ void SQLiteRow::InitFromTable(SQLiteTable* table)
 	}
 }
 
+#ifndef TESTING_
 void SQLiteRow::AddRef()
 {
 	asAtomicInc(m_refcount);
@@ -164,6 +175,7 @@ void SQLiteRow::Release()
 		delete this;
 	}
 }
+#endif
 
 SQLiteRow* SQLiteRow::Factory(SQLiteTable* table)
 {
@@ -179,20 +191,23 @@ SQLiteRow::SQLiteRow(SQLiteTable* table)
 
 SQLiteRow::~SQLiteRow()
 {
-	size_t idx = 0, len = m_values.size();
-	for(; idx < len; ++idx)
+	for(std::unordered_map<std::string, SQLiteVariant*>::iterator it = m_valuemap.begin(),
+		    end = m_valuemap.end(); it != end; ++it)
 	{
-		delete m_values[idx];
+		delete it->second;
 	}
 }
 
 void SQLiteRow::ClearValues()
 {
-	for(SQLiteVariant* var : m_values)
+	for(std::unordered_map<std::string, SQLiteVariant*>::iterator it = m_valuemap.begin(),
+		    end = m_valuemap.end(); it != end; ++it)
 	{
-		var->ClearValue();
+		if(it->second)
+		{
+			it->second->ClearValue();
+		}
 	}
-	m_valuemap.clear();
 }
 
 void SQLiteRow::SetColumnValue(const std::string& colname, const SQLiteVariant* value)
@@ -205,9 +220,8 @@ void SQLiteRow::SetColumnValue(const std::string& colname, const int v)
 	SQLiteVariant* var = m_valuemap[colname];
 	if(!var)
 	{
-		m_values.emplace_back(new SQLiteVariant());
-		m_valuemap[colname] = m_values.back();
-		var = m_values.back();
+		var = new SQLiteVariant();
+		m_valuemap[colname] = var;
 	}
 
 	var->SetValue(v);
@@ -218,9 +232,8 @@ void SQLiteRow::SetColumnValue(const std::string& colname, const long long v)
 	SQLiteVariant* var = m_valuemap[colname];
 	if(!var)
 	{
-		m_values.emplace_back(new SQLiteVariant());
-		m_valuemap[colname] = m_values.back();
-		var = m_values.back();
+		var = new SQLiteVariant();
+		m_valuemap[colname] = var;
 	}
 
 	var->SetValue(v);
@@ -231,9 +244,8 @@ void SQLiteRow::SetColumnValue(const std::string& colname, const unsigned int v)
 	SQLiteVariant* var = m_valuemap[colname];
 	if(!var)
 	{
-		m_values.emplace_back(new SQLiteVariant());
-		m_valuemap[colname] = m_values.back();
-		var = m_values.back();
+		var = new SQLiteVariant();
+		m_valuemap[colname] = var;
 	}
 
 	var->SetValue(v);
@@ -244,9 +256,8 @@ void SQLiteRow::SetColumnValue(const std::string& colname, const unsigned long l
 	SQLiteVariant* var = m_valuemap[colname];
 	if(!var)
 	{
-		m_values.emplace_back(new SQLiteVariant());
-		m_valuemap[colname] = m_values.back();
-		var = m_values.back();
+		var = new SQLiteVariant();
+		m_valuemap[colname] = var;
 	}
 
 	var->SetValue(v);
@@ -257,9 +268,8 @@ void SQLiteRow::SetColumnValue(const std::string& colname, const float v)
 	SQLiteVariant* var = m_valuemap[colname];
 	if(!var)
 	{
-		m_values.emplace_back(new SQLiteVariant());
-		m_valuemap[colname] = m_values.back();
-		var = m_values.back();
+		var = new SQLiteVariant();
+		m_valuemap[colname] = var;
 	}
 
 	var->SetValue(v);
@@ -270,9 +280,8 @@ void SQLiteRow::SetColumnValue(const std::string& colname, const double v)
 	SQLiteVariant* var = m_valuemap[colname];
 	if(!var)
 	{
-		m_values.emplace_back(new SQLiteVariant());
-		m_valuemap[colname] = m_values.back();
-		var = m_values.back();
+		var = new SQLiteVariant();
+		m_valuemap[colname] = var;
 	}
 
 	var->SetValue(v);
@@ -283,9 +292,8 @@ void SQLiteRow::SetColumnValue(const std::string& colname, const std::string& v)
 	SQLiteVariant* var = m_valuemap[colname];
 	if(!var)
 	{
-		m_values.emplace_back(new SQLiteVariant());
-		m_valuemap[colname] = m_values.back();
-		var = m_values.back();
+		var = new SQLiteVariant();
+		m_valuemap[colname] = var;
 	}
 
 	var->SetValue(v);
@@ -296,9 +304,8 @@ void SQLiteRow::SetColumnValue(const std::string& colname, const char* data, con
 	SQLiteVariant* var = m_valuemap[colname];
 	if(!var)
 	{
-		m_values.emplace_back(new SQLiteVariant());
-		m_valuemap[colname] = m_values.back();
-		var = m_values.back();
+		var = new SQLiteVariant();
+		m_valuemap[colname] = var;
 	}
 
 	var->SetValue(data, datalen);
@@ -445,7 +452,6 @@ bool SQLiteRow::LoadFromDB()
 {
 	if(m_table)
 	{
-
 		return (m_table->LoadRow(this) != SQLITE_ERROR) ? true : false;
 	}
 	else

@@ -3,7 +3,7 @@ CCXX = g++
 
 SQLITECC = ${CC}
 OPTFLAG = -Og
-DEBUGFLAGS = -g
+DEBUGFLAGS = -g -DDEBUG
 CFLAGS = -Wall ${OPTFLAG} ${DEBUGFLAGS}
 CXXFLAGS = -Wall ${OPTFLAG} ${DEBUGFLAGS}
 LDLIBS = ${OPTFLAG} -pthread -lz -ldl -lm -Wl,-soname,libsodium.so,-rpath='./' -L. -l:libsodium.so ${DEBUGFLAGS}

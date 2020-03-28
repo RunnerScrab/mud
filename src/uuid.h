@@ -8,7 +8,10 @@
 #include <string>
 #include <stdint.h>
 #include "charvector.h"
+
+#ifndef TESTING_
 #include "as_manager.h"
+#endif
 
 struct Int128
 {
@@ -58,7 +61,9 @@ public:
 	static void GenerateUUID(union UUIDunion* uuid);
 };
 
+#ifndef TESTING_
 int RegisterUUIDClass(AngelScriptManager* manager);
+#endif
 
 
 #endif

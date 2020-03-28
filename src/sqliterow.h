@@ -7,19 +7,24 @@
 #include "uuid.h"
 #include "sqlitevariant.h"
 
+#ifndef TESTING_
 struct Database;
-class SQLiteTable;
 class asIScriptEngine;
+#endif
+
+class SQLiteTable;
 struct sqlite3;
 //Contains the values of the row
 class SQLiteRow
 {
 public:
+	#ifndef TESTING_
 	void AddRef();
 	void Release();
+	#endif
+
 	static SQLiteRow* Factory(SQLiteTable*);
 private:
-	std::vector<SQLiteVariant*> m_values;
 	std::unordered_map<std::string, SQLiteVariant*> m_valuemap;
 	SQLiteTable* m_table;
 
@@ -63,6 +68,8 @@ private:
 	void InitFromTable(SQLiteTable* table);
 };
 
+#ifndef TESTING_
 int RegisterDBRow(sqlite3* sqldb, asIScriptEngine* sengine);
+#endif
 
 #endif

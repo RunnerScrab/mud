@@ -83,7 +83,7 @@ bool ASAPI_LoadObjectStrKey(asIScriptObject* obj, const std::string& key)
 	{
 		asITypeInfo* obj_ti = obj->GetObjectType();
 		SQLiteTable* type_table = reinterpret_cast<SQLiteTable*>(obj_ti->GetUserData(AS_USERDATA_TYPESCHEMA));
-		SQLiteColumn* primary_keycol = type_table->GetPrimaryKeyCol();
+		SQLiteColumn* primary_keycol = type_table->GetPrimaryKeyColAt(0);
 		//Use the calling context
 		asIScriptContext* ctx = asGetActiveContext();
 
@@ -122,7 +122,7 @@ bool ASAPI_LoadObjectUUIDKey(asIScriptObject* obj, const UUID& key)
 	{
 		asITypeInfo* obj_ti = obj->GetObjectType();
 		SQLiteTable* type_table = reinterpret_cast<SQLiteTable*>(obj_ti->GetUserData(AS_USERDATA_TYPESCHEMA));
-		SQLiteColumn* primary_keycol = type_table->GetPrimaryKeyCol();
+		SQLiteColumn* primary_keycol = type_table->GetPrimaryKeyColAt(0);
 		//Use the calling context
 		asIScriptContext* ctx = asGetActiveContext();
 
@@ -159,7 +159,7 @@ template<typename T> bool ASAPI_LoadObjectIntKey(asIScriptObject* obj, const T k
 	{
 		asITypeInfo* obj_ti = obj->GetObjectType();
 		SQLiteTable* type_table = reinterpret_cast<SQLiteTable*>(obj_ti->GetUserData(AS_USERDATA_TYPESCHEMA));
-		SQLiteColumn* primary_keycol = type_table->GetPrimaryKeyCol();
+		SQLiteColumn* primary_keycol = type_table->GetPrimaryKeyColAt(0);
 		//Use the calling context
 		asIScriptContext* ctx = asGetActiveContext();
 

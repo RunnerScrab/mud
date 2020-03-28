@@ -69,8 +69,9 @@ class Meower : TestInterface, IPersistent
 			for(int i = 0, len = m_testpods.length();
 				i < len; ++i)
 				{
-					tptrow.ClearValues();
+					//tptrow.ClearValues();
 					TestPOD@ thispod = m_testpods[i];
+					tptrow.SetColValue("subtable_index", i);
 					tptrow.SetColValue("name", thispod.m_name);
 					tptrow.SetColValue("ability", thispod.m_ability);
 					tptrow.StoreIntoDB();
@@ -96,6 +97,8 @@ class Meower : TestInterface, IPersistent
 		m_uuid.Generate();
 		Log("Trying to make a meower. это - кошка!\n");
 		Log("Meower uuid: " + m_uuid.ToString() + "\n");
+		m_testpods.insertLast(TestPOD("pod1", "meow"));
+		m_testpods.insertLast(TestPOD("pod2", "MEOW"));
 	}
 	~Meower()
 	{

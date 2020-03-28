@@ -220,6 +220,10 @@ public:
 		if(!m_data.as_blob)
 		{
 			m_data.as_blob = (char*) malloc(m_datalen);
+			if(!m_data.as_blob)
+			{
+				printf("FAILED TO ALLOCATE MEMORY FOR VARIANT BLOB!\n");
+			}
 			m_reservedlen = m_datalen;
 		}
 		memset(m_data.as_blob, 0, m_reservedlen);

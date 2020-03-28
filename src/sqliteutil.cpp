@@ -31,12 +31,16 @@ int DoesSQLiteTableExist(sqlite3* pDB, const char* tablename)
 {
 	sqlite3_stmt* query = 0;
 	static const char* checktablequery = "SELECT name FROM sqlite_master WHERE type='table' AND name=$tablename;";
+	dbgprintf("SQLiteTable check query: %s\n", checktablequery);
 	if(SQLITE_OK != sqlite3_prepare_v2(pDB, checktablequery, -1, &query, 0))
 	{
+		dbgprintf("sqlite prepare failed: %s\n",
+			sqlite3_errmsg(pDB));
 		return -1;
 	}
 	if(SQLITE_OK != sqlite3_bind_text(query, 1, tablename, strlen(tablename), 0))
 	{
+		dbgprintf("sqlite bind failed\n");
 		sqlite3_finalize(query);
 		return -1;
 	}
