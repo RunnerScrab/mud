@@ -141,7 +141,7 @@ int RegisterDBTable(sqlite3* sqldb, asIScriptEngine* sengine)
 					asCALL_THISCALL);
 	RETURNFAIL_IF(result < 0);
 
-	result = sengine->RegisterObjectMethod("DBTable", "bool LoadSubTable(DBRow@ parent_row, array<DBRow@>@ results)",
+	result = sengine->RegisterObjectMethod("DBTable", "bool LoadSubTable(DBRow@+ parent_row, array<DBRow@>& out)",
 					asMETHODPR(SQLiteTable, LoadSubTable, (SQLiteRow*, CScriptArray*), bool),
 					asCALL_THISCALL);
 	RETURNFAIL_IF(result < 0);
@@ -528,7 +528,6 @@ bool SQLiteTable::LoadSubTable(SQLiteRow* parent_row, CScriptArray* resultarray)
 	if(SQLITE_OK != result)
 	{
 		dbgprintf("LoadRow prepare statement failure.\n");
-		//return result;
 		return false;
 	}
 
@@ -562,8 +561,8 @@ bool SQLiteTable::LoadSubTable(SQLiteRow* parent_row, CScriptArray* resultarray)
 
 		pRow = new SQLiteRow(this);
 #ifndef TESTING_
-		pRow->AddRef();
-		resultarray->InsertLast(pRow);
+		//InsertLast should call AddRef() for us
+		resultarray->InsertLast(&pRow);
 #else
 		resultarray.emplace_back(pRow);
 #endif
@@ -593,6 +592,8 @@ bool SQLiteTable::LoadSubTable(SQLiteRow* parent_row, CScriptArray* resultarray)
 			break;
 			default:
 				dbgprintf("SubTable: Unknown value type?\n");
+				parent_row->Release();
+				resultarray->Release();
 				return false;
 				break;
 			}
@@ -601,6 +602,7 @@ bool SQLiteTable::LoadSubTable(SQLiteRow* parent_row, CScriptArray* resultarray)
 	} while(SQLITE_ROW == result);
 
 	sqlite3_finalize(query);
+
 	return true;
 
 }
@@ -793,12 +795,12 @@ int SQLiteTable::PerformUpsert(SQLiteRow* pRow, SQLiteRow* pParentRow)
 	}
 
 /*
-	if(SQLITE_OK != sqlite3_bind_text(query, 1, m_tablename.c_str(), m_tablename.length(), 0))
-	{
-		dbgprintf("Failed to bind tablename\n");
-		sqlite3_finalize(query);
-		return SQLITE_ERROR;
-	}
+  if(SQLITE_OK != sqlite3_bind_text(query, 1, m_tablename.c_str(), m_tablename.length(), 0))
+  {
+  dbgprintf("Failed to bind tablename\n");
+  sqlite3_finalize(query);
+  return SQLITE_ERROR;
+  }
 
 */
 	for(size_t idx = 0, len = m_columns.size(); idx < len; ++idx)

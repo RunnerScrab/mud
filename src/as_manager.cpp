@@ -228,6 +228,7 @@ extern "C"
 			{
 				dbgprintf("CREATING a new table for class %s.\n", pInfo->GetName());
 				SQLiteTable* pTable = new SQLiteTable(pSQLiteDB, pInfo->GetName());
+				pTable->AddRef();
 				pInfo->SetUserData((void*) pTable, AS_USERDATA_TYPESCHEMA);
 				//We want to reuse this table for every parent class of the type in pInfo.
 				///Every class and subclass will have its own table which includes all the

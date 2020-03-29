@@ -44,6 +44,21 @@ class Meower : TestInterface, IPersistent
 	{
 		row.GetColValue("uuid", m_uuid);
 		row.GetColValue("name", m_name);
+		array<DBRow@> resultarr;
+		DBTable@ podsubtable = table.GetSubTable("testpodarray");
+		if(@podsubtable !is null)
+		{
+			podsubtable.LoadSubTable(row, resultarr);
+			for(int i = 0, len = resultarr.length(); i < len; ++i)
+			{
+				string name;
+				string ability;
+				DBRow@ hRow = resultarr[i];
+				hRow.GetColValue("name", name);
+				hRow.GetColValue("ability", ability);
+				m_testpods.insertLast(TestPOD(name, ability));
+			}
+		}
 	}
 
 	void OnDefineSchema(DBTable@ table)
@@ -344,6 +359,11 @@ void TestDatabaseRead(Player@ player)
 			{
 				player.Send("Successfully loaded meower with key 'testkey'.\r\n");
 				player.Send("Meower power: " + meower.m_superpowername + "\r\n");
+				for(int i = 0, len = meower.m_testpods.length(); i < len; ++i)
+				{
+					player.Send("Meower testpod name: " +meower.m_testpods[i].m_name +
+							    " ability: " + meower.m_testpods[i].m_ability + "\r\n");
+				}
 			}
 			else
 			{
