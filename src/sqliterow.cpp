@@ -23,9 +23,8 @@ int RegisterDBRow(sqlite3* sqldb, asIScriptEngine* engine)
 						asCALL_THISCALL);
 	RETURNFAIL_IF(result < 0);
 
-	result = engine->RegisterObjectBehaviour("DBRow", asBEHAVE_FACTORY, "DBRow@ f()",
-						asFUNCTION(SQLiteRow::Factory), asCALL_CDECL);
-	RETURNFAIL_IF(result < 0);
+	/* NOTE: DBRow's Factory function must be registered after the DBTable class,
+	 * since it has DBTable as an argument */
 
 	result = engine->RegisterObjectMethod("DBRow", "void SetColValue(const string& in, int v)",
 					asMETHODPR(SQLiteRow, SetColumnValue,
@@ -122,12 +121,26 @@ int RegisterDBRow(sqlite3* sqldb, asIScriptEngine* engine)
 						(void), bool), asCALL_THISCALL);
 	RETURNFAIL_IF(result < 0);
 
-	result = engine->RegisterObjectMethod("DBRow", "bool StoreChildRowIntoDB(DBRow@ parent_row)",
+/*	result = engine->RegisterObjectMethod("DBRow", "bool StoreChildRowIntoDB(DBRow@ parent_row)",
 					asMETHODPR(SQLiteRow, StoreChildRowIntoDB,
 						(SQLiteRow*), bool), asCALL_THISCALL);
+	RETURNFAIL_IF(result < 0);
+*/
+	result = engine->RegisterObjectMethod("DBRow", "void StoreChildRow(DBRow@ childrow)",
+					asMETHODPR(SQLiteRow, StoreChildRow, (SQLiteRow*), void),
+					asCALL_THISCALL);
 	return result;
 }
 #endif
+
+void SQLiteRow::StoreChildRow(SQLiteRow* childrow)
+{
+	if(childrow)
+	{
+		childrow->AddRef();
+		m_childrows.push_back(childrow);
+	}
+}
 
 void SQLiteRow::InitFromTable(SQLiteTable* table)
 {
@@ -195,6 +208,11 @@ SQLiteRow::~SQLiteRow()
 		    end = m_valuemap.end(); it != end; ++it)
 	{
 		delete it->second;
+	}
+
+	for(SQLiteRow* childrow : m_childrows)
+	{
+		delete childrow;
 	}
 }
 

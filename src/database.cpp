@@ -266,6 +266,18 @@ bool ASAPI_SaveObject(asIScriptObject* obj)
 			return false;
 		}
 
+		if(!obj_row->StoreAllChildRowsIntoDB())
+		{
+			if(ctx->SetException("Couldn't save child rows.") < 0)
+			{
+				ServerLog(SERVERLOG_ERROR, "Couldn't set child row storage exception.");
+			}
+			obj->Release();
+			delete obj_row;
+			ctx->PopState();
+			return false;
+		}
+
 		if(ctx->PopState() < 0)
 		{
 			if(ctx->SetException("Couldn't restore context state.") < 0)

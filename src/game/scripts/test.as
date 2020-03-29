@@ -65,24 +65,18 @@ class Meower : TestInterface, IPersistent
 			row.SetColValue("name", m_name);
 			DBTable@ testpodtable = table.GetSubTable("testpodarray");
 
-/*
 			for(int i = 0, len = m_testpods.length();
 				i < len; ++i)
 				{
 					//tptrow.ClearValues();
 					TestPOD@ thispod = m_testpods[i];
-					DBRow@ tptrow = testpodtable.MakeSubTableRow();
+					DBRow@ tptrow = DBRow(testpodtable);
 					tptrow.SetColValue("subtable_index", i);
 					tptrow.SetColValue("name", thispod.m_name);
 					tptrow.SetColValue("ability", thispod.m_ability);
-					//SubTables must be saved after the main row because of
-					//foreign key constraints!
-					//if(!tptrow.StoreChildRowIntoDB(row))
-					//{
-					//	Log("Storing subtable row FAILED!\r\n");
-					//}
+					row.StoreChildRow(tptrow);
 				}
-*/
+
 		}
 		else
 		{
@@ -240,9 +234,11 @@ void OnPlayerConnect(Player@ player)
 {
 //	try
 	{
-		//ref@ h = @player;
-		player.Send("Hello!\r\n");
 		player.Send("Account: ");
+		//ref@ h = @player;
+		/*
+		player.Send("Hello!\r\n");
+
 		uuid newuuid;
 		newuuid.Generate();
 		player.Send("\r\n" + newuuid.ToString() + "\r\n");
@@ -251,6 +247,7 @@ void OnPlayerConnect(Player@ player)
 		g_players.insertLast(player);
 
 		game_server.SendToAll("\r\nSomeone has connected. There are " + g_players.length() + " players connected.\r\n");
+		*/
 	}
 //	catch
 //	{
@@ -370,6 +367,8 @@ void OnPlayerInput(Player@ player, string rawinput)
 {
 	string input;
 	TrimString(rawinput, input);
+	//This command handling is for testing only
+	//Real Commands should be put in a map and assisted with an argument parsing/tokenizing function
 	if("makeuuid" == rawinput)
 	{
 		uuid newuuid;

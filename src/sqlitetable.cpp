@@ -150,6 +150,9 @@ int RegisterDBTable(sqlite3* sqldb, asIScriptEngine* sengine)
 					asMETHODPR(SQLiteTable, GetSubTable, (const std::string&), SQLiteTable*),
 					asCALL_THISCALL);
 
+	result = sengine->RegisterObjectBehaviour("DBRow", asBEHAVE_FACTORY, "DBRow@ f(DBTable@ table)",
+						asFUNCTION(SQLiteRow::Factory), asCALL_CDECL);
+
 	return result;
 }
 #endif

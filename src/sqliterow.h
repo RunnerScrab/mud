@@ -18,16 +18,17 @@ struct sqlite3;
 class SQLiteRow
 {
 public:
-	#ifndef TESTING_
+#ifndef TESTING_
 	void AddRef();
 	void Release();
-	#endif
+#endif
 
-	static SQLiteRow* Factory(SQLiteTable*);
+	static SQLiteRow* Factory(SQLiteTable* parenttable);
 private:
 	std::unordered_map<std::string, SQLiteVariant*> m_valuemap;
 	SQLiteTable* m_table;
 
+	std::vector<SQLiteRow*> m_childrows;
 	int m_refcount;
 public:
 	SQLiteRow(SQLiteTable* table);
@@ -64,6 +65,21 @@ public:
 	bool LoadFromDB();
 	bool StoreIntoDB();
 	bool StoreChildRowIntoDB(SQLiteRow* parent_row = 0);
+
+	void StoreChildRow(SQLiteRow* childrow);
+
+	bool StoreAllChildRowsIntoDB()
+	{
+		for(SQLiteRow* childrow : m_childrows)
+		{
+			if(!childrow->StoreChildRowIntoDB(this))
+			{
+				return false;
+			}
+		}
+		return true;
+	}
+
 private:
 	void InitFromTable(SQLiteTable* table);
 };
