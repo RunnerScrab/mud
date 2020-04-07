@@ -61,9 +61,10 @@ void ANSIColorizeString(const el_t* input, size_t inputlen, cv_t* output)
 	el_t* pInput = (el_t*) input;
 
 	el_t* markerstart = 0;
-	for(;*pInput && (markerstart = strstr(pInput, "`"));)
+	for(;*pInput && (markerstart = memchr(pInput, '`', inputlen - (pInput - input)));)
 	{
-		el_t* markerend = markerstart ? strstr(markerstart + 1, "`") : 0;
+		size_t searchlen = (input + inputlen) - (markerstart + 1);
+		el_t* markerend = markerstart ? memchr(markerstart + 1, '`', searchlen) : 0;
 		el_t symbol[32] = {0};
 		if(markerstart && markerend)
 		{
