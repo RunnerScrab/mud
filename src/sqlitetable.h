@@ -93,6 +93,12 @@ public:
 	static sqlite3* m_static_pDB;
 	static void SetDBConnection(sqlite3* pDB);
 	static sqlite3* GetDBConnection();
+
+	sqlite3* GetDBPtr()
+	{
+		return m_pDB;
+	}
+
 #ifndef TESTING_
 	void AddRef();
 	void Release();

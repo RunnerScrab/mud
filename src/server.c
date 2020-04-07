@@ -53,7 +53,7 @@ int CompClientSock(void* key, void* p)
 
 void Server_SendClientMotd(struct Server* pServer, struct Client* pClient)
 {
-	Client_WriteTo(pClient, pServer->MOTD, strlen(pServer->MOTD));
+	Client_WriteTo(pClient, pServer->MOTD, pServer->MOTDlen);
 }
 
 void Server_AddTimedTask(struct Server* pServer, void* (*taskfn) (void*),

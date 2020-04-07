@@ -27,7 +27,7 @@ void SQLStripString(std::string& str)
 	}
 }
 
-int DoesSQLiteTableExist(sqlite3* pDB, const char* tablename)
+int DoesSQLiteTableExist(sqlite3* pDB, const char* tablename, size_t tablenamelen)
 {
 	sqlite3_stmt* query = 0;
 	static const char* checktablequery = "SELECT name FROM sqlite_master WHERE type='table' AND name=$tablename;";
@@ -38,7 +38,7 @@ int DoesSQLiteTableExist(sqlite3* pDB, const char* tablename)
 			sqlite3_errmsg(pDB));
 		return -1;
 	}
-	if(SQLITE_OK != sqlite3_bind_text(query, 1, tablename, strlen(tablename), 0))
+	if(SQLITE_OK != sqlite3_bind_text(query, 1, tablename, tablenamelen, 0))
 	{
 		dbgprintf("sqlite bind failed\n");
 		sqlite3_finalize(query);
@@ -74,6 +74,16 @@ int GetTableColumns(sqlite3* pDB, const char* tablename, std::set<std::string>& 
 
 	sqlite3_finalize(columnquery);
 	return SQLITE_OK;
+}
+
+int BeginDatabaseTransaction(sqlite3* pDB)
+{
+	return sqlite3_exec(pDB, "BEGIN TRANSACTION", 0, 0, 0);
+}
+
+int EndDatabaseTransaction(sqlite3* pDB)
+{
+	return sqlite3_exec(pDB, "END TRANSACTION", 0, 0, 0);
 }
 
 int ExecSQLiteStatement(sqlite3* pDB, const char* createtablequery)

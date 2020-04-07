@@ -57,6 +57,7 @@ static int Server_LoadMOTD(struct Server* server)
 	server->MOTD = (char*) talloc(sizeof(char) * (len + 1));
 	fread(server->MOTD, sizeof(char), len, fp);
 	server->MOTD[len] = 0;
+	server->MOTDlen = len;
 	fclose(fp);
 	return 0;
 }

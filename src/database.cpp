@@ -9,6 +9,7 @@ extern "C"
 #include <cstring>
 #include <memory>
 
+#include "sqliteutil.h"
 #include "sqlitetable.h"
 #include "sqliterow.h"
 #include "angelscript.h"
@@ -236,6 +237,8 @@ bool ASAPI_SaveObject(asIScriptObject* obj)
 			obj->Release();
 			return false;
 		}
+
+
 		while(obj_ti)
 		{
 			asIScriptFunction* pSaveFun = obj_ti->GetMethodByName("OnSave", false);
@@ -254,6 +257,7 @@ bool ASAPI_SaveObject(asIScriptObject* obj)
 			obj_ti = obj_ti->GetBaseType();
 		}
 
+		BeginDatabaseTransaction(type_table->GetDBPtr());
 		if(!obj_row->StoreIntoDB())
 		{
 			if(ctx->SetException("Couldn't save row to database.") < 0)
@@ -263,6 +267,7 @@ bool ASAPI_SaveObject(asIScriptObject* obj)
 			obj->Release();
 			delete obj_row;
 			ctx->PopState();
+			EndDatabaseTransaction(type_table->GetDBPtr());
 			return false;
 		}
 
@@ -275,8 +280,10 @@ bool ASAPI_SaveObject(asIScriptObject* obj)
 			obj->Release();
 			delete obj_row;
 			ctx->PopState();
+			EndDatabaseTransaction(type_table->GetDBPtr());
 			return false;
 		}
+		EndDatabaseTransaction(type_table->GetDBPtr());
 
 		if(ctx->PopState() < 0)
 		{

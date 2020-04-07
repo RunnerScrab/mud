@@ -509,7 +509,7 @@ bool SQLiteTable::LoadSubTable(SQLiteRow* parent_row, CScriptArray* resultarray)
 		return false;
 	}
 
-	int result = DoesSQLiteTableExist(m_pDB, m_tablename.c_str());
+	int result = DoesSQLiteTableExist(m_pDB, m_tablename.c_str(), m_tablename.size());
 	if(result <= 0)
 	{
 		return false;
@@ -618,7 +618,7 @@ int SQLiteTable::LoadRow(SQLiteRow* pRow)
 		return SQLITE_ERROR;
 	}
 
-	int result = DoesSQLiteTableExist(m_pDB, m_tablename.c_str());
+	int result = DoesSQLiteTableExist(m_pDB, m_tablename.c_str(), m_tablename.size());
 
 	if(result <= 0)
 	{
@@ -710,7 +710,7 @@ int SQLiteTable::StoreRow(SQLiteRow* pRow, SQLiteRow* pParentRow)
 		return SQLITE_ERROR;
 	}
 
-	int result = DoesSQLiteTableExist(m_pDB, m_tablename.c_str());
+	int result = DoesSQLiteTableExist(m_pDB, m_tablename.c_str(), m_tablename.size());
 	if(0 == result)
 	{
 		//Create table if it does not already exist

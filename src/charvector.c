@@ -60,9 +60,9 @@ int cv_appendcv(cv_t* dest, cv_t* src)
 	return cv_append(dest, src->data, src->length);
 }
 
-int cv_appendstr(cv_t* cv, const el_t* data)
+int cv_appendstr(cv_t* cv, const el_t* data, size_t len)
 {
-	cv_strcat(cv, data);
+	cv_strncat(cv, data, len);
 	return 0;
 }
 
@@ -113,20 +113,6 @@ void cv_copy(cv_t* dest, cv_t* source)
 	memcpy(dest->data, source->data, dest->capacity);
 }
 
-void cv_strcpy(cv_t* dest, const el_t* source)
-{
-	dest->length = strlen(source) + 1;
-
-	if(dest->capacity < dest->length)
-	{
-		dest->capacity = max(dest->length, (dest->capacity<<1));
-		dest->capacity = max(MINALLOC, dest->capacity);
-		dest->data = (el_t*) trealloc(dest->data, sizeof(el_t) * dest->capacity);
-	}
-
-	memcpy(dest->data, source, dest->capacity);
-}
-
 void cv_strncpy(cv_t* dest, const el_t* source, size_t len)
 {
 	dest->length = len;
@@ -148,18 +134,6 @@ void cv_strncat(cv_t* dest, const el_t* source, size_t len)
 	}
 	dest->length = new_len;
 	strncat(dest->data, source, len);
-}
-
-void cv_strcat(cv_t* dest, const el_t* source)
-{
-	size_t new_len = max(MINALLOC, (dest->length + strlen(source)));
-	if(new_len >= dest->capacity)
-	{
-		dest->capacity = max((dest->capacity << 1), new_len);
-		dest->data = (el_t*) trealloc(dest->data, sizeof(el_t) * dest->capacity);
-	}
-	strcat(dest->data, source);
-	dest->length = new_len;
 }
 
 void cv_destroy(cv_t* cv)

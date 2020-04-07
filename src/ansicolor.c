@@ -36,7 +36,7 @@ inline int chtoi(const char ch)
 	return table[toupper(ch) - 48];
 }
 
-void atorgb(const char* a, unsigned char* r, unsigned char* g, unsigned char* b)
+void atorgb(const char* a, size_t len, unsigned char* r, unsigned char* g, unsigned char* b)
 {
 	static const unsigned char table[] = {
 		0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
@@ -44,7 +44,7 @@ void atorgb(const char* a, unsigned char* r, unsigned char* g, unsigned char* b)
 		0,0,0,0,0,0,0,0,
 		0, 1, 2, 3, 4, 5, 6, 7, 8, 9, ':', ';', '<', '=', '>', '?',
 		'@', 10, 11, 12, 13, 14, 15};
-	if(strlen(a) == 7 && (a[0] == '#' || a[0] == '@'))
+	if(strnlen(a, len) == 7 && (a[0] == '#' || a[0] == '@'))
 	{
 		*r = (table[toupper(a[1])]<<4) | table[toupper(a[2])];
 		*g = (table[toupper(a[3])]<<4) | table[toupper(a[4])];
@@ -56,10 +56,9 @@ void atorgb(const char* a, unsigned char* r, unsigned char* g, unsigned char* b)
 	}
 }
 
-void ANSIColorizeString(const el_t* input, cv_t* output)
+void ANSIColorizeString(const el_t* input, size_t inputlen, cv_t* output)
 {
 	el_t* pInput = (el_t*) input;
-//	char* output = malloc(sizeof(char) * strlen(input)<<1);
 
 	el_t* markerstart = 0;
 	for(;*pInput && (markerstart = strstr(pInput, "`"));)
@@ -79,11 +78,11 @@ void ANSIColorizeString(const el_t* input, cv_t* output)
 				//24-bit ANSI color code, foreground
 				el_t twentyfourbitansi[32] = {0};
 				unsigned char r, g, b;
-				atorgb(symbol, &r, &g, &b);
+				atorgb(symbol, 32, &r, &g, &b);
 				snprintf(twentyfourbitansi, sizeof(el_t) * 31, "\x1b[%d;2;%d;%d;%dm",
 					(symbol[0] == '#'? 38 : 48),r, g, b);
 
-				cv_appendstr(output, twentyfourbitansi);
+				cv_appendstr(output, twentyfourbitansi, 32);
 			}
 			break;
 			default:
@@ -92,7 +91,7 @@ void ANSIColorizeString(const el_t* input, cv_t* output)
 								sizeof(struct AnsiCode), compcolsymbol);
 				if(found)
 				{
-					cv_appendstr(output, (el_t*) found->code);
+					cv_appendstr(output, (el_t*) found->code, 16);
 				}
 				else
 				{
@@ -109,5 +108,5 @@ void ANSIColorizeString(const el_t* input, cv_t* output)
 		}
 	}
 
-	cv_appendstr(output, pInput);
+	cv_appendstr(output, pInput, inputlen);
 }

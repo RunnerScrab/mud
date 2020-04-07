@@ -62,6 +62,7 @@ struct Server
 	struct Database db;
 
 	char* MOTD;
+	size_t MOTDlen;
 };
 
 void ServerLog(unsigned int code, const char* fmt, ...);

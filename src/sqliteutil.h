@@ -9,9 +9,12 @@ class SQLiteVariant;
 
 void SQLEscapeString(std::string& str);
 void SQLStripString(std::string& str);
-int DoesSQLiteTableExist(sqlite3* pDB, const char* tablename);
+int DoesSQLiteTableExist(sqlite3* pDB, const char* tablename, size_t tablenamelen);
 int GetTableColumns(sqlite3* pDB, const char* tablename, std::set<std::string>& columnset);
 int ExecSQLiteStatement(sqlite3* pDB, const char* createtablequery);
 int AddColumnToSQLiteTable(sqlite3* pDB, const char* tablename, const char* colname, const char* coltype);
+
+int BeginDatabaseTransaction(sqlite3* pDB);
+int EndDatabaseTransaction(sqlite3* pDB);
 
 #endif
