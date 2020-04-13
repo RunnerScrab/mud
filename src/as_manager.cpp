@@ -244,6 +244,7 @@ extern "C"
 						ctx->SetObject(0);
 						ctx->SetArgObject(0, pTable);
 						ctx->Execute();
+						break;
 					}
 					pInfo = pInfo->GetBaseType();
 					if(pInfo)

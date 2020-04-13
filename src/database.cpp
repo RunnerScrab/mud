@@ -49,6 +49,7 @@ static bool LoadObject(SQLiteTable* type_table, asIScriptObject* obj, asITypeInf
 				ctx->SetArgObject(0, type_table);
 				ctx->SetArgObject(1, obj_row);
 				ctx->Execute();
+				break;
 			}
 			obj_ti = obj_ti->GetBaseType();
 		}
@@ -249,6 +250,7 @@ bool ASAPI_SaveObject(asIScriptObject* obj)
 				ctx->SetArgObject(0, (void*) type_table);
 				ctx->SetArgObject(1, (void*) obj_row);
 				ctx->Execute();
+				break;
 			}
 			else
 			{

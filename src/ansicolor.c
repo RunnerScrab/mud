@@ -46,6 +46,7 @@ void atorgb(const char* a, size_t len, unsigned char* r, unsigned char* g, unsig
 		'@', 10, 11, 12, 13, 14, 15};
 	if(strnlen(a, len) == 7 && (a[0] == '#' || a[0] == '@'))
 	{
+		printf("Found 24-bit ANSI color code.\n");
 		*r = (table[toupper(a[1])]<<4) | table[toupper(a[2])];
 		*g = (table[toupper(a[3])]<<4) | table[toupper(a[4])];
 		*b = (table[toupper(a[5])]<<4) | table[toupper(a[6])];
@@ -109,5 +110,5 @@ void ANSIColorizeString(const el_t* input, size_t inputlen, cv_t* output)
 		}
 	}
 
-	cv_appendstr(output, pInput, inputlen);
+	cv_appendstr(output, pInput, markerstart ? ((input + inputlen) - (markerstart + 1)) : inputlen);
 }

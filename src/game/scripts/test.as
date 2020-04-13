@@ -137,6 +137,7 @@ class SuperMeower : Meower
 
 	void OnDefineSchema(DBTable@ table)
 	{
+		Meower::OnDefineSchema(table);
 		Log("Calling SuperMeower's OnDefineSchema()\n");
 		table.AddTextCol("superpower");
 	}
@@ -149,11 +150,13 @@ class SuperMeower : Meower
 	}
 	void OnSave(DBTable@ table, DBRow@ row)
 	{
+		Meower::OnSave(table, row);
 		Log("Calling SuperMeower OnSave().\r\n");
 		row.SetColValue("superpower", m_superpowername);
 	}
 	void OnLoad(DBTable@ table, DBRow@ row)
 	{
+		Meower::OnLoad(table, row);
 		row.GetColValue("superpower", m_superpowername);
 	}
 
@@ -167,6 +170,7 @@ class MegaMeower : SuperMeower
 	}
 	void OnDefineSchema(DBTable@ table)
 	{
+		SuperMeower::OnDefineSchema(table);
 		Log("Calling MegaMeower's OnDefineSchema()");
 	}
 
@@ -218,7 +222,7 @@ class Player : PlayerConnection
 	}
 
 	private PlayerGameState m_gamestate;
-					   private string m_name;
+					   string m_name;
 								private Meower@ m_meower;
 };
 
@@ -249,6 +253,7 @@ void OnPlayerConnect(Player@ player)
 {
 //	try
 	{
+		player.SetName("Meowmaster");
 		player.Send("Account: ");
 		//ref@ h = @player;
 		/*
@@ -283,6 +288,7 @@ void OnPlayerConnect(Player@ player)
 void OnPlayerDisconnect(Player@ player)
 {
 	Log("OnPlayerDisconnect called.\n");
+	Log("Player named " + player.m_name + " disconnecting.\r\n");
 	int removeidx = g_players.findByRef(player);
 	if(removeidx >= 0)
 	{
@@ -327,10 +333,14 @@ void TestDatabase(Player@ player)
 	SuperMeower@ hMeower = @meower;
 	if(DBSaveObject(@hMeower))
 	{
+		Log("Successfully saved meower to database.\r\n");
 		player.Send("Successfully saved meower to database.\r\n");
+		player.Send("`#00ff00`Successfully saved meower to database.`default`\r\n");
 	}
 	else
 	{
+		Log("Failed to save meower to database.\r\n");
+		player.Send("Failed to save meower to database.\r\n");
 		player.Send("Failed to save meower to database.\r\n");
 	}
 	player.Send("meower guid: " + meower.m_uuid.ToString() + "\r\n");
@@ -357,7 +367,7 @@ void TestDatabaseRead(Player@ player)
 		{
 			if(DBLoadObject(@meower, keyuuid))
 			{
-				player.Send("Successfully loaded meower with key 'testkey'.\r\n");
+				player.Send("Successfully loaded meower with name " + meower.m_name + ".\r\n");
 				player.Send("Meower power: " + meower.m_superpowername + "\r\n");
 				for(int i = 0, len = meower.m_testpods.length(); i < len; ++i)
 				{
@@ -404,7 +414,7 @@ void OnPlayerInput(Player@ player, string rawinput)
 	}
 	else if ("testcolor" == rawinput)
 	{
-		player.Send("`red`Testing color!`default`\r\n");
+		player.Send("`#00ff00`Testing color!`default`\r\n");
 	}
 	else if ("testdb" == rawinput)
 	{
