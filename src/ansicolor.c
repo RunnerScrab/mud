@@ -60,7 +60,6 @@ void atorgb(const char* a, size_t len, unsigned char* r, unsigned char* g, unsig
 void ANSIColorizeString(const el_t* input, size_t inputlen, cv_t* output)
 {
 	el_t* pInput = (el_t*) input;
-
 	el_t* markerstart = 0;
 	for(;*pInput && (markerstart = memchr(pInput, '`', inputlen - (pInput - input)));)
 	{
@@ -71,6 +70,7 @@ void ANSIColorizeString(const el_t* input, size_t inputlen, cv_t* output)
 		{
 			strncpy(symbol, markerstart + 1, markerend - markerstart - 1);
 			//strncat(output, pInput, markerstart - pInput);
+			//abc`
 			cv_strncat(output, pInput, markerstart - pInput);
 			switch(symbol[0])
 			{
@@ -81,10 +81,10 @@ void ANSIColorizeString(const el_t* input, size_t inputlen, cv_t* output)
 				el_t twentyfourbitansi[32] = {0};
 				unsigned char r, g, b;
 				atorgb(symbol, 32, &r, &g, &b);
-				snprintf(twentyfourbitansi, sizeof(el_t) * 31, "\x1b[%d;2;%d;%d;%dm",
+				size_t written = snprintf(twentyfourbitansi, sizeof(el_t) * 32, "\x1b[%d;2;%d;%d;%dm",
 					(symbol[0] == '#'? 38 : 48),r, g, b);
 
-				cv_appendstr(output, twentyfourbitansi, 32);
+				cv_appendstr(output, twentyfourbitansi, written);
 			}
 			break;
 			default:
@@ -93,7 +93,7 @@ void ANSIColorizeString(const el_t* input, size_t inputlen, cv_t* output)
 								sizeof(struct AnsiCode), compcolsymbol);
 				if(found)
 				{
-					cv_appendstr(output, (el_t*) found->code, 16);
+					cv_appendstr(output, (el_t*) found->code, found->codelen);
 				}
 				else
 				{
@@ -110,5 +110,14 @@ void ANSIColorizeString(const el_t* input, size_t inputlen, cv_t* output)
 		}
 	}
 
-	cv_appendstr(output, pInput, markerstart ? ((input + inputlen) - (markerstart + 1)) : inputlen);
+	cv_appendstr(output, pInput, inputlen - (pInput - input) + 1);
+
+	/*
+	int i = 0;
+	for(; i < output->length; ++i)
+	{
+		printf((i < (output->length - 1)) ? "%x," : "%x\n",
+				output->data[i]);
+	}
+	*/
 }

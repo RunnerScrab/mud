@@ -110,8 +110,9 @@ int Client_WriteTo(struct Client* pTarget, const char* buf, size_t len)
 		cv_t compout;
 		cv_init(&compout, len);
 
+		//We don't need or want to send the null terminator over the network
 		if(ZCompressor_CompressRawData(&pTarget->zstreams,
-						color_buf.data, len, &compout) < 0)
+						color_buf.data, color_buf.length - 1, &compout) < 0)
 		{
 			pthread_mutex_unlock(&pTarget->connection_state_mtx);
 			cv_destroy(&compout);
@@ -127,8 +128,9 @@ int Client_WriteTo(struct Client* pTarget, const char* buf, size_t len)
 	}
 	default:
 	{
+		//Don't send the null terminator
 		size_t written = write_full_raw(pTarget->sock,
-						color_buf.data, len);
+						color_buf.data, color_buf.length - 1);
 		cv_destroy(&color_buf);
 		pthread_mutex_unlock(&pTarget->connection_state_mtx);
 		return written;
