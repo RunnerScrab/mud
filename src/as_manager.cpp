@@ -211,8 +211,6 @@ extern "C"
 		//Set the cleanup callback function for all the tables we'll
 		//store with their types
 
-
-
 		size_t ctxidx = ASContextPool_GetFreeContextIndex(&manager->ctx_pool);
 		asIScriptContext* ctx = ASContextPool_GetContextAt(&manager->ctx_pool, ctxidx);
 		sqlite3* pSQLiteDB = SQLiteTable::GetDBConnection();
@@ -244,6 +242,10 @@ extern "C"
 						ctx->SetObject(0);
 						ctx->SetArgObject(0, pTable);
 						ctx->Execute();
+
+						//Breaking here stops automatic calling of superclass IPersistent
+						//OnDefineSchema, which is against convention and confusing to
+						//people experienced with OOP
 						break;
 					}
 					pInfo = pInfo->GetBaseType();

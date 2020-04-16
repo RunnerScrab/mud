@@ -112,8 +112,6 @@ class Meower : TestInterface, IPersistent
 		m_uuid.Generate();
 		Log("Trying to make a meower. это - кошка!\n");
 		Log("Meower uuid: " + m_uuid.ToString() + "\n");
-		m_testpods.insertLast(TestPOD("pod1", "meow"));
-		m_testpods.insertLast(TestPOD("pod2", "MEOW"));
 	}
 	~Meower()
 	{
@@ -330,6 +328,9 @@ void TestDatabase(Player@ player)
 	otheruuid.FromString(uuidstr);
 	player.Send("Converted guid: " + otheruuid.ToString() + "\r\n");
 	SuperMeower meower;
+	meower.m_testpods.insertLast(TestPOD("pod1", "meow"));
+	meower.m_testpods.insertLast(TestPOD("pod2", "MEOW"));
+
 	SuperMeower@ hMeower = @meower;
 	if(DBSaveObject(@hMeower))
 	{
@@ -358,10 +359,10 @@ void TestDatabaseRead(Player@ player)
 	testrow.LoadFromDB();
 	string name;
 	testrow.GetColValue("name", name);
-	player.Send("Loaded meower with name: '" + name + "' from database.\r\n");
+
 	SuperMeower meower;
 
-	if(keyuuid.FromString("0f778a4b-71fb-4030-9da6-6a322a102033"))
+	if(keyuuid.FromString("4659f400-0466-4d79-ab8b-5f0d700e2d4a"))
 	{
 		try
 		{

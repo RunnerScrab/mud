@@ -49,6 +49,9 @@ static bool LoadObject(SQLiteTable* type_table, asIScriptObject* obj, asITypeInf
 				ctx->SetArgObject(0, type_table);
 				ctx->SetArgObject(1, obj_row);
 				ctx->Execute();
+
+				//Breaking here stops automatic calling of superclass IPersistent
+				//methods, which is confusing and against convention
 				break;
 			}
 			obj_ti = obj_ti->GetBaseType();
@@ -250,6 +253,10 @@ bool ASAPI_SaveObject(asIScriptObject* obj)
 				ctx->SetArgObject(0, (void*) type_table);
 				ctx->SetArgObject(1, (void*) obj_row);
 				ctx->Execute();
+
+				//This break here stops the function from automatically calling
+				//superclass IPersistent methods, which was actually confusing
+				//and against convention.
 				break;
 			}
 			else
