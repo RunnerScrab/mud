@@ -1,0 +1,260 @@
+\documentclass{book}
+\usepackage{listings}
+\usepackage{xcolor}
+\usepackage{textcomp}
+\usepackage[T1]{fontenc}
+
+\lstset{
+	showstringspaces=false,
+	upquote=true,
+	language=c++,
+    frame=single, % draw a frame at the top and bottom of the code block
+    tabsize=4, % tab space width
+    basicstyle=\ttfamily,
+    keywordstyle=\color{blue}\ttfamily,
+    stringstyle=\color{red}\ttfamily,
+    commentstyle=\color{olive}\ttfamily,
+    morecomment=[l][\color{magenta}]{\#},
+    numbers=left % display line numbers on the left
+}
+
+\begin{document}
+\chapter{Scripting API}
+\section{ANSI Color}
+All strings displayed to the user may be colorized by use of special, in-string
+color codes, which the engine will translate into ANSI escape sequences. ANSI
+24-bit color, supported by most modern clients and terminal emulators, may also
+be used with hexadecimal RGB sequences (as in HTML).
+
+\begin{figure}[h!]
+\caption{Color codes}
+\begin{center}
+\begin{tabular}{|c|c|}
+\hline
+\texttt{\char0 black\char0} &Black foreground\\
+\texttt{\char0 blue\char0} &Blue foreground\\
+\texttt{\char0 cyan\char0} &Cyan foreground\\
+\texttt{\char0 default\char0} & reset terminal (bg/fg)\\
+\texttt{\char0 green\char0} &Green foreground\\
+\texttt{\char0 magenta\char0} &Magenta foreground\\
+\texttt{\char0 white\char0} &White foreground\\
+\texttt{\char0 yellow\char0}&Yellow foreground\\
+\texttt{\char0 \#RRGGBB\char0}& Foreground to hex RGB color\\
+\texttt{\char0 @RRGGBB\char0}&Background to hex RGB color\\
+\hline
+\end{tabular}
+\end{center}
+\end{figure}
+
+For example, the command \texttt{player.Send("\char0 red\char0 WARNING\char0
+  default\char0");} would send the player red text that says WARNING. (Note that
+it is good practice to end any colorized string with \texttt{\char0
+  default\char0} to keep the last color used from bleeding into the next text.)
+
+\section{Global Event Handlers}
+
+There are several global events for which the scripter must define handler
+functions. Low level tasks like I/O, connection management, and command
+scheduling are done by the engine and do not need to be dealt with by the
+scripter in these.
+
+\subsection{\texttt{void OnPlayerConnect(PlayerConnection@ player)}}
+  Called each time a player connects to the server. The argument is a handle to
+  an engine-implemented object that represents the connecting player. A
+  scripter-defined subclass of \texttt{PlayerConnection} may and should be used
+  with this function in lieu of the base class for game-specific data/behavior,
+  e.g:
+\begin{lstlisting}
+class Player : PlayerConnection
+{
+	// ...
+	void SetGameSpecificVariable(int v)
+	{
+		somevalue = v;
+	}
+	int somevalue;
+};
+
+//PlayerConnection@ has been swapped out with Player@
+void OnPlayerConnect(Player@ player)
+{
+	player.SetGameSpecificVariable(123);
+	// ...
+}
+
+void OnPlayerDisconnect(Player@ player)
+{
+	if(123 == player.somevalue)
+	{
+		Log("This will always print");
+    }
+}
+\end{lstlisting}
+
+The subclass's data must be set directly or via setter (only the base class
+constructor will have been called by the engine), but the engine will otherwise
+behave as if the subclass were built in - the extra data are stored properly and
+without slicing.
+
+
+\subsection{\texttt{void OnPlayerDisconnect(PlayerConnection@ player)}}
+  The counterpart function of \texttt{OnPlayerConnect}, called after a player
+  disconnects. The handle passed for a given connection will point to the same
+  object as it did for \texttt{OnPlayerConnect}.
+
+\subsection{\texttt{void GameTick()}}
+  Called by the engine every second. Use to perform global game-specific logic
+  which must occur periodically and synchronously with respect to itself.
+
+\subsection{\texttt{void OnPlayerInput(PlayerConnection@ player, string input)}}
+  Generally called every time there is player input, with a handle to the player
+  and a copy of his input passed as arguments. It will not be called while the
+  player is in a menu, unless the menu provides a command passthrough feature.
+
+\section{Global Functions}
+\begin{itemize}
+\item \texttt{void Log(string msg)}\\
+  Prints a message to the server log.
+\item \texttt{void HashPassword(const string@ input, string@ output)}\\
+  Hashes string \texttt{input} and places the result into \texttt{output}.
+\item \texttt{void TrimString(const string@ input, string@ output)}\\
+  Trims string \texttt{input} of whitespace from the left and right, and places
+  the result into \texttt{output}.
+\end{itemize}
+
+\section{Global Objects}
+Presently the only global object is \texttt{game\_server}. It may be removed
+later and its member functions replaced with global ones which behave like
+static functions.
+
+\subsection{Server game\_server}
+\begin{itemize}
+\item \texttt{game\_server.SendToAll(string msg)}\\
+  Sends a message to all connected players.
+
+\item \texttt{game\_server.QueueScriptCommand(ICommand@ cmd, uint32 delay)}\\
+  Queues command cmd for execution delay seconds in the future.
+\end{itemize}
+
+\section{Interfaces and Built-in Classes}
+\subsection{uuid}
+
+\texttt{uuid} is a class built into the engine which stores and generates
+version 4 UUIDs.  Internally, the data are stored as 128 bit integers, though
+they can be converted to and from their standard string representations with the
+\texttt{ToString} and \texttt{FromString} member functions.
+
+UUIDs are ideal for use as object identifiers - because of the strong guarantee
+of uniqueness, the same ID can be used both as the object's in-memory identifier
+and as its database key.
+
+\begin{itemize}
+\item \texttt{void FromString(string uuid\_as\_string)}\\
+Converts a UUID from provided string representation and stores it in this object.
+
+\item \texttt{string ToString()}\\
+Returns string representation of stored UUID
+
+\item \texttt{void Generate()}\\
+Generates a new, random UUID in this object.
+
+\end{itemize}
+
+\subsection{ICommand}
+
+Commands may be executed immediately or queued for execution at a later time,
+and may represent player commands, character actions, or game events. They may
+be placed into per-player command queues or the global event queue.
+
+Commands must implement the ICommand interface and its method \texttt{int
+  opCall()}, which is called when the command is run; arguments to the command
+may be passed through its constructor parameters and stored in the object until
+execution.
+
+\subsection{PlayerConnection}
+\texttt{PlayerConnection} is a class implemented natively in the engine. An
+instance of this class is created for each player after they connect, which is
+passed to the scripter-defined global handler \texttt{OnPlayerConnect}.
+
+Scripters should create a subclass of PlayerConnection (named something like
+"Player"), to store/load game-specific information related to player accounts.
+
+\begin{itemize}
+\item \texttt{void Send(string msg)}\\ Sends the player a message. As with all
+  displayed text, the message may be colorized through use of special color
+  codes enclosed in backticks.
+
+\item \texttt{void Disconnect()}\\
+Forcibly disconnects the player.
+
+\item \texttt{void QueueCommand(ICommand@ cmd, uint32 delay\_in\_seconds, uint32
+  delay\_in\_nanoseconds)}\\ Enqueues an ICommand to run delay\_in\_seconds +
+  delay\_in\_nanoseconds in the future.
+
+\end{itemize}
+
+\chapter{Database API}
+
+Classes with objects to be persisted must implement the \texttt{IPersistent}
+interface, which defines methods for storage, retrieval, and schema
+initialization. Classes which implement \texttt{IPersistent} are given special
+treatment by the engine, which calls its event handling methods and invisibly
+manages low-level database access.
+
+The database is relational. Columns can be added to tables freely or
+ignored, which makes the database easily forwards and backwards compatible.
+
+Every instantiable class is given its own table in the database, composed of
+columns corresponding to its properties and those of its parent classes, if
+they, too, implement \texttt{IPersistent}.
+
+Database tables, columns, and rows are how object data are stored.
+\begin{itemize}
+\item A table corresponds to a class
+\item The table's columns correspond to the properties (member variables) of the class
+\item Rows correspond to the objects created belonging to the class, each with all the properties of
+  its class but with different values for them
+\end{itemize}
+
+\section{IPersistent}
+
+ \textbf{The superclass's \texttt{OnDefineSchema}, \texttt{OnSave}, and
+   \texttt{OnLoad} member functions should be called in the subclass
+   implementations before anything else is done in them}.
+
+
+\subsection{\texttt{void OnDefineSchema(DBTable@ table)}}
+When the engine starts the scripts, it creates an empty table object for every
+\texttt{IPersistent} class, then calls each class's \texttt{OnDefineSchema}
+method and gives it the table object. The class table object can then be
+customized inside \texttt{OnDefineSchema} by calling \texttt{DBTable}'s methods
+to add columns to the table schema.
+
+
+The actual saving and loading of an object is done by the \texttt{DBSaveObject}
+and \texttt{DBLoadObject} family of global functions, which take as their
+primary arguments the key of the object to store or retrieve. Keys may be
+integers, text strings, or UUIDs. The mapping between the object in memory
+properties and in database columns is done by the \texttt{OnSave} and
+\texttt{OnLoad} event functions, which are called by the engine when
+\texttt{DBSaveObject} and \texttt{DBLoadObject} are invoked by the scripts; the
+event functions should not themselves be called directly, as the engine must
+perform internal bookkeeping for class hierarchies and subtables (which are
+specialized DBTables designed to persist arrays of aggregate data belonging to a
+containing object).
+
+
+
+\section{DBTable}
+\subsection{\texttt{void AddUUIDCol(string column\_name, KeyType keytype, DBTable@ foreign\_table)}}}
+Adds a UUID column to the table. The KeyType argument can be omitted or set to
+\texttt{DBKEYTYPE\_PRIMARY}, if this column should be the table's primary key. The \texttt{foreign\_table}
+argument should be omitted unless the key type is set to \texttt{DBKEYTYPE\_FOREIGN}.
+\subsection{\texttt{void AddTextCol(string column\_name, KeyType keytype, DBTable@ foreign\_table)}}
+Same as above, but for holding text data.
+\subsection{\texttt{void AddRealCol(string column\_name, KeyType keytype, DBTable@ foreign\_table)}}
+Same as above, but for holding single or double precision floating point.
+\subsection{\texttt{void AddIntCol(string column\_name, KeyType keytype, DBTable@ foreign\_table)}}
+Same as above, but for holding integers of any type.
+
+\end{document}
