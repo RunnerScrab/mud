@@ -12,6 +12,10 @@ struct prioqnode
 struct prioq
 {
   struct prioqnode* array;
+	//TODO: FIXME: length and capacity should be atomics, but it's a trick
+	//to write atomic code that is compatible with both C and C++, as C11
+	//atomic types are not compatible with C++ and vice versa.  Stopgap
+	//solution would be to lock these
   size_t len, capacity;
 };
 

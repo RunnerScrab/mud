@@ -6,6 +6,9 @@
 
 int CmdDispatchThread_Init(struct CmdDispatchThread* dispatchthread, struct Server* server)
 {
+	Vector_Create(&dispatchthread->active_actors, 64, 0);
+	pthread_mutex_init(&dispatchthread->active_actors_mtx, 0);
+
 	dispatchthread->pServer = server;
 	dispatchthread->bIsRunning = 1;
 	pthread_condattr_init(&dispatchthread->wakecondattr);
@@ -38,6 +41,10 @@ void CmdDispatchThread_Stop(struct CmdDispatchThread* dispatchthread)
 
 void CmdDispatchThread_Destroy(struct CmdDispatchThread* dispatchthread)
 {
+	pthread_mutex_lock(&dispatchthread->active_actors_mtx);
+	Vector_Destroy(&dispatchthread->active_actors);
+	pthread_mutex_destroy(&dispatchthread->active_actors_mtx);
+
 	pthread_cond_destroy(&dispatchthread->wakecond);
 	pthread_condattr_destroy(&dispatchthread->wakecondattr);
 	pthread_mutex_destroy(&dispatchthread->wakecondmtx);
@@ -52,6 +59,32 @@ void ZeroTs(struct timespec* ts)
 int IsTsNonZero(struct timespec* ts)
 {
 	return ts->tv_sec && ts->tv_nsec;
+}
+
+void CmdDispatchThread_AddActiveActor(struct CmdDispatchThread* dispatchthread, struct Actor* actor)
+{
+	pthread_mutex_lock(&dispatchthread->active_actors_mtx);
+	Vector_Push(&dispatchthread->active_actors, actor);
+	pthread_mutex_unlock(&dispatchthread->active_actors_mtx);
+	Actor_AddRef(actor);
+}
+
+inline static int CmpActor(void* a, void* b)
+{
+	return a - b;
+}
+
+void CmdDispatchThread_RemoveActor(struct CmdDispatchThread* dispatchthread, struct Actor* actor)
+{
+	size_t result_idx = 0;
+	pthread_mutex_lock(&dispatchthread->active_actors_mtx);
+	if(!Vector_Find(&dispatchthread->active_actors, actor, CmpActor, &result_idx))
+	{
+		Vector_Remove(&dispatchthread->active_actors, result_idx);
+	}
+	pthread_mutex_unlock(&dispatchthread->active_actors_mtx);
+
+	Actor_ReleaseRef(actor);
 }
 
 void* UserCommandDispatchThreadFn(void* pArgs)
@@ -73,24 +106,24 @@ void* UserCommandDispatchThreadFn(void* pArgs)
 			continue;
 		}
 
-		pthread_rwlock_rdlock(&pServer->clients_rwlock);
+		pthread_mutex_lock(&pThreadData->active_actors_mtx);
 		ZeroTs(&min_delay_ts);
 
-		for(idx = 0, len = Vector_Count(&pServer->clients);
+		for(idx = 0, len = Vector_Count(&pThreadData->active_actors);
 		    idx < len; ++idx)
 		{
-			struct Client* pClient = (struct Client*) Vector_At(&pServer->clients, idx);
-			pthread_mutex_lock(&pClient->cmd_queue_mtx);
+			struct Actor* pActor = (struct Actor*) Vector_At(&pThreadData->active_actors, idx);
+			pthread_mutex_lock(&pActor->action_queue_mutex);
 			ZeroTs(&delay_ts);
-			while(hrt_prioq_get_size(&pClient->cmd_queue) > 0)
+			while(hrt_prioq_get_size(&pActor->action_queue) > 0)
 			{
-				hrt_prioq_get_key_at(&pClient->cmd_queue, 0, &delay_ts);
+				hrt_prioq_get_key_at(&pActor->action_queue, 0, &delay_ts);
 				if(CmpTs(&current_ts, &delay_ts) >= 0)
 				{
-					struct ThreadTask* pTask = (struct ThreadTask*) hrt_prioq_extract_min(&pClient->cmd_queue);
+					struct ThreadTask* pTask = (struct ThreadTask*) hrt_prioq_extract_min(&pActor->action_queue);
 					ThreadPool_AddTask(&pServer->thread_pool, pTask->taskfn, 0,
 							pTask->pArgs, pTask->releasefn);
-					MemoryPool_Free(&pClient->mem_pool, sizeof(struct ThreadTask), pTask);
+					MemoryPool_Free(&pActor->mem_pool, sizeof(struct ThreadTask), pTask);
 
 				}
 				else
@@ -105,10 +138,17 @@ void* UserCommandDispatchThreadFn(void* pArgs)
 				}
 			}
 
-			pthread_mutex_unlock(&pClient->cmd_queue_mtx);
+			pthread_mutex_unlock(&pActor->action_queue_mutex);
+
+			if(!hrt_prioq_get_size(&pActor->action_queue))
+			{
+				CmdDispatchThread_RemoveActor(pThreadData, pActor);
+				--len;
+				--idx;
+			}
 
 		}
-		pthread_rwlock_unlock(&pServer->clients_rwlock);
+		pthread_mutex_unlock(&pThreadData->active_actors_mtx);
 
 		struct timespec wait_ts;
 		if(IsTsNonZero(&min_delay_ts))

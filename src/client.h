@@ -24,6 +24,7 @@ extern "C" {
 	struct Server;
 	struct CmdDispatchThread;
 	typedef struct asIScriptObject asIScriptObject;
+	struct Actor;
 
 	struct Client
 	{
@@ -57,6 +58,7 @@ extern "C" {
 		unsigned char bDisconnected;
 		unsigned int refcount;
 		pthread_rwlock_t refcount_rwlock;
+
 	};
 
 	void Client_Disconnect(struct Client* pTarget);
