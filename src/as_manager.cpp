@@ -129,8 +129,8 @@ int AngelScriptManager_InitAPI(AngelScriptManager *manager)
 	RETURNFAIL_IF(result < 0);
 
 	result = pEngine->RegisterObjectMethod("Server",
-			"void QueueScriptCommand(IAction@+ cmd, uint32 delay)",
-			asFUNCTION(ASAPI_QueueScriptCommand), asCALL_CDECL_OBJFIRST);
+			"void QueueGlobalAction(IAction@+ cmd, uint32 delay)",
+			asFUNCTION(ASAPI_QueueScriptAction), asCALL_CDECL_OBJFIRST);
 	RETURNFAIL_IF(result < 0);
 
 	result = pEngine->RegisterObjectMethod("Server",

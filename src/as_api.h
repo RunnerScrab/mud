@@ -22,16 +22,14 @@ struct RunScriptCmdPkg
 	MemoryPool *pMemPool; //Memory pool space for this struct was allocated on
 };
 
-void* ASAPI_RunScriptCommand(void *pArgs);
+void* ASAPI_RunScriptAction(void *pArgs);
 void ASAPI_DebugVariables(struct Server *server, Player *playerobj);
 void ASAPI_DebugObject(CScriptHandle obj);
 void ASAPI_DebugArray(CScriptArray &arr);
 
 void ASAPI_SendToAll(struct Server *server, std::string &message);
-void ASAPI_QueueScriptCommand(struct Server *server, asIScriptObject *obj,
+void ASAPI_QueueScriptAction(struct Server *server, asIScriptObject *obj,
 		unsigned int delay);
-void ASAPI_QueueClientScriptCommand(struct Client *pClient,
-		asIScriptObject *obj, unsigned int delay_s, unsigned int delay_ns);
 void ASAPI_Log(std::string &message);
 void ASAPI_TrimString(const std::string &in, std::string &out);
 void ASAPI_HashPassword(const std::string &password, std::string &out);

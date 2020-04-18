@@ -174,13 +174,23 @@ class MegaMeower : SuperMeower
 
 };
 
+class Character : Actor
+{
+	string m_name;
+	Character(string name)
+	{
+		m_name = name;
+	}
+}
+
 enum PlayerGameState {LOGIN_MENU = 0,
 		      ACCOUNT_NAME_ENTRY, ACCOUNT_PASSWORD_ENTRY };
 class Player : PlayerConnection
 {
-	Actor m_actor;
+	Character@ m_char;
 	Player()
 	{
+		@m_char = Character("mychar");
 		//super();
 		m_gamestate = PlayerGameState::LOGIN_MENU;
 
@@ -435,14 +445,14 @@ void OnPlayerInput(Player@ player, string rawinput)
 		DebugObject(hsmeower);
 		DebugObject(hmeower);
 	}
-	else if("testcmd" == rawinput)
+	else if("tc" == rawinput)
 	{
-		player.m_actor.QueueAction(TestCommand(5, 7), 0, 0);
+		player.m_char.QueueAction(TestCommand(5, 7), 0, 0);
 		player.Send("Command received.\r\n");
 	}
-	else if("testdelayedcmd" == rawinput)
+	else if("tdc" == rawinput)
 	{
-		player.m_actor.QueueAction(TestCommand(1, 9), 6, 0);
+		player.m_char.QueueAction(TestCommand(1, 9), 6, 0);
 		player.Send("Command received.\r\n");
 	}
 	else

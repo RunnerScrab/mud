@@ -365,15 +365,6 @@ void* HandleUserInputTask(void *pArg)
 			Server_AddTimedTask(pServer, TestTimedTask, time(0) + 5,
 					(void*) pServer, 0);
 		}
-		else if (!strncmp(cbuf->data, "tc", min(2, bytes_read)))
-		{
-			ServerLog(SERVERLOG_STATUS, "Queueing user command.");
-			struct timespec current_ts;
-			clock_gettime(CLOCK_MONOTONIC, &current_ts);
-			current_ts.tv_sec += 6;
-			Client_QueueCommand(pClient, TestTimedTask, current_ts.tv_sec,
-					current_ts.tv_nsec, (void*) pServer, 0);
-		}
 
 		if (!bClientDisconnected)
 		{

@@ -43,7 +43,6 @@ struct Client* Client_Create(int sock, struct Server *server,
 	pClient->server = server;
 
 	pClient->player_obj = 0;
-	pClient->pCmdDispatcher = pDispatcher;
 	memset(&pClient->tel_stream, 0, sizeof(TelnetStream));
 
 	pthread_mutex_init(&pClient->connection_state_mtx, 0);
@@ -61,10 +60,6 @@ struct Client* Client_Create(int sock, struct Server *server,
 
 	cv_init(&pClient->input_buffer, CLIENT_MAXINPUTLEN);
 	memset(pClient->cmd_intervals, 0, sizeof(float) * 6); //This is for command rate stat tracking
-
-	hrt_prioq_create(&pClient->cmd_queue, 32);
-	pthread_mutex_init(&pClient->cmd_queue_mtx, 0);
-	MemoryPool_Init(&pClient->mem_pool);
 
 	pthread_rwlock_init(&pClient->refcount_rwlock, 0);
 	return pClient;
@@ -85,10 +80,6 @@ void Client_Destroy(void *p)
 	ZCompressor_StopAndRelease(&pClient->zstreams);
 
 	pthread_mutex_destroy(&pClient->connection_state_mtx);
-	pthread_mutex_lock(&pClient->cmd_queue_mtx);
-	hrt_prioq_destroy(&pClient->cmd_queue);
-	pthread_mutex_destroy(&pClient->cmd_queue_mtx);
-	MemoryPool_Destroy(&pClient->mem_pool);
 
 	asIScriptObject_Release(&pClient->player_obj);
 	pthread_rwlock_destroy(&pClient->refcount_rwlock);
@@ -157,33 +148,4 @@ void Client_Sendf(struct Client *pTarget, const char *fmt, ...)
 	cv_destroy(&buf);
 	va_end(arglist);
 	va_end(argcpy);
-}
-
-void Client_QueueCommand(struct Client *pClient, void* (*taskfn)(void*),
-		time_t runtime_s, long runtime_ns, void *args,
-		void (*argreleaserfn)(void*))
-{
-	struct ThreadTask *pTask = (struct ThreadTask*) MemoryPool_Alloc(
-			&pClient->mem_pool, sizeof(struct ThreadTask));
-	pTask->taskfn = taskfn;
-	pTask->pArgs = args;
-	pTask->releasefn = argreleaserfn;
-
-	struct timespec ts;
-	ts.tv_sec = runtime_s;
-	ts.tv_nsec = runtime_ns;
-
-	pthread_mutex_lock(&pClient->cmd_queue_mtx);
-	hrt_prioq_min_insert(&pClient->cmd_queue, &ts, pTask);
-	pthread_mutex_unlock(&pClient->cmd_queue_mtx);
-
-	//The command dispatch thread will wait on this condition variable if if
-	//ever wakes up and finds it has no commands at all (which is going to
-	//most of the time - users would be hard pressed to continuously
-	//saturate the queue without getting booted for command spam).  When the
-	//command dispatch thread does have commands queued, it will instead
-	//calculate how long it is before the earliest command must be run, then
-	//sleep for the duration.  We need to wake it up if it is sleeping here
-
-	//pthread_cond_signal(&pClient->pCmdDispatcher->wakecond);
 }

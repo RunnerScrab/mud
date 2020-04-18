@@ -17,8 +17,6 @@ static const char *playerscript = "shared abstract class PlayerConnection"
 		"}"
 		"void Send(string msg){m_obj.Send(msg);}"
 		"void Disconnect(){m_obj.Disconnect();}"
-		"void QueueCommand(IAction@+ cmd, uint32 delay_s, uint32 delay_ns){"
-		"m_obj.QueueCommand(cmd, delay_s, delay_ns);}"
 		"Player_t @opImplCast() {return @m_obj;}"
 		"private Player_t @m_obj;"
 		"}";
@@ -43,12 +41,6 @@ void Player::Send(std::string &str)
 void Player::Disconnect()
 {
 	Client_Disconnect(m_pClient);
-}
-
-void Player::QueueCommand(asIScriptObject *obj, unsigned int delay_s,
-		unsigned int delay_ns)
-{
-	ASAPI_QueueClientScriptCommand(m_pClient, obj, delay_s, delay_ns);
 }
 
 Player* Player::Factory()
@@ -96,10 +88,6 @@ int RegisterPlayerProxyClass(asIScriptEngine *engine)
 			asMETHOD(Player, Disconnect), asCALL_THISCALL) < 0)
 		return -1;
 
-	if (engine->RegisterObjectMethod("Player_t",
-			"void QueueCommand(IAction@+ act, uint32 delay_s, uint32 delay_ns)",
-			asMETHOD(Player, QueueCommand), asCALL_THISCALL) < 0)
-		return -1;
 	return 0;
 }
 

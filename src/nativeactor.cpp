@@ -21,6 +21,7 @@ static const char *actorscript = "shared class Actor"
 		"Actor(){ @m_obj = NativeActor_t();}"
 		"void QueueAction(IAction@+ cmd, uint32 delay_s, uint32 delay_ns)"
 		"{ m_obj.QueueAction(cmd, delay_s, delay_ns);}"
+		"NativeActor_t @opImplCast(){return @m_obj;}"
 		"private NativeActor_t@ m_obj;"
 		"}";
 
@@ -95,6 +96,15 @@ NativeActor::NativeActor(asIScriptObject *obj) :
 NativeActor::~NativeActor()
 {
 	pthread_mutex_lock(&m_action_queue_mtx);
+
+	while(hrt_prioq_get_size(&m_action_queue) > 0)
+	{
+		struct ThreadTask* pTask = (struct ThreadTask*)
+				hrt_prioq_extract_min(&m_action_queue);
+		struct RunScriptCmdPkg* pPkg = (struct RunScriptCmdPkg*) pTask->pArgs;
+		pPkg->cmd->Release();
+	}
+
 	hrt_prioq_destroy(&m_action_queue);
 	pthread_mutex_destroy(&m_action_queue_mtx);
 	MemoryPool_Destroy(&m_mem_pool);
@@ -120,7 +130,7 @@ void NativeActor::QueueScriptAction(asIScriptObject *obj, unsigned int delay_s,
 		struct timespec curtime;
 		if(clock_gettime(CLOCK_MONOTONIC, &curtime) >= 0)
 		{
-			QueueAction(ASAPI_RunScriptCommand, curtime.tv_sec + delay_s,
+			QueueAction(ASAPI_RunScriptAction, curtime.tv_sec + delay_s,
 					curtime.tv_nsec + delay_ns, pkg, 0);
 		}
 	}
@@ -143,15 +153,6 @@ void NativeActor::QueueAction(void* (*taskfn)(void*), time_t runtime_s,
 
 	LockQueue();
 	hrt_prioq_min_insert(&m_action_queue, &ts, pTask);
-	if(hrt_prioq_isminheap(&m_action_queue, 0))
-	{
-		ServerLog(SERVERLOG_STATUS, "Queue is a min heap after insertion.");
-	}
-	else
-	{
-		ServerLog(SERVERLOG_STATUS, "Queue is not a min heap after insertion.");
-
-	}
 	UnlockQueue();
 
 	//The command dispatch thread will wait on this condition variable if if
@@ -160,7 +161,9 @@ void NativeActor::QueueAction(void* (*taskfn)(void*), time_t runtime_s,
 	//saturate the queue without getting booted for command spam).  When the
 	//command dispatch thread does have commands queued, it will instead
 	//calculate how long it is before the earliest command must be run, then
-	//sleep for the duration.  We need to wake it up if it is sleeping here
+	//sleep for the duration.  We need to wake it up if it is sleeping here,
+	//so that it can update the wait period if necessary to run a command
+	//scheduled to run earlier
 	NativeActor::sm_pActionScheduler->AddActiveActor(this);
 	NativeActor::sm_pActionScheduler->Signal();
 	ServerLog(SERVERLOG_STATUS, "Action is queued.");

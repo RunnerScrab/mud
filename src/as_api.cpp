@@ -20,7 +20,7 @@ void ASAPI_SendToAll(struct Server *server, std::string &message)
 	Server_SendAllClients(server, message.c_str());
 }
 
-void* ASAPI_RunScriptCommand(void *pArgs)
+void* ASAPI_RunScriptAction(void *pArgs)
 {
 	struct RunScriptCmdPkg *pPkg = (struct RunScriptCmdPkg*) pArgs;
 	asIScriptFunction *func = pPkg->cmdtype->GetMethodByDecl("int opCall()");
@@ -158,7 +158,7 @@ void ASAPI_DebugVariables(struct Server *server, Player *playerobj)
 	}
 }
 
-void ASAPI_QueueScriptCommand(struct Server *server, asIScriptObject *obj,
+void ASAPI_QueueScriptAction(struct Server *server, asIScriptObject *obj,
 		unsigned int delay)
 {
 	dbgprintf("Attempting to queue script command.\n");
@@ -176,43 +176,8 @@ void ASAPI_QueueScriptCommand(struct Server *server, asIScriptObject *obj,
 		pkg->pMemPool = &server->as_manager.mem_pool;
 		pkg->engine = server->as_manager.engine;
 		pkg->context_pool = &server->as_manager.ctx_pool;
-		Server_AddTimedTask(server, ASAPI_RunScriptCommand, time(0) + delay,
+		Server_AddTimedTask(server, ASAPI_RunScriptAction, time(0) + delay,
 				pkg, 0);
-	}
-}
-
-void ASAPI_QueueClientScriptCommand(struct Client *pClient,
-		asIScriptObject *obj, unsigned int delay_s, unsigned int delay_ns)
-{
-	dbgprintf("Attempting to queue client command.\n");
-	if (obj)
-	{
-		obj->AddRef();
-		dbgprintf("Queueing client script command.\n");
-
-		struct RunScriptCmdPkg *pkg =
-				(struct RunScriptCmdPkg*) MemoryPool_Alloc(&pClient->mem_pool,
-						sizeof(struct RunScriptCmdPkg));
-		struct Server *server = pClient->server;
-		pkg->cmd = obj;
-		pkg->cmdtype = server->as_manager.main_module->GetTypeInfoByDecl(
-				"IAction");
-		pkg->pMemPool = &pClient->mem_pool;
-		pkg->engine = server->as_manager.engine;
-		pkg->context_pool = &server->as_manager.ctx_pool;
-		struct timespec curtime;
-		if (clock_gettime(CLOCK_MONOTONIC, &curtime) >= 0)
-		{
-			//ASAPI_RunScriptCommand will release the memory from the provided memory pool
-			Client_QueueCommand(pClient, ASAPI_RunScriptCommand,
-					curtime.tv_sec + delay_s, curtime.tv_nsec + delay_ns, pkg,
-					0);
-		}
-		else
-		{
-			ServerLog(SERVERLOG_ERROR,
-					"Failed to get clock time for queueing client command.");
-		}
 	}
 }
 

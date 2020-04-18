@@ -46,12 +46,8 @@ struct Client
 
 	cv_t input_buffer;
 
-	struct hrt_prioq cmd_queue;
-	pthread_mutex_t cmd_queue_mtx;
-
 	struct Server *server;
 
-	struct ActionScheduler *pCmdDispatcher;
 	struct MemoryPool mem_pool;
 
 	asIScriptObject *player_obj;
@@ -72,9 +68,6 @@ size_t Client_GetRefCount(struct Client *client);
 void Client_ReleaseRef(struct Client *client);
 void Client_AddRef(struct Client *client);
 
-void Client_QueueCommand(struct Client *pClient, void* (*taskfn)(void*),
-		time_t runtime_s, long runtime_ns, void *args,
-		void (*argreleaserfn)(void*));
 
 #ifdef __cplusplus
 }

@@ -19,8 +19,6 @@ public:
 	struct Client *m_pClient;
 	struct Actor *m_pActor;
 
-	void QueueCommand(asIScriptObject *obj, unsigned int delay_s,
-			unsigned int delay_ns);
 	void Send(std::string &str);
 	void Disconnect();
 	static Player* Factory();

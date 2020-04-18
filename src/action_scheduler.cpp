@@ -85,23 +85,21 @@ int IsTsNonZero(struct timespec *ts)
 
 void ActionScheduler::RemoveActor(NativeActor *actor)
 {
-	ServerLog(SERVERLOG_STATUS, "There are %d actors.\r\n",
-			m_active_actors.size());
+	pthread_rwlock_wrlock(&m_active_actors_rwlock);
 	m_active_actors.erase(m_active_actors.find(actor));
+	pthread_rwlock_unlock(&m_active_actors_rwlock);
 	actor->Release();
-	ServerLog(SERVERLOG_STATUS, "Erasure performed. There are %d actors.\r\n",
-			m_active_actors.size());
 }
 
 void* ActionScheduler::ThreadFunction(void *pArgs)
 {
 	ServerLog(SERVERLOG_STATUS, "Running user command dispatch thread");
-	ActionScheduler *pThreadData = (struct ActionScheduler*) pArgs;
-	struct Server *pServer = pThreadData->m_pServer;
+	ActionScheduler *pActionScheduler = (struct ActionScheduler*) pArgs;
+	struct Server *pServer = pActionScheduler->m_pServer;
 
 	struct timespec current_ts, delay_ts, min_delay_ts;
 
-	while (pThreadData->m_bIsRunning)
+	while (pActionScheduler->m_bIsRunning)
 	{
 		if (clock_gettime(CLOCK_MONOTONIC, &current_ts) < 0)
 		{
@@ -110,12 +108,12 @@ void* ActionScheduler::ThreadFunction(void *pArgs)
 			continue;
 		}
 
-		pthread_rwlock_wrlock(&pThreadData->m_active_actors_rwlock);
+		pthread_rwlock_wrlock(&pActionScheduler->m_active_actors_rwlock);
 		ZeroTs(&min_delay_ts);
 
 		for (std::set<NativeActor*>::iterator it =
-				pThreadData->m_active_actors.begin();
-				it != pThreadData->m_active_actors.end();)
+				pActionScheduler->m_active_actors.begin();
+				it != pActionScheduler->m_active_actors.end();)
 		{
 			NativeActor *pActor = *it;
 			pActor->LockQueue();
@@ -126,9 +124,6 @@ void* ActionScheduler::ThreadFunction(void *pArgs)
 			{
 				ZeroTs(&delay_ts);
 				hrt_prioq_get_key_at(aqueue, 0, &delay_ts);
-				dbgprintf("C=%ld:%ld\nD=%ld:%ld\n",
-						current_ts.tv_sec, current_ts.tv_nsec,
-						delay_ts.tv_sec, delay_ts.tv_nsec);
 				if (CmpTs(&current_ts, &delay_ts) >= 0)
 				{
 					struct ThreadTask *pTask =
@@ -147,11 +142,6 @@ void* ActionScheduler::ThreadFunction(void *pArgs)
 					{
 						min_delay_ts.tv_sec = delay_ts.tv_sec + 1;
 						min_delay_ts.tv_nsec = delay_ts.tv_nsec;
-						dbgprintf("Event was to wake sooner than current wait ends.\n");
-					}
-					else
-					{
-						dbgprintf("Event comes after the end of current wait.\n");
 					}
 					break;
 				}
@@ -159,23 +149,20 @@ void* ActionScheduler::ThreadFunction(void *pArgs)
 
 			if (!hrt_prioq_get_size(aqueue))
 			{
+				pActor->UnlockQueue();
 				pActor->Release();
 				std::set<NativeActor*>::iterator erasethis = it;
 				++it;
-				pThreadData->m_active_actors.erase(erasethis);
-				//pThreadData->RemoveActor(pActor);
+				pActionScheduler->m_active_actors.erase(erasethis);
 			}
 			else
 			{
+				pActor->UnlockQueue();
 				++it;
 			}
 
-			pActor->UnlockQueue();
-
-
-
 		}
-		pthread_rwlock_unlock(&pThreadData->m_active_actors_rwlock);
+		pthread_rwlock_unlock(&pActionScheduler->m_active_actors_rwlock);
 
 		struct timespec wait_ts;
 		if (IsTsNonZero(&min_delay_ts))
@@ -194,20 +181,22 @@ void* ActionScheduler::ThreadFunction(void *pArgs)
 				current_ts.tv_sec, current_ts.tv_nsec, wait_ts.tv_sec,
 				wait_ts.tv_nsec);
 
-		pthread_cond_timedwait(&pThreadData->m_wakecond,
-				&pThreadData->m_wakecondmtx, &wait_ts);
+		pthread_cond_timedwait(&pActionScheduler->m_wakecond,
+				&pActionScheduler->m_wakecondmtx, &wait_ts);
 
 		dbgprintf("WAKING: Wait done at %ld ; %ld\n", wait_ts.tv_sec,
 				wait_ts.tv_nsec);
 
 	}
 
-	for (NativeActor *pActor : pThreadData->m_active_actors)
+	//Release all references to the actors in our set, so ARC
+	//can free them
+	for (NativeActor *pActor : pActionScheduler->m_active_actors)
 	{
 		pActor->Release();
 	}
 
-	ServerLog(SERVERLOG_STATUS, "Command Dispatch thread exiting.");
+	ServerLog(SERVERLOG_STATUS, "Action scheduler thread exiting.");
 	CCompatibleASThreadCleanup();
 	return (void*) 0;
 }
