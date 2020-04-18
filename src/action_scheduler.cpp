@@ -119,35 +119,43 @@ void* ActionScheduler::ThreadFunction(void *pArgs)
 		{
 			NativeActor *pActor = *it;
 			pActor->LockQueue();
-			ZeroTs(&delay_ts);
+
 			struct hrt_prioq *aqueue = pActor->GetQueue();
 
 			while (hrt_prioq_get_size(aqueue) > 0)
 			{
+				ZeroTs(&delay_ts);
 				hrt_prioq_get_key_at(aqueue, 0, &delay_ts);
+				dbgprintf("C=%ld:%ld\nD=%ld:%ld\n",
+						current_ts.tv_sec, current_ts.tv_nsec,
+						delay_ts.tv_sec, delay_ts.tv_nsec);
 				if (CmpTs(&current_ts, &delay_ts) >= 0)
 				{
 					struct ThreadTask *pTask =
 							(struct ThreadTask*) hrt_prioq_extract_min(aqueue);
-
+					dbgprintf("Putting task in threadpool.\n");
 					ThreadPool_AddTask(&pServer->thread_pool, pTask->taskfn, 0,
 							pTask->pArgs, pTask->releasefn);
 					pActor->FreeQueueTask(pTask);
 				}
 				else
 				{
+					dbgprintf("Found event for later.\n");
 					if (!IsTsNonZero(&min_delay_ts)
 							|| (IsTsNonZero(&delay_ts)
 									&& CmpTs(&min_delay_ts, &delay_ts) == 1))
 					{
 						min_delay_ts.tv_sec = delay_ts.tv_sec + 1;
 						min_delay_ts.tv_nsec = delay_ts.tv_nsec;
+						dbgprintf("Event was to wake sooner than current wait ends.\n");
+					}
+					else
+					{
+						dbgprintf("Event comes after the end of current wait.\n");
 					}
 					break;
 				}
 			}
-
-			pActor->UnlockQueue();
 
 			if (!hrt_prioq_get_size(aqueue))
 			{
@@ -161,6 +169,10 @@ void* ActionScheduler::ThreadFunction(void *pArgs)
 			{
 				++it;
 			}
+
+			pActor->UnlockQueue();
+
+
 
 		}
 		pthread_rwlock_unlock(&pThreadData->m_active_actors_rwlock);

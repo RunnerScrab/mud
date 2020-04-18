@@ -164,7 +164,7 @@ void hrt_prioq_decreasekey(struct hrt_prioq *pHeap, int idx,
 		for (i = idx; i > 0;)
 		{
 			hrt_prioq_get_key_at(pHeap, parent(i), &a);
-			hrt_prioq_get_key_at(pHeap, parent(i), &b);
+			hrt_prioq_get_key_at(pHeap, i, &b);
 			if (CmpTs(&a, &b) == 1)
 			{
 				swap_hrtprioq_node(&pHeap->array[i], &pHeap->array[parent(i)]);

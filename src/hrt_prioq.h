@@ -38,7 +38,7 @@ const struct hrt_prioqnode* hrt_prioq_getminimum(struct hrt_prioq *pHeap);
 int hrt_prioq_min_insert(struct hrt_prioq *pHeap, struct timespec *key,
 		void *data);
 void hrt_prioq_destroy(struct hrt_prioq *pHeap);
-
+int hrt_prioq_isminheap(struct hrt_prioq *pHeap, size_t idx);
 #ifdef __cplusplus
 }
 #endif

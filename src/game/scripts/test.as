@@ -442,7 +442,7 @@ void OnPlayerInput(Player@ player, string rawinput)
 	}
 	else if("testdelayedcmd" == rawinput)
 	{
-		player.m_actor.QueueAction(TestCommand(1, 9), 3, 0);
+		player.m_actor.QueueAction(TestCommand(1, 9), 6, 0);
 		player.Send("Command received.\r\n");
 	}
 	else

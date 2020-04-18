@@ -129,7 +129,7 @@ void NativeActor::QueueScriptAction(asIScriptObject *obj, unsigned int delay_s,
 void NativeActor::QueueAction(void* (*taskfn)(void*), time_t runtime_s,
 		long runtime_ns, void *args, void (*argreleaserfn)(void*))
 {
-	ServerLog(SERVERLOG_STATUS, "Action is queued.");
+
 	//Queues a threadpool task into the scheduler
 	struct ThreadTask *pTask = (struct ThreadTask*) MemoryPool_Alloc(
 			&m_mem_pool, sizeof(struct ThreadTask));
@@ -141,9 +141,18 @@ void NativeActor::QueueAction(void* (*taskfn)(void*), time_t runtime_s,
 	ts.tv_sec = runtime_s;
 	ts.tv_nsec = runtime_ns;
 
-	pthread_mutex_lock(&m_action_queue_mtx);
+	LockQueue();
 	hrt_prioq_min_insert(&m_action_queue, &ts, pTask);
-	pthread_mutex_unlock(&m_action_queue_mtx);
+	if(hrt_prioq_isminheap(&m_action_queue, 0))
+	{
+		ServerLog(SERVERLOG_STATUS, "Queue is a min heap after insertion.");
+	}
+	else
+	{
+		ServerLog(SERVERLOG_STATUS, "Queue is not a min heap after insertion.");
+
+	}
+	UnlockQueue();
 
 	//The command dispatch thread will wait on this condition variable if if
 	//ever wakes up and finds it has no commands at all (which is going to
@@ -154,4 +163,5 @@ void NativeActor::QueueAction(void* (*taskfn)(void*), time_t runtime_s,
 	//sleep for the duration.  We need to wake it up if it is sleeping here
 	NativeActor::sm_pActionScheduler->AddActiveActor(this);
 	NativeActor::sm_pActionScheduler->Signal();
+	ServerLog(SERVERLOG_STATUS, "Action is queued.");
 }
