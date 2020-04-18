@@ -12,7 +12,7 @@ class ActionScheduler
 {
 	pthread_t m_thread;
 	struct Server *m_pServer;
-	std::atomic<char> m_bIsRunning;
+	volatile std::atomic<char> m_bIsRunning;
 	pthread_cond_t m_wakecond;
 	pthread_condattr_t m_wakecondattr;
 	pthread_mutex_t m_wakecondmtx;

@@ -16,7 +16,7 @@
 ActionScheduler *NativeActor::sm_pActionScheduler = 0;
 AngelScriptManager *NativeActor::sm_pAngelScriptManager = 0;
 
-static const char *actorscript = "shared abstract class Actor"
+static const char *actorscript = "shared class Actor"
 		"{"
 		"Actor(){ @m_obj = NativeActor_t();}"
 		"void QueueAction(IAction@+ cmd, uint32 delay_s, uint32 delay_ns)"
@@ -85,6 +85,11 @@ NativeActor::NativeActor(asIScriptObject *obj) :
 	hrt_prioq_create(&m_action_queue, 32);
 	pthread_mutex_init(&m_action_queue_mtx, 0);
 	MemoryPool_Init(&m_mem_pool);
+	ActionScheduler* scheduler = GetActionScheduler();
+	if(scheduler)
+	{
+		scheduler->AddActiveActor(this);
+	}
 }
 
 NativeActor::~NativeActor()
@@ -124,6 +129,7 @@ void NativeActor::QueueScriptAction(asIScriptObject *obj, unsigned int delay_s,
 void NativeActor::QueueAction(void* (*taskfn)(void*), time_t runtime_s,
 		long runtime_ns, void *args, void (*argreleaserfn)(void*))
 {
+	ServerLog(SERVERLOG_STATUS, "Action is queued.");
 	//Queues a threadpool task into the scheduler
 	struct ThreadTask *pTask = (struct ThreadTask*) MemoryPool_Alloc(
 			&m_mem_pool, sizeof(struct ThreadTask));
@@ -146,6 +152,6 @@ void NativeActor::QueueAction(void* (*taskfn)(void*), time_t runtime_s,
 	//command dispatch thread does have commands queued, it will instead
 	//calculate how long it is before the earliest command must be run, then
 	//sleep for the duration.  We need to wake it up if it is sleeping here
-
+	NativeActor::sm_pActionScheduler->AddActiveActor(this);
 	NativeActor::sm_pActionScheduler->Signal();
 }

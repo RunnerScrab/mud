@@ -62,9 +62,13 @@ void ActionScheduler::StopThread(void)
 
 void ActionScheduler::AddActiveActor(NativeActor *actor)
 {
+
 	pthread_rwlock_wrlock(&m_active_actors_rwlock);
-	m_active_actors.insert(actor);
-	actor->AddRef();
+	if (m_active_actors.find(actor) == m_active_actors.end())
+	{
+		m_active_actors.insert(actor);
+		actor->AddRef();
+	}
 	pthread_rwlock_unlock(&m_active_actors_rwlock);
 }
 
@@ -81,11 +85,12 @@ int IsTsNonZero(struct timespec *ts)
 
 void ActionScheduler::RemoveActor(NativeActor *actor)
 {
-
-	pthread_rwlock_wrlock(&m_active_actors_rwlock);
-	m_active_actors.erase(actor);
+	ServerLog(SERVERLOG_STATUS, "There are %d actors.\r\n",
+			m_active_actors.size());
+	m_active_actors.erase(m_active_actors.find(actor));
 	actor->Release();
-	pthread_rwlock_unlock(&m_active_actors_rwlock);
+	ServerLog(SERVERLOG_STATUS, "Erasure performed. There are %d actors.\r\n",
+			m_active_actors.size());
 }
 
 void* ActionScheduler::ThreadFunction(void *pArgs)
@@ -105,11 +110,14 @@ void* ActionScheduler::ThreadFunction(void *pArgs)
 			continue;
 		}
 
-		pthread_rwlock_rdlock(&pThreadData->m_active_actors_rwlock);
+		pthread_rwlock_wrlock(&pThreadData->m_active_actors_rwlock);
 		ZeroTs(&min_delay_ts);
 
-		for (NativeActor *pActor : pThreadData->m_active_actors)
+		for (std::set<NativeActor*>::iterator it =
+				pThreadData->m_active_actors.begin();
+				it != pThreadData->m_active_actors.end();)
 		{
+			NativeActor *pActor = *it;
 			pActor->LockQueue();
 			ZeroTs(&delay_ts);
 			struct hrt_prioq *aqueue = pActor->GetQueue();
@@ -143,7 +151,15 @@ void* ActionScheduler::ThreadFunction(void *pArgs)
 
 			if (!hrt_prioq_get_size(aqueue))
 			{
-				pThreadData->RemoveActor(pActor);
+				pActor->Release();
+				std::set<NativeActor*>::iterator erasethis = it;
+				++it;
+				pThreadData->m_active_actors.erase(erasethis);
+				//pThreadData->RemoveActor(pActor);
+			}
+			else
+			{
+				++it;
 			}
 
 		}
@@ -173,6 +189,12 @@ void* ActionScheduler::ThreadFunction(void *pArgs)
 				wait_ts.tv_nsec);
 
 	}
+
+	for (NativeActor *pActor : pThreadData->m_active_actors)
+	{
+		pActor->Release();
+	}
+
 	ServerLog(SERVERLOG_STATUS, "Command Dispatch thread exiting.");
 	CCompatibleASThreadCleanup();
 	return (void*) 0;

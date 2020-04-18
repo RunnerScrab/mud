@@ -13,7 +13,7 @@ class TestCommand : IAction
 	int opCall()
 	{
 		int sum = a + b;
-		game_server.SendToAll("Ran TestCommand. Result: " + sum);
+		game_server.SendToAll("Ran TestCommand. Result: " + sum + "\r\n");
 		return 0;
 	}
 };
@@ -178,7 +178,7 @@ enum PlayerGameState {LOGIN_MENU = 0,
 		      ACCOUNT_NAME_ENTRY, ACCOUNT_PASSWORD_ENTRY };
 class Player : PlayerConnection
 {
-
+	Actor m_actor;
 	Player()
 	{
 		//super();
@@ -437,7 +437,13 @@ void OnPlayerInput(Player@ player, string rawinput)
 	}
 	else if("testcmd" == rawinput)
 	{
-		player.QueueCommand(TestCommand(5, 7), 0, 0);
+		player.m_actor.QueueAction(TestCommand(5, 7), 0, 0);
+		player.Send("Command received.\r\n");
+	}
+	else if("testdelayedcmd" == rawinput)
+	{
+		player.m_actor.QueueAction(TestCommand(1, 9), 3, 0);
+		player.Send("Command received.\r\n");
 	}
 	else
 	{
