@@ -7,9 +7,10 @@
 #include <stddef.h>
 #include <pthread.h>
 
-void* TickThreadFn(void* pArgs);
+void* TickThreadFn(void *pArgs);
 
-int TickThread_Init(struct TickThread* tt, struct Server* server, size_t tickspeed)
+int TickThread_Init(struct TickThread *tt, struct Server *server,
+		size_t tickspeed)
 {
 	tt->pServer = server;
 	tt->bIsRunning = 1;
@@ -17,16 +18,16 @@ int TickThread_Init(struct TickThread* tt, struct Server* server, size_t tickspe
 	return pthread_create(&tt->thread, 0, TickThreadFn, (void*) tt);
 }
 
-void TickThread_Stop(struct TickThread* tt)
+void TickThread_Stop(struct TickThread *tt)
 {
-	if(tt->bIsRunning)
+	if (tt->bIsRunning)
 	{
 		tt->bIsRunning = 0;
 		pthread_join(tt->thread, 0);
 	}
 }
 
-void* TickThreadFn(void* pArgs)
+void* TickThreadFn(void *pArgs)
 {
 	//The idea here is that timed events are allocated from the
 	//server's pool allocator and enqueued on their own priority
@@ -40,12 +41,12 @@ void* TickThreadFn(void* pArgs)
 	//The importance of this is that work to be done on a server
 	//tick may occur simultaneously.
 
-	struct TickThread* pThreadData = (struct TickThread*) pArgs;
-	struct Server* pServer = pThreadData->pServer;
+	struct TickThread *pThreadData = (struct TickThread*) pArgs;
+	struct Server *pServer = pThreadData->pServer;
 	const size_t tick_delay = pThreadData->tick_delay;
 	time_t curtime;
 	ServerLog(SERVERLOG_STATUS, "Tick thread running.");
-	while(pThreadData->bIsRunning)
+	while (pThreadData->bIsRunning)
 	{
 		//Server_SendAllClients(pServer, "Tick!\r\n\r\n");
 		curtime = time(0);
@@ -54,15 +55,15 @@ void* TickThreadFn(void* pArgs)
 
 		//Dispatch ready server events
 		pthread_mutex_lock(&pServer->timed_queue_mtx);
-		while(prioq_get_size(&pServer->timed_queue) > 0 &&
-			curtime >=
-			prioq_get_key_at(&pServer->timed_queue, 0))
+		while (prioq_get_size(&pServer->timed_queue) > 0
+				&& curtime >= prioq_get_key_at(&pServer->timed_queue, 0))
 		{
-			struct ThreadTask* pTask = (struct ThreadTask*) prioq_extract_min(&pServer->timed_queue);
-			ThreadPool_AddTask(&pServer->thread_pool,
-					pTask->taskfn, 0,
+			struct ThreadTask *pTask = (struct ThreadTask*) prioq_extract_min(
+					&pServer->timed_queue);
+			ThreadPool_AddTask(&pServer->thread_pool, pTask->taskfn, 0,
 					pTask->pArgs, pTask->releasefn);
-			MemoryPool_Free(&pServer->mem_pool, sizeof(struct ThreadTask), pTask);
+			MemoryPool_Free(&pServer->mem_pool, sizeof(struct ThreadTask),
+					pTask);
 		}
 		pthread_mutex_unlock(&pServer->timed_queue_mtx);
 

@@ -1,19 +1,20 @@
 #include "sqlitevariant.h"
 #include "sqlite/sqlite3.h"
 
-int BindVariantToStatement(sqlite3_stmt* stmt, const SQLiteVariant* value, int pos)
+int BindVariantToStatement(sqlite3_stmt *stmt, const SQLiteVariant *value,
+		int pos)
 {
 	//pos is the position of the argument in the select statement
-	if(!value)
+	if (!value)
 	{
 		printf("Given a 0 variant pointer!\n");
 		return SQLITE_ERROR;
 	}
-	switch(value->GetType())
+	switch (value->GetType())
 	{
 	case SQLiteVariant::StoredType::VARINT:
 
-		switch(value->GetDataLength())
+		switch (value->GetDataLength())
 		{
 		case sizeof(unsigned char):
 		case sizeof(unsigned short):
@@ -26,7 +27,7 @@ int BindVariantToStatement(sqlite3_stmt* stmt, const SQLiteVariant* value, int p
 			return sqlite3_bind_int(stmt, pos, val);
 
 		}
-		break;
+			break;
 		case sizeof(unsigned long long):
 		{
 			unsigned long long val = 0;
@@ -40,7 +41,7 @@ int BindVariantToStatement(sqlite3_stmt* stmt, const SQLiteVariant* value, int p
 		}
 		break;
 	case SQLiteVariant::StoredType::VARREAL:
-		if(sizeof(float) == value->GetDataLength())
+		if (sizeof(float) == value->GetDataLength())
 		{
 			float val = 0.f;
 			value->GetValue(val);
@@ -55,9 +56,11 @@ int BindVariantToStatement(sqlite3_stmt* stmt, const SQLiteVariant* value, int p
 
 		break;
 	case SQLiteVariant::StoredType::VARTEXT:
-		return sqlite3_bind_text(stmt, pos, value->GetValueBlobPtr(), value->GetDataLength() - 1, 0);
+		return sqlite3_bind_text(stmt, pos, value->GetValueBlobPtr(),
+				value->GetDataLength() - 1, 0);
 	case SQLiteVariant::StoredType::VARBLOB:
-		return sqlite3_bind_blob(stmt, pos, value->GetValueBlobPtr(), value->GetDataLength(), 0);
+		return sqlite3_bind_blob(stmt, pos, value->GetValueBlobPtr(),
+				value->GetDataLength(), 0);
 	default:
 		return SQLITE_ERROR;
 	}
@@ -65,6 +68,7 @@ int BindVariantToStatement(sqlite3_stmt* stmt, const SQLiteVariant* value, int p
 
 std::string VariantTypeToString(SQLiteVariant::StoredType type)
 {
-	static const char* typestrs[] = {"NULL", "INT", "REAL", "BLOB", "TEXT"};
+	static const char *typestrs[] =
+	{ "NULL", "INT", "REAL", "BLOB", "TEXT" };
 	return std::string(typestrs[static_cast<int>(type)]);
 }

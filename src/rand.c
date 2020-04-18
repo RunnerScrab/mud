@@ -1,11 +1,11 @@
 #include "rand.h"
 #include <stdlib.h>
 
-int RandGenerator_Init(struct RandGenerator* rgn)
+int RandGenerator_Init(struct RandGenerator *rgn)
 {
 	struct timespec ts;
 	clock_gettime(CLOCK_REALTIME, &ts);
-	rgn->seed64 =  ts.tv_sec << 32 | ts.tv_nsec;
+	rgn->seed64 = ts.tv_sec << 32 | ts.tv_nsec;
 
 #ifdef USEINTELINTRINSICS_
 	_rdseed64_step(&rgn->seed64);
@@ -15,12 +15,12 @@ int RandGenerator_Init(struct RandGenerator* rgn)
 	return 0;
 }
 
-void RandGenerator_Destroy(struct RandGenerator* rgn)
+void RandGenerator_Destroy(struct RandGenerator *rgn)
 {
 
 }
 
-void RandGenerator_Gen64(unsigned long long* p64)
+void RandGenerator_Gen64(unsigned long long *p64)
 {
 #ifdef USEINTELINTRINSICS_
 	_rdrand64_step(p64);
@@ -49,7 +49,7 @@ double RandGenerator_RandDouble(struct RandGenerator* rgn)
 }
 
 #endif
-int RandFIFO_Init(struct RandFIFO* fifo, size_t init_len)
+int RandFIFO_Init(struct RandFIFO *fifo, size_t init_len)
 {
 	fifo->length = init_len;
 	return 0;

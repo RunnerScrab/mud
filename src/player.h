@@ -4,7 +4,6 @@
 #include "client.h"
 #include "as_manager.h"
 
-
 #include <string>
 
 class asIScriptObject;
@@ -14,22 +13,24 @@ class asIScriptModule;
 
 struct Actor;
 
-class Player : public AS_RefCountedObj
+class Player: public AS_RefCountedObj
 {
 public:
-	struct Client* m_pClient;
-	struct Actor* m_pActor;
+	struct Client *m_pClient;
+	struct Actor *m_pActor;
 
-	void QueueCommand(asIScriptObject* obj, unsigned int delay_s, unsigned int delay_ns);
-	void Send(std::string& str);
+	void QueueCommand(asIScriptObject *obj, unsigned int delay_s,
+			unsigned int delay_ns);
+	void Send(std::string &str);
 	void Disconnect();
 	static Player* Factory();
 protected:
-	Player(asIScriptObject* obj);
+	Player(asIScriptObject *obj);
 	~Player();
 };
 
-int LoadPlayerScript(asIScriptEngine* engine, asIScriptModule* module);
-int RegisterPlayerProxyClass(asIScriptEngine* engine);
-asIScriptObject* CreatePlayerProxy(AngelScriptManager* manager, struct Client* pClient);
+int LoadPlayerScript(asIScriptEngine *engine, asIScriptModule *module);
+int RegisterPlayerProxyClass(asIScriptEngine *engine);
+asIScriptObject* CreatePlayerProxy(AngelScriptManager *manager,
+		struct Client *pClient);
 #endif

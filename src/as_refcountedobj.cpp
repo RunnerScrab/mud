@@ -4,8 +4,7 @@
 #include <cstring>
 #include <string>
 
-
-AS_RefCountedObj::AS_RefCountedObj(asIScriptObject* obj)
+AS_RefCountedObj::AS_RefCountedObj(asIScriptObject *obj)
 {
 	m_obj = obj;
 	m_refCount = 1;
@@ -21,7 +20,7 @@ AS_RefCountedObj::~AS_RefCountedObj()
 void AS_RefCountedObj::AddRef()
 {
 	asAtomicInc(m_refCount);
-	if(!m_isDead->Get())
+	if (!m_isDead->Get())
 	{
 		m_obj->AddRef();
 	}
@@ -29,12 +28,12 @@ void AS_RefCountedObj::AddRef()
 
 void AS_RefCountedObj::Release()
 {
-	if(!m_isDead->Get())
+	if (!m_isDead->Get())
 	{
 		m_obj->Release();
 	}
 	asAtomicDec(m_refCount);
-	if(!m_refCount)
+	if (!m_refCount)
 	{
 		delete this;
 	}

@@ -1,7 +1,8 @@
 #ifndef POOLALLOC_H_
 #define POOLALLOC_H_
 #ifdef __cplusplus
-extern "C" {
+extern "C"
+{
 #endif
 
 #include "talloc.h"
@@ -11,7 +12,7 @@ extern "C" {
 
 struct InplaceFreeNode
 {
-	struct InplaceFreeNode* nextinplacenode;
+	struct InplaceFreeNode *nextinplacenode;
 };
 
 //These are all blocking data structures that should be safe to share between multiple threads.
@@ -22,7 +23,7 @@ struct InplaceFreeNode
 //Preallocated memory pool for particular size
 struct PoolMemBlock
 {
-	void* datablock;
+	void *datablock;
 };
 
 struct AllocPool
@@ -30,7 +31,7 @@ struct AllocPool
 	struct PoolMemBlock *pool_blocks;
 
 	ssize_t element_size, element_count;
-	struct InplaceFreeNode* headnode;
+	struct InplaceFreeNode *headnode;
 	ssize_t block_count;
 	pthread_mutex_t pool_mutex;
 };
@@ -38,30 +39,31 @@ struct AllocPool
 struct MemoryPool
 {
 	//Manage alloc pools of different sizes
-	struct AllocPool** alloc_pools;
+	struct AllocPool **alloc_pools;
 	ssize_t alloc_pool_count;
 	ssize_t default_init_elcount;
 	pthread_mutex_t mtx;
 };
 
-void MemoryPool_Init(struct MemoryPool* mp);
+void MemoryPool_Init(struct MemoryPool *mp);
 
 //Uses internal mutex
-void* MemoryPool_Alloc(struct MemoryPool* mp, ssize_t block_size);
+void* MemoryPool_Alloc(struct MemoryPool *mp, ssize_t block_size);
 
 //Free releases pooled memory for later reuse
-void MemoryPool_Free(struct MemoryPool* mp, ssize_t block_size, void* pFreeMe);
-struct AllocPool* MemoryPool_AddBlockSizePool(struct MemoryPool* mp, ssize_t block_size);
+void MemoryPool_Free(struct MemoryPool *mp, ssize_t block_size, void *pFreeMe);
+struct AllocPool* MemoryPool_AddBlockSizePool(struct MemoryPool *mp,
+		ssize_t block_size);
 
 //Destroy system frees all preallocated memory from the heap via system call
-void MemoryPool_Destroy(struct MemoryPool* mp);
+void MemoryPool_Destroy(struct MemoryPool *mp);
 
-void AllocPool_Init(struct AllocPool* pAllocPool, ssize_t element_count,
+void AllocPool_Init(struct AllocPool *pAllocPool, ssize_t element_count,
 		ssize_t element_size);
-void AllocPool_Destroy(struct AllocPool* pAllocPool);
+void AllocPool_Destroy(struct AllocPool *pAllocPool);
 
-void* AllocPool_Alloc(struct AllocPool* pAllocPool);
-void AllocPool_Free(struct AllocPool* pAllocPool, void* pFreeMe);
+void* AllocPool_Alloc(struct AllocPool *pAllocPool);
+void AllocPool_Free(struct AllocPool *pAllocPool, void *pFreeMe);
 
 #ifdef __cplusplus
 }

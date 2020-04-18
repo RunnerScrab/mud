@@ -5,11 +5,12 @@
 #include <stdio.h>
 #include <string.h>
 
-int Vector_Create(struct Vector* pArray, size_t initial_size, void (*FreeNodeFunc) (void*))
+int Vector_Create(struct Vector *pArray, size_t initial_size,
+		void (*FreeNodeFunc)(void*))
 {
 	pArray->pStorage = (void**) talloc(sizeof(void*) * initial_size);
 
-	if(!pArray->pStorage)
+	if (!pArray->pStorage)
 	{
 		return -1;
 	}
@@ -20,20 +21,20 @@ int Vector_Create(struct Vector* pArray, size_t initial_size, void (*FreeNodeFun
 	return 0;
 }
 
-void Vector_Destroy(struct Vector* pArray)
+void Vector_Destroy(struct Vector *pArray)
 {
 	size_t i = 0;
-	if(pArray->FreeNodeFn)
+	if (pArray->FreeNodeFn)
 	{
 		//We have been supplied a destructor for these nodes
-		for(; i < pArray->length; ++i)
+		for (; i < pArray->length; ++i)
 		{
 			pArray->FreeNodeFn(pArray->pStorage[i]);
 		}
 	}
 	else
 	{
-		for(; i < pArray->length; ++i)
+		for (; i < pArray->length; ++i)
 		{
 			tfree(pArray->pStorage[i]);
 		}
@@ -42,13 +43,14 @@ void Vector_Destroy(struct Vector* pArray)
 	pArray->pStorage = 0;
 }
 
-int Vector_Push(struct Vector* pArray, void* pVal)
+int Vector_Push(struct Vector *pArray, void *pVal)
 {
-	if(pArray->length >= pArray->capacity)
+	if (pArray->length >= pArray->capacity)
 	{
 		pArray->capacity = pArray->capacity << 1;
-		pArray->pStorage = (void**) trealloc(pArray->pStorage, sizeof(void*) * pArray->capacity);
-		if(!pArray->pStorage)
+		pArray->pStorage = (void**) trealloc(pArray->pStorage,
+				sizeof(void*) * pArray->capacity);
+		if (!pArray->pStorage)
 		{
 			return -1;
 		}
@@ -58,14 +60,14 @@ int Vector_Push(struct Vector* pArray, void* pVal)
 	return 0;
 }
 
-size_t Vector_Count(struct Vector* pArray)
+size_t Vector_Count(struct Vector *pArray)
 {
 	return pArray->length;
 }
 
-void* Vector_At(struct Vector* pArray, size_t idx)
+void* Vector_At(struct Vector *pArray, size_t idx)
 {
-	if(pArray->pStorage)
+	if (pArray->pStorage)
 	{
 		return pArray->pStorage[idx];
 	}
@@ -75,14 +77,14 @@ void* Vector_At(struct Vector* pArray, size_t idx)
 	}
 }
 
-int Vector_Find(struct Vector* pArray, void* key,
-		int (*comp)(void*, void*), size_t* outkey)
+int Vector_Find(struct Vector *pArray, void *key, int (*comp)(void*, void*),
+		size_t *outkey)
 {
 	size_t i = 0, z = pArray->length;
 	//We can use a heap later if performance is unimpressive
-	for(; i < z; ++i)
+	for (; i < z; ++i)
 	{
-		if(!comp(key, pArray->pStorage[i]))
+		if (!comp(key, pArray->pStorage[i]))
 		{
 			*outkey = i;
 			return 0;
@@ -91,9 +93,9 @@ int Vector_Find(struct Vector* pArray, void* key,
 	return -1;
 }
 
-int Vector_Remove(struct Vector* pArray, size_t idx)
+int Vector_Remove(struct Vector *pArray, size_t idx)
 {
-	if(pArray->FreeNodeFn)
+	if (pArray->FreeNodeFn)
 	{
 		pArray->FreeNodeFn(pArray->pStorage[idx]);
 	}
@@ -103,12 +105,13 @@ int Vector_Remove(struct Vector* pArray, size_t idx)
 	}
 
 	memmove(&(pArray->pStorage[idx]), &(pArray->pStorage[idx + 1]),
-		(pArray->length - idx - 1) * sizeof(void*));
+			(pArray->length - idx - 1) * sizeof(void*));
 
-	if(pArray->length <= (pArray->capacity >> 2))
+	if (pArray->length <= (pArray->capacity >> 2))
 	{
 		pArray->capacity = pArray->length << 1;
-		pArray->pStorage = (void**) trealloc(pArray->pStorage, pArray->capacity * sizeof(void*));
+		pArray->pStorage = (void**) trealloc(pArray->pStorage,
+				pArray->capacity * sizeof(void*));
 	}
 
 	--(pArray->length);

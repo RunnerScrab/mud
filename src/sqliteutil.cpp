@@ -5,40 +5,43 @@
 
 #include <cstring>
 
-void SQLEscapeString(std::string& str)
+void SQLEscapeString(std::string &str)
 {
 	std::string::size_type pos = 0;
-	for(; pos < str.length() &&
-		    (pos = str.find("'", pos)) != std::string::npos;)
+	for (;
+			pos < str.length()
+					&& (pos = str.find("'", pos)) != std::string::npos;)
 	{
 		str.replace(pos, 1, "''");
 		pos += 2;
 	}
 }
 
-void SQLStripString(std::string& str)
+void SQLStripString(std::string &str)
 {
 	std::string::size_type pos = 0;
-	for(; pos < str.length() &&
-		    (pos = str.find("'", pos)) != std::string::npos;)
+	for (;
+			pos < str.length()
+					&& (pos = str.find("'", pos)) != std::string::npos;)
 	{
 		str.replace(pos, 1, "");
 		++pos;
 	}
 }
 
-int DoesSQLiteTableExist(sqlite3* pDB, const char* tablename, size_t tablenamelen)
+int DoesSQLiteTableExist(sqlite3 *pDB, const char *tablename,
+		size_t tablenamelen)
 {
-	sqlite3_stmt* query = 0;
-	static const char* checktablequery = "SELECT name FROM sqlite_master WHERE type='table' AND name=$tablename;";
+	sqlite3_stmt *query = 0;
+	static const char *checktablequery =
+			"SELECT name FROM sqlite_master WHERE type='table' AND name=$tablename;";
 	dbgprintf("SQLiteTable check query: %s\n", checktablequery);
-	if(SQLITE_OK != sqlite3_prepare_v2(pDB, checktablequery, -1, &query, 0))
+	if (SQLITE_OK != sqlite3_prepare_v2(pDB, checktablequery, -1, &query, 0))
 	{
-		dbgprintf("sqlite prepare failed: %s\n",
-			sqlite3_errmsg(pDB));
+		dbgprintf("sqlite prepare failed: %s\n", sqlite3_errmsg(pDB));
 		return -1;
 	}
-	if(SQLITE_OK != sqlite3_bind_text(query, 1, tablename, tablenamelen, 0))
+	if (SQLITE_OK != sqlite3_bind_text(query, 1, tablename, tablenamelen, 0))
 	{
 		dbgprintf("sqlite bind failed\n");
 		sqlite3_finalize(query);
@@ -51,22 +54,25 @@ int DoesSQLiteTableExist(sqlite3* pDB, const char* tablename, size_t tablenamele
 	return result;
 }
 
-int GetTableColumns(sqlite3* pDB, const char* tablename, std::set<std::string>& columnset)
+int GetTableColumns(sqlite3 *pDB, const char *tablename,
+		std::set<std::string> &columnset)
 {
 	//Do not call this before verifying the table exists. (pragmas cannot use bound parameters).
 	std::string tablenamestr(tablename);
 	SQLStripString(tablenamestr);
 
 	std::string columnquerystr = "pragma table_info(" + tablenamestr + ");";
-	sqlite3_stmt* columnquery = 0;
+	sqlite3_stmt *columnquery = 0;
 
-	if(SQLITE_OK != sqlite3_prepare_v2(pDB, columnquerystr.c_str(), -1, &columnquery, 0))
+	if (SQLITE_OK
+			!= sqlite3_prepare_v2(pDB, columnquerystr.c_str(), -1, &columnquery,
+					0))
 	{
 		dbgprintf("Failed to prepare sql statement\n");
 		return -1;
 	}
 
-	while(sqlite3_step(columnquery) != SQLITE_DONE)
+	while (sqlite3_step(columnquery) != SQLITE_DONE)
 	{
 		std::string row((char*) sqlite3_column_text(columnquery, 1));
 		columnset.insert(row);
@@ -76,22 +82,22 @@ int GetTableColumns(sqlite3* pDB, const char* tablename, std::set<std::string>& 
 	return SQLITE_OK;
 }
 
-int BeginDatabaseTransaction(sqlite3* pDB)
+int BeginDatabaseTransaction(sqlite3 *pDB)
 {
 	return sqlite3_exec(pDB, "BEGIN TRANSACTION", 0, 0, 0);
 }
 
-int EndDatabaseTransaction(sqlite3* pDB)
+int EndDatabaseTransaction(sqlite3 *pDB)
 {
 	return sqlite3_exec(pDB, "END TRANSACTION", 0, 0, 0);
 }
 
-int ExecSQLiteStatement(sqlite3* pDB, const char* createtablequery)
+int ExecSQLiteStatement(sqlite3 *pDB, const char *createtablequery)
 {
-	sqlite3_stmt* query = 0;
+	sqlite3_stmt *query = 0;
 	int result = 0;
 	result = sqlite3_prepare_v2(pDB, createtablequery, -1, &query, 0);
-	if(SQLITE_OK != result)
+	if (SQLITE_OK != result)
 	{
 		dbgprintf("Failed preparing create table sql statement.\n");
 		return result;
@@ -102,19 +108,23 @@ int ExecSQLiteStatement(sqlite3* pDB, const char* createtablequery)
 	return result;
 }
 
-int AddColumnToSQLiteTable(sqlite3* pDB, const char* tablename, const char* colname, const char* coltype)
+int AddColumnToSQLiteTable(sqlite3 *pDB, const char *tablename,
+		const char *colname, const char *coltype)
 {
-	dbgprintf("Trying to add column %s with type %s to table %s\n", colname, coltype, tablename);
-	sqlite3_stmt* query = 0;
+	dbgprintf("Trying to add column %s with type %s to table %s\n", colname,
+			coltype, tablename);
+	sqlite3_stmt *query = 0;
 	int result = 0;
 
 	//SQLite does not support binding parameters to alter table, either.
 	//The values here are not user supplied, but are taken from the game scripts
-	std::string atqstr = "alter table " + std::string(tablename) + " add column " + std::string(colname) + " " + std::string(coltype);
+	std::string atqstr = "alter table " + std::string(tablename)
+			+ " add column " + std::string(colname) + " "
+			+ std::string(coltype);
 	SQLStripString(atqstr); //Strip all apostrophes from this string
 
 	result = sqlite3_prepare_v2(pDB, atqstr.c_str(), -1, &query, 0);
-	if(SQLITE_OK != result)
+	if (SQLITE_OK != result)
 	{
 		dbgprintf("Add Column Prepare failed: %d\n", result);
 		return result;

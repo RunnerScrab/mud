@@ -2,17 +2,17 @@
 
 extern "C"
 {
-	void CCompatibleASThreadCleanup()
-	{
-		asThreadCleanup();
-	}
+void CCompatibleASThreadCleanup()
+{
+	asThreadCleanup();
+}
 
-	void asIScriptObject_Release(asIScriptObject** p)
+void asIScriptObject_Release(asIScriptObject **p)
+{
+	if (p && *p)
 	{
-		if(p && *p)
-		{
-			(*p)->Release();
-			*p = 0;
-		}
+		(*p)->Release();
+		*p = 0;
 	}
+}
 }

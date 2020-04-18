@@ -6,50 +6,51 @@
 
 struct AnsiCode
 {
-	const char* symbol;
+	const char *symbol;
 	unsigned char code[16];
 	unsigned int codelen;
 };
 
-struct AnsiCode color_codes[] = {
-	{"black", "\x1B[30m", 5},
-	{"blue", "\x1B[34m", 5},
-	{"cyan", "\x1B[36m", 5},
-	{"default", "\x1B[0m", 4},
-	{"green", "\x1B[32m", 5},
-	{"magenta", "\x1B[35m", 5},
-	{"red", "\x1B[31m", 5},
-	{"white", "\x1B[37m", 5},
-	{"yellow", "\x1B[33m", 5}
-};
+struct AnsiCode color_codes[] =
+{
+{ "black", "\x1B[30m", 5 },
+{ "blue", "\x1B[34m", 5 },
+{ "cyan", "\x1B[36m", 5 },
+{ "default", "\x1B[0m", 4 },
+{ "green", "\x1B[32m", 5 },
+{ "magenta", "\x1B[35m", 5 },
+{ "red", "\x1B[31m", 5 },
+{ "white", "\x1B[37m", 5 },
+{ "yellow", "\x1B[33m", 5 } };
 
-int compcolsymbol(const void* a, const void* b)
+int compcolsymbol(const void *a, const void *b)
 {
 	return strcmp((const char*) a,
-		((const char*)((struct AnsiCode*) b)->symbol));
+			((const char*) ((struct AnsiCode*) b)->symbol));
 }
 
 inline int chtoi(const char ch)
 {
-	static const unsigned char table[] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, ':', ';', '<', '=', '>', '?',
-					      '@', 10, 11, 12, 13, 14, 15};
+	static const unsigned char table[] =
+	{ 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, ':', ';', '<', '=', '>', '?', '@', 10, 11,
+			12, 13, 14, 15 };
 	return table[toupper(ch) - 48];
 }
 
-void atorgb(const char* a, size_t len, unsigned char* r, unsigned char* g, unsigned char* b)
+void atorgb(const char *a, size_t len, unsigned char *r, unsigned char *g,
+		unsigned char *b)
 {
-	static const unsigned char table[] = {
-		0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-		0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-		0,0,0,0,0,0,0,0,
-		0, 1, 2, 3, 4, 5, 6, 7, 8, 9, ':', ';', '<', '=', '>', '?',
-		'@', 10, 11, 12, 13, 14, 15};
-	if(strnlen(a, len) == 7 && (a[0] == '#' || a[0] == '@'))
+	static const unsigned char table[] =
+	{ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+			0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+			0, 1, 2, 3, 4, 5, 6, 7, 8, 9, ':', ';', '<', '=', '>', '?', '@', 10,
+			11, 12, 13, 14, 15 };
+	if (strnlen(a, len) == 7 && (a[0] == '#' || a[0] == '@'))
 	{
 		printf("Found 24-bit ANSI color code.\n");
-		*r = (table[toupper(a[1])]<<4) | table[toupper(a[2])];
-		*g = (table[toupper(a[3])]<<4) | table[toupper(a[4])];
-		*b = (table[toupper(a[5])]<<4) | table[toupper(a[6])];
+		*r = (table[toupper(a[1])] << 4) | table[toupper(a[2])];
+		*g = (table[toupper(a[3])] << 4) | table[toupper(a[4])];
+		*b = (table[toupper(a[5])] << 4) | table[toupper(a[6])];
 	}
 	else
 	{
@@ -57,50 +58,58 @@ void atorgb(const char* a, size_t len, unsigned char* r, unsigned char* g, unsig
 	}
 }
 
-void ANSIColorizeString(const el_t* input, size_t inputlen, cv_t* output)
+void ANSIColorizeString(const el_t *input, size_t inputlen, cv_t *output)
 {
-	el_t* pInput = (el_t*) input;
-	el_t* markerstart = 0;
-	for(;*pInput && (markerstart = memchr(pInput, '`', inputlen - (pInput - input)));)
+	el_t *pInput = (el_t*) input;
+	el_t *markerstart = 0;
+	for (;
+			*pInput
+					&& (markerstart = memchr(pInput, '`',
+							inputlen - (pInput - input)));)
 	{
 		size_t searchlen = (input + inputlen) - (markerstart + 1);
-		el_t* markerend = markerstart ? memchr(markerstart + 1, '`', searchlen) : 0;
-		el_t symbol[32] = {0};
-		if(markerstart && markerend)
+		el_t *markerend =
+				markerstart ? memchr(markerstart + 1, '`', searchlen) : 0;
+		el_t symbol[32] =
+		{ 0 };
+		if (markerstart && markerend)
 		{
 			strncpy(symbol, markerstart + 1, markerend - markerstart - 1);
 			//strncat(output, pInput, markerstart - pInput);
 			//abc`
 			cv_strncat(output, pInput, markerstart - pInput);
-			switch(symbol[0])
+			switch (symbol[0])
 			{
 			case '@':
 			case '#':
 			{
 				//24-bit ANSI color code, foreground
-				el_t twentyfourbitansi[32] = {0};
+				el_t twentyfourbitansi[32] =
+				{ 0 };
 				unsigned char r, g, b;
 				atorgb(symbol, 32, &r, &g, &b);
-				size_t written = snprintf(twentyfourbitansi, sizeof(el_t) * 32, "\x1b[%d;2;%d;%d;%dm",
-					(symbol[0] == '#'? 38 : 48),r, g, b);
+				size_t written = snprintf(twentyfourbitansi, sizeof(el_t) * 32,
+						"\x1b[%d;2;%d;%d;%dm", (symbol[0] == '#' ? 38 : 48), r,
+						g, b);
 
 				cv_appendstr(output, twentyfourbitansi, written);
 			}
-			break;
+				break;
 			default:
 			{
-				struct AnsiCode* found = (struct AnsiCode*) bsearch(symbol, color_codes, 9,
-								sizeof(struct AnsiCode), compcolsymbol);
-				if(found)
+				struct AnsiCode *found = (struct AnsiCode*) bsearch(symbol,
+						color_codes, 9, sizeof(struct AnsiCode), compcolsymbol);
+				if (found)
 				{
 					cv_appendstr(output, (el_t*) found->code, found->codelen);
 				}
 				else
 				{
-					cv_strncat(output, markerstart, markerend - markerstart + 1);
+					cv_strncat(output, markerstart,
+							markerend - markerstart + 1);
 				}
 			}
-			break;
+				break;
 			}
 			pInput = (markerend + 1);
 		}
@@ -113,11 +122,11 @@ void ANSIColorizeString(const el_t* input, size_t inputlen, cv_t* output)
 	cv_appendstr(output, pInput, inputlen - (pInput - input) + 1);
 
 	/*
-	int i = 0;
-	for(; i < output->length; ++i)
-	{
-		printf((i < (output->length - 1)) ? "%x," : "%x\n",
-				output->data[i]);
-	}
-	*/
+	 int i = 0;
+	 for(; i < output->length; ++i)
+	 {
+	 printf((i < (output->length - 1)) ? "%x," : "%x\n",
+	 output->data[i]);
+	 }
+	 */
 }

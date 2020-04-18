@@ -19,13 +19,13 @@ struct RandGenerator
 
 struct RandFIFO
 {
-	unsigned long long* fifo;
+	unsigned long long *fifo;
 	size_t length;
 };
 
-int RandFIFO_Init(struct RandFIFO* fifo, size_t init_len);
-int RandGenerator_Init(struct RandGenerator* rgn);
-void RandGenerator_Destroy(struct RandGenerator* rgn);
-void RandGenerator_Gen64(unsigned long long* p64);
+int RandFIFO_Init(struct RandFIFO *fifo, size_t init_len);
+int RandGenerator_Init(struct RandGenerator *rgn);
+void RandGenerator_Destroy(struct RandGenerator *rgn);
+void RandGenerator_Gen64(unsigned long long *p64);
 
 #endif

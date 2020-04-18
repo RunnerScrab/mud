@@ -30,24 +30,25 @@
 #include "as_manager.h"
 #include "as_cinterface.h"
 
-static int Server_InitializeADTs(struct Server* server);
-static int Server_InitializeScriptEngine(struct Server* server);
-static int Server_LoadConfiguration(struct Server* server);
-static int Server_LoadGame(struct Server* server);
-static int Server_InitializeThreads(struct Server* server);
-static int Server_InitializeNetwork(struct Server* server, const char* szAddr, unsigned short port);
-static void Server_StopNetwork(struct Server* server);
-static void Server_StopThreads(struct Server* server);
-static void Server_UnloadGame(struct Server* server);
-static void Server_FreeConfiguration(struct Server* server);
-static void Server_StopScriptEngine(struct Server* server);
-static void Server_ReleaseADTs(struct Server* server);
+static int Server_InitializeADTs(struct Server *server);
+static int Server_InitializeScriptEngine(struct Server *server);
+static int Server_LoadConfiguration(struct Server *server);
+static int Server_LoadGame(struct Server *server);
+static int Server_InitializeThreads(struct Server *server);
+static int Server_InitializeNetwork(struct Server *server, const char *szAddr,
+		unsigned short port);
+static void Server_StopNetwork(struct Server *server);
+static void Server_StopThreads(struct Server *server);
+static void Server_UnloadGame(struct Server *server);
+static void Server_FreeConfiguration(struct Server *server);
+static void Server_StopScriptEngine(struct Server *server);
+static void Server_ReleaseADTs(struct Server *server);
 
-static int Server_LoadMOTD(struct Server* server)
+static int Server_LoadMOTD(struct Server *server)
 {
 	//TODO: Put MOTD filename/path in configuration
-	FILE* fp = fopen("motd.txt", "rb");
-	if(!fp)
+	FILE *fp = fopen("motd.txt", "rb");
+	if (!fp)
 	{
 		return -1;
 	}
@@ -62,7 +63,7 @@ static int Server_LoadMOTD(struct Server* server)
 	return 0;
 }
 
-static int Server_InitializeADTs(struct Server* server)
+static int Server_InitializeADTs(struct Server *server)
 {
 	pthread_mutex_init(&server->timed_queue_mtx, 0);
 	prioq_create(&server->timed_queue, 32);
@@ -70,25 +71,28 @@ static int Server_InitializeADTs(struct Server* server)
 	pthread_rwlock_init(&server->clients_rwlock, 0);
 
 	pthread_rwlock_wrlock(&server->clients_rwlock);
-	if(FAILURE(Vector_Create(&(server->clients), 64, Client_Destroy)))
+	if (FAILURE(Vector_Create(&(server->clients), 64, Client_Destroy)))
 	{
-		ServerLog(SERVERLOG_ERROR, "FATAL: Failed to allocate memory for client list!");
+		ServerLog(SERVERLOG_ERROR,
+				"FATAL: Failed to allocate memory for client list!");
 		Server_Stop(server);
 		return -1;
 	}
 	pthread_rwlock_unlock(&server->clients_rwlock);
 
-	if(FAILURE(RandGenerator_Init(&server->rand_generator)))
+	if (FAILURE(RandGenerator_Init(&server->rand_generator)))
 	{
-		ServerLog(SERVERLOG_ERROR, "FATAL: Failed to initialize random number generator!");
+		ServerLog(SERVERLOG_ERROR,
+				"FATAL: Failed to initialize random number generator!");
 		Server_Stop(server);
 		return -1;
 	}
 	ServerLog(SERVERLOG_STATUS, "Initialized random number generator.");
 
-	if(FAILURE(CryptoManager_Init(&server->crypto_manager)))
+	if (FAILURE(CryptoManager_Init(&server->crypto_manager)))
 	{
-		ServerLog(SERVERLOG_ERROR, "FATAL: Failed to initialize cryptographic module!");
+		ServerLog(SERVERLOG_ERROR,
+				"FATAL: Failed to initialize cryptographic module!");
 		Server_Stop(server);
 		return -1;
 	}
@@ -99,18 +103,18 @@ static int Server_InitializeADTs(struct Server* server)
 	return 0;
 }
 
-static int Server_InitializeScriptEngine(struct Server* server)
+static int Server_InitializeScriptEngine(struct Server *server)
 {
-	int result = AngelScriptManager_InitEngine(&server->as_manager);
-	if(FAILURE(result))
+	int result = AngelScriptManager_InitEngine(&server->as_manager, server);
+	if (FAILURE(result))
 	{
 		ServerLog(SERVERLOG_ERROR, "Failed to initialize AngelScript engine.");
 		return -1;
 	}
 	ServerLog(SERVERLOG_STATUS, "Initialized scripting engine.");
 
-	result = AngelScriptManager_InitAPI(&server->as_manager, server);
-	if(FAILURE(result))
+	result = AngelScriptManager_InitAPI(&server->as_manager);
+	if (FAILURE(result))
 	{
 		ServerLog(SERVERLOG_ERROR, "Failed to initialize script API.\n");
 		return -1;
@@ -119,30 +123,34 @@ static int Server_InitializeScriptEngine(struct Server* server)
 	return result;
 }
 
-static int Server_LoadConfiguration(struct Server* server)
+static int Server_LoadConfiguration(struct Server *server)
 {
-	int result = AngelScriptManager_LoadServerConfig(&server->as_manager, &server->configuration);
-	if(FAILURE(result))
+	int result = AngelScriptManager_LoadServerConfig(&server->as_manager,
+			&server->configuration);
+	if (FAILURE(result))
 	{
-		ServerLog(SERVERLOG_ERROR, "Failed to load configuration file server.cfg.");
+		ServerLog(SERVERLOG_ERROR,
+				"Failed to load configuration file server.cfg.");
 		return -1;
 	}
 	ServerLog(SERVERLOG_STATUS, "Configuration file loaded.");
 	return 0;
 }
 
-static int Server_LoadGame(struct Server* server)
+static int Server_LoadGame(struct Server *server)
 {
-	int result = AngelScriptManager_LoadScripts(&server->as_manager, server->configuration.scriptpath);
-	if(FAILURE(result))
+	int result = AngelScriptManager_LoadScripts(&server->as_manager,
+			server->configuration.scriptpath);
+	if (FAILURE(result))
 	{
 		ServerLog(SERVERLOG_ERROR, "Failed to load game scripts.");
 		return -1;
 	}
 	ServerLog(SERVERLOG_STATUS, "Game scripts loaded.");
 
-	result = AngelScriptManager_PrepareScriptPersistenceLayer(&server->as_manager);
-	if(FAILURE(result))
+	result = AngelScriptManager_PrepareScriptPersistenceLayer(
+			&server->as_manager);
+	if (FAILURE(result))
 	{
 		ServerLog(SERVERLOG_ERROR, "Failed to start persistence layer!");
 		return -1;
@@ -157,25 +165,19 @@ static int Server_LoadGame(struct Server* server)
 	return 0;
 }
 
-static int Server_InitializeThreads(struct Server* server)
+static int Server_InitializeThreads(struct Server *server)
 {
 	server->cpu_cores = get_nprocs();
 
-	if(FAILURE(TickThread_Init(&server->game_tick_thread, server, 1000000)))
+	if (FAILURE(TickThread_Init(&server->game_tick_thread, server, 1000000)))
 	{
 		ServerLog(SERVERLOG_ERROR, "Failed to initialize server tick thread!");
 		return -1;
 	}
 	ServerLog(SERVERLOG_STATUS, "Initialized server tick thread.");
 
-	if(FAILURE(CmdDispatchThread_Init(&server->cmd_dispatch_thread, server)))
-	{
-		ServerLog(SERVERLOG_ERROR, "Failed to initialize task dispatch thread!");
-		return -1;
-	}
-	ServerLog(SERVERLOG_STATUS, "Initialized task dispatch thread.");
-
-	if(FAILURE(ThreadPool_Init(&server->thread_pool, max(server->cpu_cores - 2, 1))))
+	if (FAILURE(
+			ThreadPool_Init(&server->thread_pool, max(server->cpu_cores - 2, 1))))
 	{
 		ServerLog(SERVERLOG_ERROR, "Failed to initialize thread pool!");
 		return -1;
@@ -184,18 +186,21 @@ static int Server_InitializeThreads(struct Server* server)
 	return 0;
 }
 
-static int Server_InitializeNetwork(struct Server* server, const char* szAddr, unsigned short port)
+static int Server_InitializeNetwork(struct Server *server, const char *szAddr,
+		unsigned short port)
 {
 	int opts = 1;
 	server->sockfd = socket(AF_INET, SOCK_STREAM, 0);
 
-	if(FAILURE(server->sockfd))
+	if (FAILURE(server->sockfd))
 	{
 		ServerLog(SERVERLOG_ERROR, "Could not create socket.");
 		return -1;
 	}
 
-	if (FAILURE(setsockopt(server->sockfd, SOL_SOCKET, SO_REUSEADDR, &opts, sizeof(int))))
+	if (FAILURE(
+			setsockopt(server->sockfd, SOL_SOCKET, SO_REUSEADDR, &opts,
+					sizeof(int))))
 	{
 		ServerLog(SERVERLOG_ERROR, "Failed to set socket options.");
 		return -1;
@@ -208,7 +213,8 @@ static int Server_InitializeNetwork(struct Server* server, const char* szAddr, u
 
 	// Configure epoll for the server
 	server->evlist_len = 64;
-	server->evlist = (struct epoll_event*) talloc(sizeof(struct epoll_event) * server->evlist_len);
+	server->evlist = (struct epoll_event*) talloc(
+			sizeof(struct epoll_event) * server->evlist_len);
 	memset(server->evlist, 0, sizeof(struct epoll_event) * server->evlist_len);
 
 	server->epfd = epoll_create(10);
@@ -223,58 +229,64 @@ static int Server_InitializeNetwork(struct Server* server, const char* szAddr, u
 	//Open a pipe for in-process server commands and have epoll watch the
 	//read end
 
-	if(FAILURE(pipe(server->cmd_pipe)) ||
-		FAILURE(epoll_ctl(server->epfd, EPOLL_CTL_ADD,
+	if (FAILURE(pipe(server->cmd_pipe)) ||
+	FAILURE(epoll_ctl(server->epfd, EPOLL_CTL_ADD,
 					server->cmd_pipe[0], &(server->cmdpipe_event))))
 	{
 		ServerLog(SERVERLOG_ERROR, "FAILED TO CREATE COMMAND PIPE!");
 		return -1;
 	}
 
-	if(FAILURE(epoll_ctl(server->epfd,
-					EPOLL_CTL_ADD,
-					server->sockfd,
+	if (FAILURE(
+			epoll_ctl(server->epfd, EPOLL_CTL_ADD, server->sockfd,
 					&(server->server_event))))
 	{
-		ServerLog(SERVERLOG_ERROR, "FATAL: Could not add server socket to epoll wait list!");
+		ServerLog(SERVERLOG_ERROR,
+				"FATAL: Could not add server socket to epoll wait list!");
 		Server_Stop(server);
 		return -1;
 	}
 
-	if(FAILURE(bind(server->sockfd, (struct sockaddr*) &server->addr_in,
+	if (FAILURE(
+			bind(server->sockfd, (struct sockaddr* ) &server->addr_in,
 					sizeof(struct sockaddr_in))))
 	{
 		ServerLog(SERVERLOG_ERROR, "Failed to bind to %s:%d.",
-			inet_ntoa(server->addr_in.sin_addr), ntohs(server->addr_in.sin_port));
+				inet_ntoa(server->addr_in.sin_addr),
+				ntohs(server->addr_in.sin_port));
 		return -1;
 	}
 
 	int backlog = 64; //TODO: Make this configurable
-	if(FAILURE(listen(server->sockfd, backlog)))
+	if (FAILURE(listen(server->sockfd, backlog)))
 	{
 		ServerLog(SERVERLOG_ERROR, "Could not listen on %s:%d.",
-			inet_ntoa(server->addr_in.sin_addr), ntohs(server->addr_in.sin_port));
+				inet_ntoa(server->addr_in.sin_addr),
+				ntohs(server->addr_in.sin_port));
 		return -1;
 	}
 
 	ServerLog(SERVERLOG_STATUS, "Server now listening on %s:%d.",
-		inet_ntoa(server->addr_in.sin_addr), ntohs(server->addr_in.sin_port));
+			inet_ntoa(server->addr_in.sin_addr),
+			ntohs(server->addr_in.sin_port));
 
 	return 0;
 }
 
-int Server_Start(struct Server* server)
+int Server_Start(struct Server *server)
 {
 	memset(server, 0, sizeof(struct Server));
-	if(FAILURE(Server_InitializeADTs(server)))
+	if (FAILURE(Server_InitializeADTs(server)))
 		return -1;
-	if(FAILURE(Server_InitializeScriptEngine(server)))
-		return -1;
-
-	if(FAILURE(Server_LoadConfiguration(server)))
+	if (FAILURE(Server_InitializeScriptEngine(server)))
 		return -1;
 
-	if(FAILURE(Database_Init(&server->db, server, server->configuration.dbfilepath)))
+	if (FAILURE(Server_LoadConfiguration(server)))
+		return -1;
+
+	if (FAILURE(
+			Database_Init(&server->db, server,
+					server->configuration.dbfilepath)))
 	{
 		ServerLog(SERVERLOG_ERROR, "FATAL: Failed to initialize database!");
 		Server_Stop(server);
@@ -282,17 +294,20 @@ int Server_Start(struct Server* server)
 	}
 	ServerLog(SERVERLOG_STATUS, "Initialized database engine.");
 
-	if(FAILURE(Server_LoadGame(server)))
+	if (FAILURE(Server_LoadGame(server)))
 		return -1;
-	if(FAILURE(Server_InitializeThreads(server)))
+	if (FAILURE(Server_InitializeThreads(server)))
 		return -1;
-	if(FAILURE(Server_InitializeNetwork(server, server->configuration.bindip, server->configuration.bindport)))
+	if (FAILURE(
+			Server_InitializeNetwork(server, server->configuration.bindip,
+					server->configuration.bindport)))
 		return -1;
-	ServerLog(SERVERLOG_STATUS, "Server running. %d processor cores detected.", server->cpu_cores);
+	ServerLog(SERVERLOG_STATUS, "Server running. %d processor cores detected.",
+			server->cpu_cores);
 	return 0;
 }
 
-static void Server_StopNetwork(struct Server* server)
+static void Server_StopNetwork(struct Server *server)
 {
 	close(server->sockfd);
 	close(server->cmd_pipe[0]);
@@ -300,38 +315,36 @@ static void Server_StopNetwork(struct Server* server)
 	tfree(server->evlist);
 }
 
-static void Server_StopThreads(struct Server* server)
+static void Server_StopThreads(struct Server *server)
 {
 	ThreadPool_Destroy(&server->thread_pool);
-	CmdDispatchThread_Stop(&server->cmd_dispatch_thread);
-	CmdDispatchThread_Destroy(&server->cmd_dispatch_thread);
 	TickThread_Stop(&server->game_tick_thread);
 }
 
-static void Server_FreeMOTD(struct Server* server)
+static void Server_FreeMOTD(struct Server *server)
 {
 	tfree(server->MOTD);
 	server->MOTD = 0;
 }
 
-static void Server_UnloadGame(struct Server* server)
+static void Server_UnloadGame(struct Server *server)
 {
 	Server_FreeMOTD(server);
 	Database_Release(&server->db);
 }
 
-static void Server_FreeConfiguration(struct Server* server)
+static void Server_FreeConfiguration(struct Server *server)
 {
 
 }
 
-static void Server_StopScriptEngine(struct Server* server)
+static void Server_StopScriptEngine(struct Server *server)
 {
 	AngelScriptManager_ReleaseEngine(&server->as_manager);
 	CCompatibleASThreadCleanup();
 }
 
-static void Server_ReleaseADTs(struct Server* server)
+static void Server_ReleaseADTs(struct Server *server)
 {
 	MemoryPool_Destroy(&server->mem_pool);
 	CryptoManager_Destroy(&server->crypto_manager);
@@ -342,7 +355,7 @@ static void Server_ReleaseADTs(struct Server* server)
 	pthread_mutex_destroy(&server->timed_queue_mtx);
 }
 
-void Server_Stop(struct Server* server)
+void Server_Stop(struct Server *server)
 {
 	Server_StopNetwork(server);
 	Server_StopThreads(server);

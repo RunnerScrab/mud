@@ -11,7 +11,10 @@
 class SQLiteVariant
 {
 public:
-	typedef enum {VARNONE = 0, VARINT, VARREAL, VARBLOB, VARTEXT} StoredType;
+	typedef enum
+	{
+		VARNONE = 0, VARINT, VARREAL, VARBLOB, VARTEXT
+	} StoredType;
 private:
 	StoredType m_storedtype;
 	size_t m_datalen;
@@ -19,7 +22,7 @@ private:
 
 	union VARUNION
 	{
-		char* as_blob;
+		char *as_blob;
 		unsigned long long as_uint64;
 		long long as_int64;
 		double as_double;
@@ -29,7 +32,8 @@ private:
 
 	void FreeBlobHeapMemIfAllocated()
 	{
-		if((VARBLOB == m_storedtype || VARTEXT == m_storedtype) && m_data.as_blob)
+		if ((VARBLOB == m_storedtype || VARTEXT == m_storedtype)
+				&& m_data.as_blob)
 		{
 			free(m_data.as_blob);
 		}
@@ -54,7 +58,8 @@ public:
 
 	const std::string GetTypeAsString()
 	{
-		static const char* typestrs[] = {"NULL", "INT", "REAL", "BLOB", "TEXT"};
+		static const char *typestrs[] =
+		{ "NULL", "INT", "REAL", "BLOB", "TEXT" };
 		return std::string(typestrs[static_cast<int>(m_storedtype)]);
 	}
 
@@ -63,12 +68,11 @@ public:
 		return m_datalen;
 	}
 
-
 	void ClearValue()
 	{
 		//Don't clear the reserved len or release any heap memory
 		m_datalen = 0;
-		switch(m_storedtype)
+		switch (m_storedtype)
 		{
 		case VARTEXT:
 		case VARBLOB:
@@ -89,13 +93,13 @@ public:
 		memset(&m_data, 0, sizeof(union VARUNION));
 	}
 
-	SQLiteVariant(const SQLiteVariant& other)
+	SQLiteVariant(const SQLiteVariant &other)
 	{
 		m_datalen = other.m_datalen;
 		m_storedtype = other.m_storedtype;
 		m_reservedlen = other.m_reservedlen;
 
-		if(VARTEXT == m_storedtype || VARBLOB == m_storedtype)
+		if (VARTEXT == m_storedtype || VARBLOB == m_storedtype)
 		{
 			m_data.as_blob = (char*) malloc(m_reservedlen);
 			memcpy(m_data.as_blob, other.m_data.as_blob, m_reservedlen);
@@ -106,7 +110,7 @@ public:
 		}
 	}
 
-	SQLiteVariant(SQLiteVariant&& other)
+	SQLiteVariant(SQLiteVariant &&other)
 	{
 		m_datalen = std::move(other.m_datalen);
 		m_reservedlen = std::move(other.m_reservedlen);
@@ -117,17 +121,18 @@ public:
 		other.m_storedtype = VARNONE;
 	}
 
-	SQLiteVariant& operator=(const SQLiteVariant& other)
+	SQLiteVariant& operator=(const SQLiteVariant &other)
 	{
-		if(VARTEXT == other.m_storedtype || VARBLOB == other.m_storedtype)
+		if (VARTEXT == other.m_storedtype || VARBLOB == other.m_storedtype)
 		{
-			if(!m_data.as_blob)
+			if (!m_data.as_blob)
 			{
 				m_data.as_blob = (char*) malloc(other.m_reservedlen);
 			}
-			else if(m_reservedlen < other.m_reservedlen)
+			else if (m_reservedlen < other.m_reservedlen)
 			{
-				m_data.as_blob = (char*) realloc(m_data.as_blob, other.m_reservedlen);
+				m_data.as_blob = (char*) realloc(m_data.as_blob,
+						other.m_reservedlen);
 			}
 			m_datalen = other.m_datalen;
 			m_reservedlen = other.m_reservedlen;
@@ -147,7 +152,8 @@ public:
 
 	~SQLiteVariant()
 	{
-		if((VARBLOB == m_storedtype || VARTEXT == m_storedtype) && m_data.as_blob)
+		if ((VARBLOB == m_storedtype || VARTEXT == m_storedtype)
+				&& m_data.as_blob)
 		{
 			free(m_data.as_blob);
 		}
@@ -201,26 +207,27 @@ public:
 		m_storedtype = VARREAL;
 	}
 
-	void SetValue(const std::string& v)
+	void SetValue(const std::string &v)
 	{
-		if(VARBLOB == m_storedtype || VARTEXT == m_storedtype)
+		if (VARBLOB == m_storedtype || VARTEXT == m_storedtype)
 		{
-			if(m_data.as_blob)
+			if (m_data.as_blob)
 			{
-				if((v.length() + 1) > m_reservedlen)
+				if ((v.length() + 1) > m_reservedlen)
 				{
 					m_reservedlen = (v.length() + 1) << 1;
-					m_data.as_blob = (char*) realloc(m_data.as_blob, m_reservedlen);
+					m_data.as_blob = (char*) realloc(m_data.as_blob,
+							m_reservedlen);
 				}
 			}
 		}
 
 		m_datalen = v.length() + 1;
 
-		if(!m_data.as_blob)
+		if (!m_data.as_blob)
 		{
 			m_data.as_blob = (char*) malloc(m_datalen);
-			if(!m_data.as_blob)
+			if (!m_data.as_blob)
 			{
 				printf("FAILED TO ALLOCATE MEMORY FOR VARIANT BLOB!\n");
 			}
@@ -231,39 +238,40 @@ public:
 		m_storedtype = VARTEXT;
 	}
 
-	void SetValue(const char* data, size_t len)
+	void SetValue(const char *data, size_t len)
 	{
-		if(VARBLOB == m_storedtype || VARTEXT == m_storedtype)
+		if (VARBLOB == m_storedtype || VARTEXT == m_storedtype)
 		{
-			if(m_data.as_blob)
+			if (m_data.as_blob)
 			{
-				if(len > m_reservedlen)
+				if (len > m_reservedlen)
 				{
 					m_reservedlen = std::max((len << 1), (size_t) 4);
-					m_data.as_blob = (char*) realloc(m_data.as_blob, m_reservedlen);
+					m_data.as_blob = (char*) realloc(m_data.as_blob,
+							m_reservedlen);
 				}
 			}
 		}
 
 		m_datalen = std::max(len, (size_t) 4);
 
-		if(!m_data.as_blob)
+		if (!m_data.as_blob)
 		{
 			m_data.as_blob = (char*) malloc(m_datalen);
 			m_reservedlen = m_datalen;
 		}
 
 		memset(m_data.as_blob, 0, m_reservedlen);
-		if(data)
+		if (data)
 		{
 			memcpy(m_data.as_blob, data, m_datalen);
 		}
 		m_storedtype = VARBLOB;
 	}
 
-	bool GetValue(int& v) const
+	bool GetValue(int &v) const
 	{
-		if(VARINT == m_storedtype)// && m_datalen == sizeof(int))
+		if (VARINT == m_storedtype)		// && m_datalen == sizeof(int))
 		{
 			v = m_data.as_int;
 			return true;
@@ -274,9 +282,9 @@ public:
 		}
 	}
 
-	bool GetValue(long long& v) const
+	bool GetValue(long long &v) const
 	{
-		if(VARINT == m_storedtype)// && m_datalen == sizeof(long long))
+		if (VARINT == m_storedtype)		// && m_datalen == sizeof(long long))
 		{
 			v = m_data.as_int64;
 			return true;
@@ -287,9 +295,9 @@ public:
 		}
 	}
 
-	bool GetValue(unsigned int& v) const
+	bool GetValue(unsigned int &v) const
 	{
-		if(VARINT == m_storedtype)// && m_datalen == sizeof(unsigned int))
+		if (VARINT == m_storedtype)		// && m_datalen == sizeof(unsigned int))
 		{
 			v = m_data.as_uint;
 			return true;
@@ -300,9 +308,9 @@ public:
 		}
 	}
 
-	bool GetValue(unsigned long long& v) const
+	bool GetValue(unsigned long long &v) const
 	{
-		if(VARINT == m_storedtype)// && m_datalen == sizeof(unsigned long long))
+		if (VARINT == m_storedtype)	// && m_datalen == sizeof(unsigned long long))
 		{
 			v = m_data.as_uint64;
 			return true;
@@ -313,9 +321,9 @@ public:
 		}
 	}
 
-	bool GetValue(float& v) const
+	bool GetValue(float &v) const
 	{
-		if(VARREAL == m_storedtype)// && m_datalen == sizeof(float))
+		if (VARREAL == m_storedtype)		// && m_datalen == sizeof(float))
 		{
 			v = static_cast<float>(m_data.as_double);
 			return true;
@@ -326,9 +334,9 @@ public:
 		}
 	}
 
-	bool GetValue(double& v) const
+	bool GetValue(double &v) const
 	{
-		if(VARREAL == m_storedtype)// && m_datalen == sizeof(double))
+		if (VARREAL == m_storedtype)		// && m_datalen == sizeof(double))
 		{
 			v = m_data.as_double;
 			return true;
@@ -339,9 +347,9 @@ public:
 		}
 	}
 
-	bool GetValue(std::string& v) const
+	bool GetValue(std::string &v) const
 	{
-		if(VARTEXT == m_storedtype)
+		if (VARTEXT == m_storedtype)
 		{
 			v = std::string(m_data.as_blob);
 			return true;
@@ -357,9 +365,9 @@ public:
 		return m_data.as_blob;
 	}
 
-	bool GetValue(std::vector<char>& v) const
+	bool GetValue(std::vector<char> &v) const
 	{
-		if(VARBLOB == m_storedtype)
+		if (VARBLOB == m_storedtype)
 		{
 			v.resize(m_datalen);
 			memcpy(&v[0], m_data.as_blob, m_datalen);
@@ -373,6 +381,7 @@ public:
 };
 
 std::string VariantTypeToString(SQLiteVariant::StoredType type);
-int BindVariantToStatement(sqlite3_stmt* stmt, const SQLiteVariant* value, int pos);
+int BindVariantToStatement(sqlite3_stmt *stmt, const SQLiteVariant *value,
+		int pos);
 
 #endif

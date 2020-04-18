@@ -1,4 +1,4 @@
-class TestCommand : ICommand
+class TestCommand : IAction
 {
 	private int a;
 		     private int b;

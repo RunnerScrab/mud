@@ -23,6 +23,7 @@ OBJS := $(COBJS) $(CXXOBJS)
 DEPS := $(CDEPS) $(CXXDEPS)
 LIBS = libangelscript.a libsqlite3.a
 
+all: mud
 mud: ${OBJS} ${LIBS}
 # The linking must be managed by g++
 	${CCXX} -o mud ${OBJS} ${LIBS} ${LDLIBS}

@@ -4,6 +4,6 @@
 typedef struct asIScriptObject asIScriptObject;
 
 void CCompatibleASThreadCleanup();
-void asIScriptObject_Release(asIScriptObject** p);
+void asIScriptObject_Release(asIScriptObject **p);
 
 #endif

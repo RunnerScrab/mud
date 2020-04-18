@@ -6,37 +6,36 @@ static size_t g_allocs = 0;
 static size_t g_frees = 0;
 static size_t g_reallocs = 0;
 
-
-void* trealloc_(void* origp, size_t size, const char* func, const char* file, const int line)
+void* trealloc_(void *origp, size_t size, const char *func, const char *file,
+		const int line)
 {
 	++g_reallocs;
 	void *newv = realloc(origp, size);
 	return newv;
 }
 
-void* talloc_(size_t size, const char* func, const char* file, const int line)
+void* talloc_(size_t size, const char *func, const char *file, const int line)
 {
-	void* returnval = malloc(size);
+	void *returnval = malloc(size);
 	++g_allocs;
 	return returnval;
 
 }
 
-void tfree2(void* p)
+void tfree2(void *p)
 {
 	++g_frees;
 	free(p);
 }
 
-void tswap_memory(void** a, void** b)
+void tswap_memory(void **a, void **b)
 {
-	void* t = *b;
+	void *t = *b;
 	*b = *a;
 	*a = t;
 }
 
-
-void tfree_(void* p, const char* func, const char* file, const int line)
+void tfree_(void *p, const char *func, const char *file, const int line)
 {
 	++g_frees;
 	free(p);

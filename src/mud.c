@@ -21,11 +21,10 @@
 
 #include "as_manager.h"
 
-
 #define SUCCESS(x) (x >= 0)
 #define FAILURE(x) (x < 0)
 
-static struct Server* g_pServer = 0;
+static struct Server *g_pServer = 0;
 
 void HandleKillSig(int sig)
 {
@@ -33,7 +32,7 @@ void HandleKillSig(int sig)
 	Server_WriteToCmdPipe(g_pServer, "kill", 5);
 }
 
-int main(int argc, char** argv)
+int main(int argc, char **argv)
 {
 #ifdef DEBUG
 	ServerLog(SERVERLOG_STATUS, "*****DEBUG BUILD*****");
@@ -41,33 +40,35 @@ int main(int argc, char** argv)
 	struct Server server;
 	g_pServer = &server;
 
-	struct EvPkg* pEvPkg = 0;
+	struct EvPkg *pEvPkg = 0;
 
 	int ready = 0;
 	int loop_ctr = 0;
 	volatile char mudloop_running = 1;
 
 	//TODO: Handle binding properly w/ ipv6 support
-	if(SUCCESS(Server_Start(&server)))
+	if (SUCCESS(Server_Start(&server)))
 	{
 		signal(SIGINT, HandleKillSig);
 
-		for(;mudloop_running;)
+		for (; mudloop_running;)
 		{
 
-			ready = epoll_wait(server.epfd, server.evlist, server.evlist_len, -1);
+			ready = epoll_wait(server.epfd, server.evlist, server.evlist_len,
+					-1);
 
-			if(ready == -1)
+			if (ready == -1)
 			{
 				char errmsg[256];
 				strerror_r(errno, errmsg, 256);
-				ServerLog(SERVERLOG_DEBUG, "epoll reported error: %s\n", errmsg);
+				ServerLog(SERVERLOG_DEBUG, "epoll reported error: %s\n",
+						errmsg);
 			}
 
-			for(loop_ctr = 0; loop_ctr < ready; ++loop_ctr)
+			for (loop_ctr = 0; loop_ctr < ready; ++loop_ctr)
 			{
 				pEvPkg = (struct EvPkg*) (server.evlist[loop_ctr].data.ptr);
-				if(pEvPkg->sockfd == server.sockfd)
+				if (pEvPkg->sockfd == server.sockfd)
 				{
 					Server_AcceptClient(&server);
 				}
@@ -75,23 +76,27 @@ int main(int argc, char** argv)
 				//Basically all it does is allow epoll to pass us back the socket
 				//experiencing activity and a pointer to a client IF AND ONLY IF
 				//it's actually a client.
-				else if(server.evlist[loop_ctr].data.ptr == server.cmd_pipe)
+				else if (server.evlist[loop_ctr].data.ptr == server.cmd_pipe)
 				{
 					//Received something on cmd pipe
-					char buf[256] = {0};
+					char buf[256] =
+					{ 0 };
 					size_t bread = read(server.cmd_pipe[0], buf, 256);
 					buf[bread - 1] = 0;
-					ServerLog(SERVERLOG_DEBUG, "Received on cmd pipe: %s\n", buf);
-					if(strstr(buf, "kill"))
+					ServerLog(SERVERLOG_DEBUG, "Received on cmd pipe: %s\n",
+							buf);
+					if (strstr(buf, "kill"))
 					{
-						Server_SendAllClients(&server, "\r\nServer going down!\r\n");
+						Server_SendAllClients(&server,
+								"\r\nServer going down!\r\n");
 						mudloop_running = 0;
 						break;
 					}
 				}
 				else
 				{
-					Server_HandleUserInput(&server, (struct Client*) pEvPkg->pData);
+					Server_HandleUserInput(&server,
+							(struct Client*) pEvPkg->pData);
 				}
 
 			}
@@ -101,6 +106,7 @@ int main(int argc, char** argv)
 
 	ServerLog(SERVERLOG_STATUS, "Server shutting down.");
 	Server_Stop(&server);
-	ServerLog(SERVERLOG_DEBUG, "%d unfreed allocations.\n", toutstanding_allocs());
+	ServerLog(SERVERLOG_DEBUG, "%d unfreed allocations.\n",
+			toutstanding_allocs());
 	return 0;
 }

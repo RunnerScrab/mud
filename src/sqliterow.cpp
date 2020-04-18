@@ -9,144 +9,162 @@
 #define RETURNFAIL_IF(a) if(a){return -1;}
 
 #ifndef TESTING_
-int RegisterDBRow(sqlite3* sqldb, asIScriptEngine* engine)
+int RegisterDBRow(sqlite3 *sqldb, asIScriptEngine *engine)
 {
 	int result = 0;
 	result = engine->RegisterObjectType("DBRow", 0, asOBJ_REF);
 	RETURNFAIL_IF(result < 0);
 
-	result = engine->RegisterObjectBehaviour("DBRow", asBEHAVE_ADDREF, "void f()", asMETHOD(SQLiteRow, AddRef),
-						asCALL_THISCALL);
+	result = engine->RegisterObjectBehaviour("DBRow", asBEHAVE_ADDREF,
+			"void f()", asMETHOD(SQLiteRow, AddRef), asCALL_THISCALL);
 	RETURNFAIL_IF(result < 0);
 
-	result = engine->RegisterObjectBehaviour("DBRow", asBEHAVE_RELEASE, "void f()", asMETHOD(SQLiteRow, Release),
-						asCALL_THISCALL);
+	result = engine->RegisterObjectBehaviour("DBRow", asBEHAVE_RELEASE,
+			"void f()", asMETHOD(SQLiteRow, Release), asCALL_THISCALL);
 	RETURNFAIL_IF(result < 0);
 
 	/* NOTE: DBRow's Factory function must be registered after the DBTable class,
 	 * since it has DBTable as an argument */
 
-	result = engine->RegisterObjectMethod("DBRow", "void SetColValue(const string& in, int v)",
-					asMETHODPR(SQLiteRow, SetColumnValue,
-						(const std::string&, int), void), asCALL_THISCALL);
+	result = engine->RegisterObjectMethod("DBRow",
+			"void SetColValue(const string& in, int v)",
+			asMETHODPR(SQLiteRow, SetColumnValue, (const std::string&, int),
+					void), asCALL_THISCALL);
 	RETURNFAIL_IF(result < 0);
 
-	result = engine->RegisterObjectMethod("DBRow", "void SetColValue(const string& in, int64 v)",
-					asMETHODPR(SQLiteRow, SetColumnValue,
-						(const std::string&, long long), void), asCALL_THISCALL);
+	result = engine->RegisterObjectMethod("DBRow",
+			"void SetColValue(const string& in, int64 v)",
+			asMETHODPR(SQLiteRow, SetColumnValue,
+					(const std::string&, long long), void), asCALL_THISCALL);
 	RETURNFAIL_IF(result < 0);
 
-	result = engine->RegisterObjectMethod("DBRow", "void SetColValue(const string& in, uint32 v)",
-					asMETHODPR(SQLiteRow, SetColumnValue,
-						(const std::string&, unsigned int), void), asCALL_THISCALL);
+	result = engine->RegisterObjectMethod("DBRow",
+			"void SetColValue(const string& in, uint32 v)",
+			asMETHODPR(SQLiteRow, SetColumnValue,
+					(const std::string&, unsigned int), void), asCALL_THISCALL);
 	RETURNFAIL_IF(result < 0);
 
-	result = engine->RegisterObjectMethod("DBRow", "void SetColValue(const string& in, uint64 v)",
-					asMETHODPR(SQLiteRow, SetColumnValue,
-						(const std::string&, unsigned long long), void), asCALL_THISCALL);
+	result = engine->RegisterObjectMethod("DBRow",
+			"void SetColValue(const string& in, uint64 v)",
+			asMETHODPR(SQLiteRow, SetColumnValue,
+					(const std::string&, unsigned long long), void),
+			asCALL_THISCALL);
 	RETURNFAIL_IF(result < 0);
 
-	result = engine->RegisterObjectMethod("DBRow", "void SetColValue(const string& in, float v)",
-					asMETHODPR(SQLiteRow, SetColumnValue,
-						(const std::string&, float), void), asCALL_THISCALL);
+	result = engine->RegisterObjectMethod("DBRow",
+			"void SetColValue(const string& in, float v)",
+			asMETHODPR(SQLiteRow, SetColumnValue, (const std::string&, float),
+					void), asCALL_THISCALL);
 	RETURNFAIL_IF(result < 0);
 
-	result = engine->RegisterObjectMethod("DBRow", "void SetColValue(const string& in, double v)",
-					asMETHODPR(SQLiteRow, SetColumnValue,
-						(const std::string&, double), void), asCALL_THISCALL);
+	result = engine->RegisterObjectMethod("DBRow",
+			"void SetColValue(const string& in, double v)",
+			asMETHODPR(SQLiteRow, SetColumnValue, (const std::string&, double),
+					void), asCALL_THISCALL);
 	RETURNFAIL_IF(result < 0);
 
-	result = engine->RegisterObjectMethod("DBRow", "void SetColValue(const string& in, const string& in)",
-					asMETHODPR(SQLiteRow, SetColumnValue,
-						(const std::string&, const std::string&), void), asCALL_THISCALL);
+	result = engine->RegisterObjectMethod("DBRow",
+			"void SetColValue(const string& in, const string& in)",
+			asMETHODPR(SQLiteRow, SetColumnValue,
+					(const std::string&, const std::string&), void),
+			asCALL_THISCALL);
 	RETURNFAIL_IF(result < 0);
 
-	result = engine->RegisterObjectMethod("DBRow", "void SetColValue(const string& in, const uuid& in)",
-					asMETHODPR(SQLiteRow, SetColumnValue,
-						(const std::string&, const UUID&), void), asCALL_THISCALL);
+	result = engine->RegisterObjectMethod("DBRow",
+			"void SetColValue(const string& in, const uuid& in)",
+			asMETHODPR(SQLiteRow, SetColumnValue,
+					(const std::string&, const UUID&), void), asCALL_THISCALL);
 	RETURNFAIL_IF(result < 0);
 
-	result = engine->RegisterObjectMethod("DBRow", "bool GetColValue(const string& in, int& out)",
-					asMETHODPR(SQLiteRow, GetColumnValue,
-						(const std::string&, int&), bool), asCALL_THISCALL);
+	result = engine->RegisterObjectMethod("DBRow",
+			"bool GetColValue(const string& in, int& out)",
+			asMETHODPR(SQLiteRow, GetColumnValue, (const std::string&, int&),
+					bool), asCALL_THISCALL);
 	RETURNFAIL_IF(result < 0);
 
-	result = engine->RegisterObjectMethod("DBRow", "bool GetColValue(const string& in, uint32& out)",
-					asMETHODPR(SQLiteRow, GetColumnValue,
-						(const std::string&, unsigned int&), bool), asCALL_THISCALL);
+	result = engine->RegisterObjectMethod("DBRow",
+			"bool GetColValue(const string& in, uint32& out)",
+			asMETHODPR(SQLiteRow, GetColumnValue,
+					(const std::string&, unsigned int&), bool),
+			asCALL_THISCALL);
 	RETURNFAIL_IF(result < 0);
 
-	result = engine->RegisterObjectMethod("DBRow", "bool GetColValue(const string& in, int64& out)",
-					asMETHODPR(SQLiteRow, GetColumnValue,
-						(const std::string&, long long&), bool), asCALL_THISCALL);
+	result = engine->RegisterObjectMethod("DBRow",
+			"bool GetColValue(const string& in, int64& out)",
+			asMETHODPR(SQLiteRow, GetColumnValue,
+					(const std::string&, long long&), bool), asCALL_THISCALL);
 	RETURNFAIL_IF(result < 0);
 
-	result = engine->RegisterObjectMethod("DBRow", "bool GetColValue(const string& in, uint64& out)",
-					asMETHODPR(SQLiteRow, GetColumnValue,
-						(const std::string&, unsigned long long&), bool), asCALL_THISCALL);
+	result = engine->RegisterObjectMethod("DBRow",
+			"bool GetColValue(const string& in, uint64& out)",
+			asMETHODPR(SQLiteRow, GetColumnValue,
+					(const std::string&, unsigned long long&), bool),
+			asCALL_THISCALL);
 	RETURNFAIL_IF(result < 0);
 
-	result = engine->RegisterObjectMethod("DBRow", "bool GetColValue(const string& in, float& out)",
-					asMETHODPR(SQLiteRow, GetColumnValue,
-						(const std::string&, float&), bool), asCALL_THISCALL);
+	result = engine->RegisterObjectMethod("DBRow",
+			"bool GetColValue(const string& in, float& out)",
+			asMETHODPR(SQLiteRow, GetColumnValue, (const std::string&, float&),
+					bool), asCALL_THISCALL);
 	RETURNFAIL_IF(result < 0);
 
-	result = engine->RegisterObjectMethod("DBRow", "bool GetColValue(const string& in, double& out)",
-					asMETHODPR(SQLiteRow, GetColumnValue,
-						(const std::string&, double&), bool), asCALL_THISCALL);
+	result = engine->RegisterObjectMethod("DBRow",
+			"bool GetColValue(const string& in, double& out)",
+			asMETHODPR(SQLiteRow, GetColumnValue, (const std::string&, double&),
+					bool), asCALL_THISCALL);
 	RETURNFAIL_IF(result < 0);
 
-	result = engine->RegisterObjectMethod("DBRow", "bool GetColValue(const string& in, string& out)",
-					asMETHODPR(SQLiteRow, GetColumnValue,
-						(const std::string&, std::string&), bool), asCALL_THISCALL);
+	result = engine->RegisterObjectMethod("DBRow",
+			"bool GetColValue(const string& in, string& out)",
+			asMETHODPR(SQLiteRow, GetColumnValue,
+					(const std::string&, std::string&), bool), asCALL_THISCALL);
 	RETURNFAIL_IF(result < 0);
 
-	result = engine->RegisterObjectMethod("DBRow", "bool GetColValue(const string& in, uuid& out)",
-					asMETHODPR(SQLiteRow, GetColumnValue,
-						(const std::string&, UUID&), bool), asCALL_THISCALL);
+	result = engine->RegisterObjectMethod("DBRow",
+			"bool GetColValue(const string& in, uuid& out)",
+			asMETHODPR(SQLiteRow, GetColumnValue, (const std::string&, UUID&),
+					bool), asCALL_THISCALL);
 	RETURNFAIL_IF(result < 0);
 
 	result = engine->RegisterObjectMethod("DBRow", "void ClearValues()",
-					asMETHODPR(SQLiteRow, ClearValues, (void), void),
-					asCALL_THISCALL);
+			asMETHODPR(SQLiteRow, ClearValues, (void), void), asCALL_THISCALL);
 	RETURNFAIL_IF(result < 0);
 
 	result = engine->RegisterObjectMethod("DBRow", "bool LoadFromDB()",
-					asMETHODPR(SQLiteRow, LoadFromDB,
-						(void), bool), asCALL_THISCALL);
+			asMETHODPR(SQLiteRow, LoadFromDB, (void), bool), asCALL_THISCALL);
 	RETURNFAIL_IF(result < 0);
 
 	result = engine->RegisterObjectMethod("DBRow", "bool StoreIntoDB()",
-					asMETHODPR(SQLiteRow, StoreIntoDB,
-						(void), bool), asCALL_THISCALL);
+			asMETHODPR(SQLiteRow, StoreIntoDB, (void), bool), asCALL_THISCALL);
 	RETURNFAIL_IF(result < 0);
 
-/*	result = engine->RegisterObjectMethod("DBRow", "bool StoreChildRowIntoDB(DBRow@ parent_row)",
-					asMETHODPR(SQLiteRow, StoreChildRowIntoDB,
-						(SQLiteRow*), bool), asCALL_THISCALL);
-	RETURNFAIL_IF(result < 0);
-*/
-	result = engine->RegisterObjectMethod("DBRow", "void StoreChildRow(DBRow@ childrow)",
-					asMETHODPR(SQLiteRow, StoreChildRow, (SQLiteRow*), void),
-					asCALL_THISCALL);
+	/*	result = engine->RegisterObjectMethod("DBRow", "bool StoreChildRowIntoDB(DBRow@ parent_row)",
+	 asMETHODPR(SQLiteRow, StoreChildRowIntoDB,
+	 (SQLiteRow*), bool), asCALL_THISCALL);
+	 RETURNFAIL_IF(result < 0);
+	 */
+	result = engine->RegisterObjectMethod("DBRow",
+			"void StoreChildRow(DBRow@ childrow)",
+			asMETHODPR(SQLiteRow, StoreChildRow, (SQLiteRow*), void),
+			asCALL_THISCALL);
 	return result;
 }
 #endif
 
-void SQLiteRow::StoreChildRow(SQLiteRow* childrow)
+void SQLiteRow::StoreChildRow(SQLiteRow *childrow)
 {
-	if(childrow)
+	if (childrow)
 	{
 		childrow->AddRef();
 		m_childrows.push_back(childrow);
 	}
 }
 
-void SQLiteRow::InitFromTable(SQLiteTable* table)
+void SQLiteRow::InitFromTable(SQLiteTable *table)
 {
-	for(SQLiteColumn* col : table->m_columns)
+	for (SQLiteColumn *col : table->m_columns)
 	{
-		if(!col || SQLiteColumn::KeyType::KEY_NONE != col->GetKeyType())
+		if (!col || SQLiteColumn::KeyType::KEY_NONE != col->GetKeyType())
 		{
 			//Don't set a default value for a key type (what we're
 			//doing below) so we can tell easily if one was not
@@ -154,7 +172,7 @@ void SQLiteRow::InitFromTable(SQLiteTable* table)
 			continue;
 		}
 
-		switch(col->GetType())
+		switch (col->GetType())
 		{
 		case SQLiteVariant::StoredType::VARNONE:
 			break;
@@ -183,19 +201,19 @@ void SQLiteRow::AddRef()
 void SQLiteRow::Release()
 {
 	asAtomicDec(m_refcount);
-	if(!m_refcount)
+	if (!m_refcount)
 	{
 		delete this;
 	}
 }
 #endif
 
-SQLiteRow* SQLiteRow::Factory(SQLiteTable* table)
+SQLiteRow* SQLiteRow::Factory(SQLiteTable *table)
 {
 	return new SQLiteRow(table);
 }
 
-SQLiteRow::SQLiteRow(SQLiteTable* table)
+SQLiteRow::SQLiteRow(SQLiteTable *table)
 {
 	m_refcount = 1;
 	m_table = table;
@@ -204,13 +222,13 @@ SQLiteRow::SQLiteRow(SQLiteTable* table)
 
 SQLiteRow::~SQLiteRow()
 {
-	for(std::unordered_map<std::string, SQLiteVariant*>::iterator it = m_valuemap.begin(),
-		    end = m_valuemap.end(); it != end; ++it)
+	for (std::unordered_map<std::string, SQLiteVariant*>::iterator it =
+			m_valuemap.begin(), end = m_valuemap.end(); it != end; ++it)
 	{
 		delete it->second;
 	}
 
-	for(SQLiteRow* childrow : m_childrows)
+	for (SQLiteRow *childrow : m_childrows)
 	{
 		delete childrow;
 	}
@@ -218,19 +236,20 @@ SQLiteRow::~SQLiteRow()
 
 void SQLiteRow::ClearValues()
 {
-	for(std::unordered_map<std::string, SQLiteVariant*>::iterator it = m_valuemap.begin(),
-		    end = m_valuemap.end(); it != end; ++it)
+	for (std::unordered_map<std::string, SQLiteVariant*>::iterator it =
+			m_valuemap.begin(), end = m_valuemap.end(); it != end; ++it)
 	{
-		if(it->second)
+		if (it->second)
 		{
 			it->second->ClearValue();
 		}
 	}
 }
 
-void SQLiteRow::SetColumnValue(const std::string& colname, const SQLiteVariant* value)
+void SQLiteRow::SetColumnValue(const std::string &colname,
+		const SQLiteVariant *value)
 {
-	if(!m_valuemap[colname])
+	if (!m_valuemap[colname])
 	{
 		m_valuemap[colname] = new SQLiteVariant();
 	}
@@ -238,10 +257,10 @@ void SQLiteRow::SetColumnValue(const std::string& colname, const SQLiteVariant* 
 	*(m_valuemap[colname]) = *value;
 }
 
-void SQLiteRow::SetColumnValue(const std::string& colname, const int v)
+void SQLiteRow::SetColumnValue(const std::string &colname, const int v)
 {
-	SQLiteVariant* var = m_valuemap[colname];
-	if(!var)
+	SQLiteVariant *var = m_valuemap[colname];
+	if (!var)
 	{
 		var = new SQLiteVariant();
 		m_valuemap[colname] = var;
@@ -250,10 +269,10 @@ void SQLiteRow::SetColumnValue(const std::string& colname, const int v)
 	var->SetValue(v);
 }
 
-void SQLiteRow::SetColumnValue(const std::string& colname, const long long v)
+void SQLiteRow::SetColumnValue(const std::string &colname, const long long v)
 {
-	SQLiteVariant* var = m_valuemap[colname];
-	if(!var)
+	SQLiteVariant *var = m_valuemap[colname];
+	if (!var)
 	{
 		var = new SQLiteVariant();
 		m_valuemap[colname] = var;
@@ -262,10 +281,10 @@ void SQLiteRow::SetColumnValue(const std::string& colname, const long long v)
 	var->SetValue(v);
 }
 
-void SQLiteRow::SetColumnValue(const std::string& colname, const unsigned int v)
+void SQLiteRow::SetColumnValue(const std::string &colname, const unsigned int v)
 {
-	SQLiteVariant* var = m_valuemap[colname];
-	if(!var)
+	SQLiteVariant *var = m_valuemap[colname];
+	if (!var)
 	{
 		var = new SQLiteVariant();
 		m_valuemap[colname] = var;
@@ -274,10 +293,11 @@ void SQLiteRow::SetColumnValue(const std::string& colname, const unsigned int v)
 	var->SetValue(v);
 }
 
-void SQLiteRow::SetColumnValue(const std::string& colname, const unsigned long long v)
+void SQLiteRow::SetColumnValue(const std::string &colname,
+		const unsigned long long v)
 {
-	SQLiteVariant* var = m_valuemap[colname];
-	if(!var)
+	SQLiteVariant *var = m_valuemap[colname];
+	if (!var)
 	{
 		var = new SQLiteVariant();
 		m_valuemap[colname] = var;
@@ -286,10 +306,10 @@ void SQLiteRow::SetColumnValue(const std::string& colname, const unsigned long l
 	var->SetValue(v);
 }
 
-void SQLiteRow::SetColumnValue(const std::string& colname, const float v)
+void SQLiteRow::SetColumnValue(const std::string &colname, const float v)
 {
-	SQLiteVariant* var = m_valuemap[colname];
-	if(!var)
+	SQLiteVariant *var = m_valuemap[colname];
+	if (!var)
 	{
 		var = new SQLiteVariant();
 		m_valuemap[colname] = var;
@@ -298,10 +318,10 @@ void SQLiteRow::SetColumnValue(const std::string& colname, const float v)
 	var->SetValue(v);
 }
 
-void SQLiteRow::SetColumnValue(const std::string& colname, const double v)
+void SQLiteRow::SetColumnValue(const std::string &colname, const double v)
 {
-	SQLiteVariant* var = m_valuemap[colname];
-	if(!var)
+	SQLiteVariant *var = m_valuemap[colname];
+	if (!var)
 	{
 		var = new SQLiteVariant();
 		m_valuemap[colname] = var;
@@ -310,10 +330,10 @@ void SQLiteRow::SetColumnValue(const std::string& colname, const double v)
 	var->SetValue(v);
 }
 
-void SQLiteRow::SetColumnValue(const std::string& colname, const std::string& v)
+void SQLiteRow::SetColumnValue(const std::string &colname, const std::string &v)
 {
-	SQLiteVariant* var = m_valuemap[colname];
-	if(!var)
+	SQLiteVariant *var = m_valuemap[colname];
+	if (!var)
 	{
 		var = new SQLiteVariant();
 		m_valuemap[colname] = var;
@@ -322,10 +342,11 @@ void SQLiteRow::SetColumnValue(const std::string& colname, const std::string& v)
 	var->SetValue(v);
 }
 
-void SQLiteRow::SetColumnValue(const std::string& colname, const char* data, const size_t datalen)
+void SQLiteRow::SetColumnValue(const std::string &colname, const char *data,
+		const size_t datalen)
 {
-	SQLiteVariant* var = m_valuemap[colname];
-	if(!var)
+	SQLiteVariant *var = m_valuemap[colname];
+	if (!var)
 	{
 		var = new SQLiteVariant();
 		m_valuemap[colname] = var;
@@ -334,20 +355,20 @@ void SQLiteRow::SetColumnValue(const std::string& colname, const char* data, con
 	var->SetValue(data, datalen);
 }
 
-void SQLiteRow::SetColumnValue(const std::string& colname, const UUID& uuid)
+void SQLiteRow::SetColumnValue(const std::string &colname, const UUID &uuid)
 {
 	SetColumnValue(colname, uuid.GetData(), uuid.GetDataSize());
 }
 
-SQLiteVariant* SQLiteRow::GetColumnValue(const std::string& colname)
+SQLiteVariant* SQLiteRow::GetColumnValue(const std::string &colname)
 {
 	return m_valuemap[colname];
 }
 
-bool SQLiteRow::GetColumnValue(const std::string& colname, int& out)
+bool SQLiteRow::GetColumnValue(const std::string &colname, int &out)
 {
-	SQLiteVariant* var = m_valuemap[colname];
-	if(var)
+	SQLiteVariant *var = m_valuemap[colname];
+	if (var)
 	{
 		var->GetValue(out);
 		return true;
@@ -358,10 +379,10 @@ bool SQLiteRow::GetColumnValue(const std::string& colname, int& out)
 	}
 }
 
-bool SQLiteRow::GetColumnValue(const std::string& colname, unsigned int& out)
+bool SQLiteRow::GetColumnValue(const std::string &colname, unsigned int &out)
 {
-	SQLiteVariant* var = m_valuemap[colname];
-	if(var)
+	SQLiteVariant *var = m_valuemap[colname];
+	if (var)
 	{
 		var->GetValue(out);
 		return true;
@@ -372,10 +393,10 @@ bool SQLiteRow::GetColumnValue(const std::string& colname, unsigned int& out)
 	}
 }
 
-bool SQLiteRow::GetColumnValue(const std::string& colname, long long& out)
+bool SQLiteRow::GetColumnValue(const std::string &colname, long long &out)
 {
-	SQLiteVariant* var = m_valuemap[colname];
-	if(var)
+	SQLiteVariant *var = m_valuemap[colname];
+	if (var)
 	{
 		var->GetValue(out);
 		return true;
@@ -386,10 +407,11 @@ bool SQLiteRow::GetColumnValue(const std::string& colname, long long& out)
 	}
 }
 
-bool SQLiteRow::GetColumnValue(const std::string& colname, unsigned long long& out)
+bool SQLiteRow::GetColumnValue(const std::string &colname,
+		unsigned long long &out)
 {
-	SQLiteVariant* var = m_valuemap[colname];
-	if(var)
+	SQLiteVariant *var = m_valuemap[colname];
+	if (var)
 	{
 		var->GetValue(out);
 		return true;
@@ -400,10 +422,10 @@ bool SQLiteRow::GetColumnValue(const std::string& colname, unsigned long long& o
 	}
 }
 
-bool SQLiteRow::GetColumnValue(const std::string& colname, float& out)
+bool SQLiteRow::GetColumnValue(const std::string &colname, float &out)
 {
-	SQLiteVariant* var = m_valuemap[colname];
-	if(var)
+	SQLiteVariant *var = m_valuemap[colname];
+	if (var)
 	{
 		var->GetValue(out);
 		return true;
@@ -414,10 +436,10 @@ bool SQLiteRow::GetColumnValue(const std::string& colname, float& out)
 	}
 }
 
-bool SQLiteRow::GetColumnValue(const std::string& colname, double& out)
+bool SQLiteRow::GetColumnValue(const std::string &colname, double &out)
 {
-	SQLiteVariant* var = m_valuemap[colname];
-	if(var)
+	SQLiteVariant *var = m_valuemap[colname];
+	if (var)
 	{
 		var->GetValue(out);
 		return true;
@@ -428,10 +450,10 @@ bool SQLiteRow::GetColumnValue(const std::string& colname, double& out)
 	}
 }
 
-bool SQLiteRow::GetColumnValue(const std::string& colname, std::string& out)
+bool SQLiteRow::GetColumnValue(const std::string &colname, std::string &out)
 {
-	SQLiteVariant* var = m_valuemap[colname];
-	if(var)
+	SQLiteVariant *var = m_valuemap[colname];
+	if (var)
 	{
 		var->GetValue(out);
 		return true;
@@ -442,10 +464,11 @@ bool SQLiteRow::GetColumnValue(const std::string& colname, std::string& out)
 	}
 }
 
-bool SQLiteRow::GetColumnValue(const std::string& colname, std::vector<char>& out)
+bool SQLiteRow::GetColumnValue(const std::string &colname,
+		std::vector<char> &out)
 {
-	SQLiteVariant* var = m_valuemap[colname];
-	if(var)
+	SQLiteVariant *var = m_valuemap[colname];
+	if (var)
 	{
 		var->GetValue(out);
 		return true;
@@ -456,13 +479,14 @@ bool SQLiteRow::GetColumnValue(const std::string& colname, std::vector<char>& ou
 	}
 }
 
-bool SQLiteRow::GetColumnValue(const std::string& colname, UUID& uuidout)
+bool SQLiteRow::GetColumnValue(const std::string &colname, UUID &uuidout)
 {
-	SQLiteVariant* var = m_valuemap[colname];
-	if(var)
+	SQLiteVariant *var = m_valuemap[colname];
+	if (var)
 	{
-		uuidout.CopyFromByteArray(reinterpret_cast<const unsigned char*>(var->GetValueBlobPtr()),
-					var->GetDataLength());
+		uuidout.CopyFromByteArray(
+				reinterpret_cast<const unsigned char*>(var->GetValueBlobPtr()),
+				var->GetDataLength());
 		return true;
 	}
 	else
@@ -473,7 +497,7 @@ bool SQLiteRow::GetColumnValue(const std::string& colname, UUID& uuidout)
 
 bool SQLiteRow::LoadFromDB()
 {
-	if(m_table)
+	if (m_table)
 	{
 		return (m_table->LoadRow(this) != SQLITE_ERROR) ? true : false;
 	}
@@ -483,11 +507,12 @@ bool SQLiteRow::LoadFromDB()
 	}
 }
 
-bool SQLiteRow::StoreChildRowIntoDB(SQLiteRow* parent_row)
+bool SQLiteRow::StoreChildRowIntoDB(SQLiteRow *parent_row)
 {
-	if(m_table)
+	if (m_table)
 	{
-		return (m_table->StoreRow(this, parent_row) != SQLITE_ERROR) ? true : false;
+		return (m_table->StoreRow(this, parent_row) != SQLITE_ERROR) ?
+				true : false;
 	}
 	else
 	{

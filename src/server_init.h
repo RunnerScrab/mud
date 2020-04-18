@@ -3,7 +3,7 @@
 
 struct Server;
 
-int Server_Start(struct Server* server);
-void Server_Stop(struct Server* server);
+int Server_Start(struct Server *server);
+void Server_Stop(struct Server *server);
 
 #endif

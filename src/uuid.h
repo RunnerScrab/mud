@@ -39,13 +39,13 @@ class UUID
 	union UUIDunion m_data;
 public:
 	UUID(); //No arguments generates UUID
-	UUID(const UUID& other); //Copy constructor
+	UUID(const UUID &other); //Copy constructor
 	UUID(u_int64_t half1, u_int64_t half2);
-	void CopyFromByteArray(const unsigned char* in, size_t len);
-	int CopyToByteArray(char* out, size_t len);
-	void GetAsInt128(struct Int128* out);
+	void CopyFromByteArray(const unsigned char *in, size_t len);
+	int CopyToByteArray(char *out, size_t len);
+	void GetAsInt128(struct Int128 *out);
 	std::string ToString() const;
-	bool FromString(const std::string& str);
+	bool FromString(const std::string &str);
 
 	const char* GetData() const
 	{
@@ -58,12 +58,11 @@ public:
 	}
 
 	void Generate();
-	static void GenerateUUID(union UUIDunion* uuid);
+	static void GenerateUUID(union UUIDunion *uuid);
 };
 
 #ifndef TESTING_
-int RegisterUUIDClass(AngelScriptManager* manager);
+int RegisterUUIDClass(AngelScriptManager *manager);
 #endif
-
 
 #endif

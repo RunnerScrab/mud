@@ -8,11 +8,9 @@ struct CryptoManager
 
 };
 
-
-int CryptoManager_Init(struct CryptoManager* cmanager);
-void CryptoManager_Destroy(struct CryptoManager* cmanager);
-int CryptoManager_HashPassword(const char* password,
-			size_t passwordlen,
-			cv_t* output);
+int CryptoManager_Init(struct CryptoManager *cmanager);
+void CryptoManager_Destroy(struct CryptoManager *cmanager);
+int CryptoManager_HashPassword(const char *password, size_t passwordlen,
+		cv_t *output);
 
 #endif

@@ -11,16 +11,11 @@ public:
 	void Release();
 
 protected:
-	AS_RefCountedObj(asIScriptObject* obj);
+	AS_RefCountedObj(asIScriptObject *obj);
 	virtual ~AS_RefCountedObj();
 	int m_refCount;
-	asILockableSharedBool* m_isDead;
-	asIScriptObject* m_obj;
-};
-
-class PersistentObject
-{
-
+	asILockableSharedBool *m_isDead;
+	asIScriptObject *m_obj;
 };
 
 #endif
