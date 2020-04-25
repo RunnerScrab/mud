@@ -406,8 +406,8 @@ void TestDatabaseRead(Player@ player)
 
 void OnPlayerInput(Player@ player, string rawinput)
 {
-	string input;
-	TrimString(rawinput, input);
+	string input = TrimString(rawinput);
+
 	//This command handling is for testing only
 	//Real Commands should be put in a map and assisted with an argument parsing/tokenizing function
 	if("makeuuid" == rawinput)
@@ -470,8 +470,7 @@ void OnPlayerInput(Player@ player, string rawinput)
 		case PlayerGameState::ACCOUNT_PASSWORD_ENTRY:
 		{
 			game_server.SendToAll(player.GetName() + " says: " + input + "\r\n");
-			string output;
-			HashPassword(input, output);
+			string output = HashPassword(input);
 			player.Send("Your password hash is:" + output);
 			break;
 		}

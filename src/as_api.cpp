@@ -186,22 +186,31 @@ void ASAPI_Log(std::string &message)
 	ServerLog(SERVERLOG_STATUS, message.c_str());
 }
 
-void ASAPI_TrimString(const std::string &in, std::string &out)
+std::string ASAPI_TrimString(const std::string &in)
 {
 	const char *pstr = in.c_str();
 	size_t strsize = in.size();
-	const char *begin = findfirstnonspace(pstr, strsize);
-	const char *end = lastnonspace(pstr, strsize);
-	if (begin && end)
+	const char* begin = findfirstnonspace(pstr, strsize);
+	const char* end = lastnonspace(pstr, strsize);
+
+	if(begin && end)
 	{
-		out.assign(begin, end - begin + 1);
+		std::string retval;
+		retval.assign(begin, end - begin + 1);
+		return retval;
+	}
+	else
+	{
+		return in;
 	}
 }
 
-void ASAPI_HashPassword(const std::string &password, std::string &out)
+std::string ASAPI_HashPassword(const std::string &password)
 {
 	cv_t buf;
 	cv_init(&buf, 256);
+	std::string out;
+
 	dbgprintf("Received '%s' to hash.\n", password.c_str());
 	if (CryptoManager_HashPassword(password.c_str(), password.length(), &buf)
 			>= 0)
@@ -214,6 +223,7 @@ void ASAPI_HashPassword(const std::string &password, std::string &out)
 		dbgprintf("Hashing FAILED!\n");
 	}
 	cv_destroy(&buf);
+	return out;
 }
 
 void ASAPI_SetDatabasePathAndFile(struct ServerConfig *config,

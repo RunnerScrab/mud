@@ -30,7 +30,7 @@ void NativeActor::SetActionScheduler(ActionScheduler *as)
 	sm_pActionScheduler = as;
 }
 
-int LoadActorProxyScript(asIScriptModule* module)
+int LoadActorProxyScript(asIScriptModule *module)
 {
 	return module->AddScriptSection("game", actorscript, strlen(actorscript));
 }
@@ -46,7 +46,8 @@ int RegisterNativeActorClass(asIScriptEngine *engine,
 	RETURNFAIL_IF(result < 0);
 
 	result = engine->RegisterObjectBehaviour("NativeActor_t", asBEHAVE_FACTORY,
-			"NativeActor_t @f()", asFUNCTION(NativeActor::Factory), asCALL_CDECL);
+			"NativeActor_t @f()", asFUNCTION(NativeActor::Factory),
+			asCALL_CDECL);
 	RETURNFAIL_IF(result < 0);
 
 	result = engine->RegisterObjectBehaviour("NativeActor_t", asBEHAVE_ADDREF,
@@ -86,8 +87,8 @@ NativeActor::NativeActor(asIScriptObject *obj) :
 	hrt_prioq_create(&m_action_queue, 32);
 	pthread_mutex_init(&m_action_queue_mtx, 0);
 	MemoryPool_Init(&m_mem_pool);
-	ActionScheduler* scheduler = GetActionScheduler();
-	if(scheduler)
+	ActionScheduler *scheduler = GetActionScheduler();
+	if (scheduler)
 	{
 		scheduler->AddActiveActor(this);
 	}
@@ -97,11 +98,11 @@ NativeActor::~NativeActor()
 {
 	pthread_mutex_lock(&m_action_queue_mtx);
 
-	while(hrt_prioq_get_size(&m_action_queue) > 0)
+	while (hrt_prioq_get_size(&m_action_queue) > 0)
 	{
-		struct ThreadTask* pTask = (struct ThreadTask*)
-				hrt_prioq_extract_min(&m_action_queue);
-		struct RunScriptCmdPkg* pPkg = (struct RunScriptCmdPkg*) pTask->pArgs;
+		struct ThreadTask *pTask = (struct ThreadTask*) hrt_prioq_extract_min(
+				&m_action_queue);
+		struct RunScriptCmdPkg *pPkg = (struct RunScriptCmdPkg*) pTask->pArgs;
 		pPkg->cmd->Release();
 	}
 
@@ -128,7 +129,7 @@ void NativeActor::QueueScriptAction(asIScriptObject *obj, unsigned int delay_s,
 		pkg->context_pool = &manager->ctx_pool;
 
 		struct timespec curtime;
-		if(clock_gettime(CLOCK_MONOTONIC, &curtime) >= 0)
+		if (clock_gettime(CLOCK_MONOTONIC, &curtime) >= 0)
 		{
 			QueueAction(ASAPI_RunScriptAction, curtime.tv_sec + delay_s,
 					curtime.tv_nsec + delay_ns, pkg, 0);

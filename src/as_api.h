@@ -31,8 +31,10 @@ void ASAPI_SendToAll(struct Server *server, std::string &message);
 void ASAPI_QueueScriptAction(struct Server *server, asIScriptObject *obj,
 		unsigned int delay);
 void ASAPI_Log(std::string &message);
-void ASAPI_TrimString(const std::string &in, std::string &out);
-void ASAPI_HashPassword(const std::string &password, std::string &out);
+
+
+std::string ASAPI_HashPassword(const std::string& password);
+std::string ASAPI_TrimString(const std::string &in);
 
 void ASAPI_SetGameScriptPath(struct ServerConfig *config, std::string &path);
 void ASAPI_SetDatabasePathAndFile(struct ServerConfig *config,
