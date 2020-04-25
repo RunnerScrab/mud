@@ -35,9 +35,6 @@ static void* ThreadPool_WorkerThreadFunc(void *pArg)
 			break;
 		}
 
-		// min is now a copy, and the original space on the queue is effectively
-		// released
-
 		//Retrieve the next task from the priority queue
 		struct ThreadTask *pTask = (struct ThreadTask*) prioq_extract_min(
 				&pPool->prio_queue);
@@ -125,7 +122,7 @@ int ThreadPool_Init(struct ThreadPool *tp, unsigned int cores)
 
 	AllocPool_Init(&(tp->alloc_pool), 64, sizeof(struct ThreadTask));
 
-	tp->thread_count = cores; // - 1 for the server thread?
+	tp->thread_count = cores;
 	tp->pThreads = (pthread_t*) talloc(sizeof(pthread_t) * tp->thread_count);
 
 	if (pthread_cond_init(&(tp->wakecond), 0) < 0)
@@ -190,4 +187,3 @@ int ThreadPool_AddTask(struct ThreadPool *tp, void* (*task)(void*),
 #ifdef __cplusplus
 }
 #endif
-
