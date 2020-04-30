@@ -11,17 +11,33 @@ struct AnsiCode
 	unsigned int codelen;
 };
 
+//These are in alphabetical order
 struct AnsiCode color_codes[] =
 {
+{ "bgblack", "\x1B[40m", 5 },
+{ "bgblue", "\x1B[44m", 5 },
+{ "bgcyan", "\x1B[46m", 5 },
+{ "bggreen", "\x1B[42m", 5 },
+{ "bgmagenta", "\x1B[45m", 5 },
+{ "bgred", "\x1B[41m", 5 },
+{ "bgwhite", "\x1B[47m", 5 },
+{ "bgyellow", "\x1B[43m", 5 },
+
 { "black", "\x1B[30m", 5 },
+{ "blink", "\x1B[05m", 5},
 { "blue", "\x1B[34m", 5 },
 { "cyan", "\x1B[36m", 5 },
 { "default", "\x1B[0m", 4 },
 { "green", "\x1B[32m", 5 },
 { "magenta", "\x1B[35m", 5 },
 { "red", "\x1B[31m", 5 },
+{ "rvid", "\x1B[07m", 5},
 { "white", "\x1B[37m", 5 },
-{ "yellow", "\x1B[33m", 5 } };
+{ "yellow", "\x1B[33m", 5 }
+
+};
+
+static const unsigned int g_numcolcodes = sizeof(color_codes)/sizeof(struct AnsiCode);
 
 int compcolsymbol(const void *a, const void *b)
 {
@@ -98,7 +114,7 @@ void ANSIColorizeString(const el_t *input, size_t inputlen, cv_t *output)
 			default:
 			{
 				struct AnsiCode *found = (struct AnsiCode*) bsearch(symbol,
-						color_codes, 9, sizeof(struct AnsiCode), compcolsymbol);
+						color_codes, g_numcolcodes, sizeof(struct AnsiCode), compcolsymbol);
 				if (found)
 				{
 					cv_appendstr(output, (el_t*) found->code, found->codelen);

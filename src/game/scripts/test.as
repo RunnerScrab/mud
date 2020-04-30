@@ -1,7 +1,7 @@
 class TestCommand : IAction
 {
 	private int a;
-		     private int b;
+     	private int b;
 
 	TestCommand(int a, int b)
 	{
@@ -13,7 +13,7 @@ class TestCommand : IAction
 	int opCall()
 	{
 		int sum = a + b;
-		game_server.SendToAll("Ran TestCommand. Result: " + sum + "\r\n");
+		game_server.SendToAll("`blink``bgblue`Ran TestCommand. Result: " + sum + "`default`\r\n");
 		return 0;
 	}
 };

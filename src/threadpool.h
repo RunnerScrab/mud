@@ -4,6 +4,7 @@
 #include <sys/sysinfo.h>
 #include "poolalloc.h"
 #include "prioq.h"
+#include "deque.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -18,6 +19,19 @@ struct ThreadTask
 	//it on the ThreadTask instance to release
 	void (*releasefn)(void*);
 };
+
+/*
+A global locking work queue has the well-documented limitation of thread
+contention - multiple threads fighting over the queue at the same time to get
+work.
+
+Work-stealing is supposed to be generally superior to a global locking queue as
+it permits tasks to be distributed without blocking on a single source. However,
+a significant downside to all work-stealing algorithms (known to me) is that the
+worker threads busy-wait to look for a new task when idle; this burns through
+a significant amount of CPU time.
+
+ */
 
 struct ThreadPool
 {
