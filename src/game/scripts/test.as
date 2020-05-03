@@ -185,18 +185,46 @@ class Character : Actor
 
 enum PlayerGameState {LOGIN_MENU = 0,
 		      ACCOUNT_NAME_ENTRY, ACCOUNT_PASSWORD_ENTRY };
-class Player : PlayerConnection
+class Player : IUserEventObserver
 {
+	PlayerConnection@ m_connection;
 	Character@ m_char;
-	Player()
+	Player(PlayerConnection@ conn)
 	{
+		@m_connection = conn;
+		conn.AttachUserEventObserver(this);
 		@m_char = Character("mychar");
-		//super();
 		m_gamestate = PlayerGameState::LOGIN_MENU;
-
 	}
+
+	void OnInputReceived(string input)
+	{
+		m_connection.Send("Received: " + input + "\r\n");
+		if(input == "quit")
+			 m_connection.Disconnect();
+	}
+
+	void OnOutputReceived(string output)
+	{
+		m_connection.Send("Observed: " + output + "\n");
+	}
+
+	void Send(string input)
+	{
+		m_connection.Send(input);
+	}
+
+	void OnDisconnect()
+	{
+		Log("Player disconnecting\n");
+		//m_connection.DetachUserEventObserver(this);
+		//OnPlayerDisconnect(this);
+	}
+
 	~Player()
 	{
+		Log("Calling script player destructor.\n");
+		//m_connection.DetachUserEventObserver(this);
 	}
 
 	PlayerGameState GetPlayerGameState()
@@ -257,25 +285,26 @@ void GameTick()
 
 
 
-void OnPlayerConnect(Player@ player)
+void OnPlayerConnect(PlayerConnection@ conn)
 {
 //	try
 	{
-		player.SetName("Meowmaster");
-		player.Send("Account: ");
-		//ref@ h = @player;
-		/*
-		player.Send("Hello!\r\n");
+		Player@ player = Player(conn);
+		g_players.insertLast(player);
+		if(g_players.length() >= 2)
+		{
 
+			conn.AttachUserEventObserver(g_players[g_players.length() - 2]);
+			player.Send("Attaching an additional observer.\n");
+		}
 		uuid newuuid;
 		newuuid.Generate();
 		player.Send("\r\n" + newuuid.ToString() + "\r\n");
 		g_meowers.insertLast(SuperMeower());
 		player.SetMeower(g_meowers[g_meowers.length() - 1]);
-		g_players.insertLast(player);
 
 		game_server.SendToAll("\r\nSomeone has connected. There are " + g_players.length() + " players connected.\r\n");
-		*/
+
 	}
 //	catch
 //	{
@@ -418,10 +447,6 @@ void OnPlayerInput(Player@ player, string rawinput)
 		uuid uuid2;
 		uuid2 = newuuid;
 		player.Send("Copy has uuid " + uuid2.ToString() + "\r\n");
-	}
-	else if("debugvars" == rawinput)
-	{
-		game_server.DebugVariables(player);
 	}
 	else if ("testcolor" == rawinput)
 	{

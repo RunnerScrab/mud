@@ -73,6 +73,7 @@ void Client_Disconnect(struct Client *pClient)
 
 void Client_Destroy(void *p)
 {
+	printf("Destroying client.\n");
 	struct Client *pClient = (struct Client*) p;
 	pthread_mutex_lock(&pClient->connection_state_mtx);
 	cv_destroy(&pClient->tel_stream.sb_args);
@@ -82,6 +83,7 @@ void Client_Destroy(void *p)
 	pthread_mutex_destroy(&pClient->connection_state_mtx);
 
 	asIScriptObject_Release(&pClient->player_obj);
+
 	pthread_rwlock_destroy(&pClient->refcount_rwlock);
 	tfree(pClient);
 }

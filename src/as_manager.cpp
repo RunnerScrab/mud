@@ -356,7 +356,7 @@ int AngelScriptManager_LoadScripts(AngelScriptManager *manager,
 	RETURNFAIL_IF(0 == manager->world_tick_func);
 
 	manager->on_player_connect_func = manager->main_module->GetFunctionByDecl(
-			"void OnPlayerConnect(Player@ player)");
+			"void OnPlayerConnect(PlayerConnection@ player)");
 	RETURNFAIL_IF(0 == manager->on_player_connect_func);
 
 	manager->on_player_disconnect_func =
@@ -379,11 +379,8 @@ void AngelScriptManager_CallOnPlayerDisconnect(AngelScriptManager *manager,
 	dbgprintf("Calling on player disconnect.\n");
 	size_t idx = ASContextPool_GetFreeContextIndex(&manager->ctx_pool);
 	asIScriptContext *ctx = ASContextPool_GetContextAt(&manager->ctx_pool, idx);
-	ctx->Prepare(manager->on_player_disconnect_func);
-
-	ctx->SetArgObject(0, pClient->player_obj);
-	ctx->Execute();
-
+	Player* pPlayer = *reinterpret_cast<Player**>(pClient->player_obj->GetAddressOfProperty(0));
+	pPlayer->NotifyObserversOfDisconnect(ctx);
 	ASContextPool_ReturnContextByIndex(&manager->ctx_pool, idx);
 }
 
@@ -392,12 +389,8 @@ void AngelScriptManager_CallOnPlayerInput(AngelScriptManager *manager,
 {
 	size_t idx = ASContextPool_GetFreeContextIndex(&manager->ctx_pool);
 	asIScriptContext *ctx = ASContextPool_GetContextAt(&manager->ctx_pool, idx);
-	ctx->Prepare(manager->on_player_input_func);
-	ctx->SetArgObject(0, pClient->player_obj);
-	std::string strarg(input);
-	ctx->SetArgObject(1, &strarg);
-	ctx->Execute();
-
+	Player* pPlayer = *reinterpret_cast<Player**>(pClient->player_obj->GetAddressOfProperty(0));
+	pPlayer->NotifyObserversOfInput(input, ctx);
 	ASContextPool_ReturnContextByIndex(&manager->ctx_pool, idx);
 }
 
