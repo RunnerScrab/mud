@@ -1,7 +1,7 @@
 class TestCommand : IAction
 {
-	private int a;
-     	private int b;
+private int a;
+	     private int b;
 
 	TestCommand(int a, int b)
 	{
@@ -81,16 +81,16 @@ class Meower : TestInterface, IPersistent
 			DBTable@ testpodtable = table.GetSubTable("testpodarray");
 
 			for(int i = 0, len = m_testpods.length();
-				i < len; ++i)
-				{
-					//tptrow.ClearValues();
-					TestPOD@ thispod = m_testpods[i];
-					DBRow@ tptrow = DBRow(testpodtable);
-					tptrow.SetColValue("subtable_index", i);
-					tptrow.SetColValue("name", thispod.m_name);
-					tptrow.SetColValue("ability", thispod.m_ability);
-					row.StoreChildRow(tptrow);
-				}
+			    i < len; ++i)
+			{
+//tptrow.ClearValues();
+				TestPOD@ thispod = m_testpods[i];
+				DBRow@ tptrow = DBRow(testpodtable);
+				tptrow.SetColValue("subtable_index", i);
+				tptrow.SetColValue("name", thispod.m_name);
+				tptrow.SetColValue("ability", thispod.m_ability);
+				row.StoreChildRow(tptrow);
+			}
 
 		}
 		else
@@ -183,11 +183,11 @@ class Character : Actor
 	}
 }
 
-enum PlayerGameState {LOGIN_MENU = 0,
-		      ACCOUNT_NAME_ENTRY, ACCOUNT_PASSWORD_ENTRY };
+	enum PlayerGameState {LOGIN_MENU = 0,
+			      ACCOUNT_NAME_ENTRY, ACCOUNT_PASSWORD_ENTRY };
 class Player : IUserEventObserver
 {
-	PlayerConnection@ m_connection;
+	weakref<PlayerConnection> m_connection;
 	Character@ m_char;
 	Player(PlayerConnection@ conn)
 	{
@@ -199,32 +199,49 @@ class Player : IUserEventObserver
 
 	void OnInputReceived(string input)
 	{
-		m_connection.Send("Received: " + input + "\r\n");
-		if(input == "quit")
-			 m_connection.Disconnect();
+		PlayerConnection@ conn = m_connection.get();
+		if(conn !is null)
+		{
+			conn.Send("Received: " + input + "\r\n");
+			if(input == "quit")
+			{
+				Log("Disconnecting client from script.\n");
+				conn.Disconnect();
+			}
+		}
+		else
+		{
+			Log("Attempted to call the method of a dead object.\n");
+		}
 	}
 
 	void OnOutputReceived(string output)
 	{
-		m_connection.Send("Observed: " + output + "\n");
+		PlayerConnection@ conn = m_connection.get();
+		if(conn !is null)
+		{
+			conn.Send("Observed: " + output + "\n");
+		}
 	}
 
 	void Send(string input)
 	{
-		m_connection.Send(input);
+		PlayerConnection@ conn = m_connection.get();
+		if(conn !is null)
+		{
+			conn.Send(input);
+		}
 	}
 
 	void OnDisconnect()
 	{
 		Log("Player disconnecting\n");
-		//m_connection.DetachUserEventObserver(this);
-		//OnPlayerDisconnect(this);
 	}
 
 	~Player()
 	{
 		Log("Calling script player destructor.\n");
-		//m_connection.DetachUserEventObserver(this);
+//m_connection.DetachUserEventObserver(this);
 	}
 
 	PlayerGameState GetPlayerGameState()
@@ -257,9 +274,9 @@ class Player : IUserEventObserver
 		Send(msg);
 	}
 
-	private PlayerGameState m_gamestate;
-					   string m_name;
-								private Meower@ m_meower;
+private PlayerGameState m_gamestate;
+	string m_name;
+		     private Meower@ m_meower;
 };
 
 TestCommand tc(1, 2);
@@ -412,7 +429,7 @@ void TestDatabaseRead(Player@ player)
 				for(int i = 0, len = meower.m_testpods.length(); i < len; ++i)
 				{
 					player.Send("Meower testpod name: " +meower.m_testpods[i].m_name +
-							    " ability: " + meower.m_testpods[i].m_ability + "\r\n");
+						    " ability: " + meower.m_testpods[i].m_ability + "\r\n");
 				}
 			}
 			else
@@ -437,8 +454,8 @@ void OnPlayerInput(Player@ player, string rawinput)
 {
 	string input = TrimString(rawinput);
 
-	//This command handling is for testing only
-	//Real Commands should be put in a map and assisted with an argument parsing/tokenizing function
+//This command handling is for testing only
+//Real Commands should be put in a map and assisted with an argument parsing/tokenizing function
 	if("makeuuid" == rawinput)
 	{
 		uuid newuuid;

@@ -17,8 +17,7 @@ class asIScriptContext;
 
 struct Actor;
 
-class Player:
-		public AS_RefCountedObj
+class PlayerConnection
 {
 public:
 	static void SetUserEventObserverType(asITypeInfo *ti)
@@ -38,26 +37,33 @@ public:
 
 	void Send(std::string &str);
 	void Disconnect();
-	static Player* Factory();
+	static PlayerConnection* Factory(struct Client *client);
 
 	bool AddUserEventObserver(asIScriptObject *obj);
 	bool RemoveUserEventObserver(asIScriptObject *obj);
 	void RemoveAllUserEventObservers();
 
-
-	void NotifyObserversOfOutput(const std::string& output,
-			asIScriptContext* ctx);
+	void NotifyObserversOfOutput(const std::string &output,
+			asIScriptContext *ctx);
 	void NotifyObserversOfInput(const std::string &input,
 			asIScriptContext *ctx);
 	void NotifyObserversOfDisconnect(asIScriptContext *ctx);
+
+	void AddRef();
+	void Release();
+	asILockableSharedBool* GetWeakRefFlag();
+
 protected:
-	Player(asIScriptObject *obj);
-	~Player();
+	PlayerConnection();
+	~PlayerConnection();
 
 private:
+	int m_refcount;
+	asILockableSharedBool *m_weakrefflag;
+
 	std::atomic<bool> m_bConnected;
 	std::set<asIScriptObject*> m_observers;
-	asIScriptObject* m_firstobserver;
+	asIScriptObject *m_firstobserver;
 	pthread_rwlock_t m_observers_rwlock;
 
 	static asITypeInfo *sm_observertype;
@@ -66,8 +72,6 @@ private:
 	static asIScriptFunction *sm_observer_dc_method;
 };
 
-int LoadPlayerScript(asIScriptEngine *engine, asIScriptModule *module);
-int RegisterPlayerProxyClass(asIScriptEngine *engine);
-asIScriptObject* CreatePlayerProxy(AngelScriptManager *manager,
-		struct Client *pClient);
+int RegisterPlayerConnectionClass(asIScriptEngine *engine);
+
 #endif
