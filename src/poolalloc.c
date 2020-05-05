@@ -1,5 +1,6 @@
 #include "poolalloc.h"
 #include "talloc.h"
+#include "utils.h"
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -166,9 +167,11 @@ void* AllocPool_Alloc(struct AllocPool *pAllocPool)
 	if (!pAllocPool->headnode)
 	{
 		//Expand memory pool if we have run out of space
+		dbgprintf("!!!Expanding poolalloc memory!!! (Should not happen often or memory may not be being returned)\n");
 		AllocPool_AddBlock(pAllocPool);
 	}
 	pthread_mutex_unlock(&pAllocPool->pool_mutex);
+	dbgprintf("!Alloced poolmem at %p\n", returnval);
 	return returnval;
 }
 
@@ -179,6 +182,7 @@ void AllocPool_Free(struct AllocPool *pAllocPool, void *pFreeMe)
 	pthread_mutex_lock(&pAllocPool->pool_mutex);
 	((struct InplaceFreeNode*) pFreeMe)->nextinplacenode = pAllocPool->headnode;
 	pAllocPool->headnode = (struct InplaceFreeNode*) pFreeMe;
+	dbgprintf("!Freed poolmem at %p\n", pFreeMe);
 	pthread_mutex_unlock(&pAllocPool->pool_mutex);
 }
 

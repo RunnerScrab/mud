@@ -208,6 +208,17 @@ class Player : IUserEventObserver
 				Log("Disconnecting client from script.\n");
 				conn.Disconnect();
 			}
+			else if("tc" == input)
+			{
+				m_char.QueueAction(TestCommand(5, 7), 0, 0);
+				Send("Command received.\r\n");
+			}
+			else if("tdc" == input)
+			{
+				m_char.QueueAction(TestCommand(1, 9), 6, 0);
+				Send("Command received.\r\n");
+			}
+
 		}
 		else
 		{
@@ -220,7 +231,7 @@ class Player : IUserEventObserver
 		PlayerConnection@ conn = m_connection.get();
 		if(conn !is null)
 		{
-			conn.Send("Observed: " + output + "\n");
+			//	conn.Send("Observed: " + output + "\n");
 		}
 	}
 

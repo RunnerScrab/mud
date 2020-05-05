@@ -212,7 +212,6 @@ bool PlayerConnection::AddUserEventObserver(asIScriptObject *observer)
 		ServerLog(SERVERLOG_STATUS, "Adding observer to set.");
 		pthread_rwlock_wrlock(&m_observers_rwlock);
 		m_observers.insert(observer);
-		observer->GetWeakRefFlag()->AddRef();
 		pthread_rwlock_unlock(&m_observers_rwlock);
 		ServerLog(SERVERLOG_STATUS, "Observer Refcount now %d.",
 				observer->GetRefCount());
