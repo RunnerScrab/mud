@@ -185,14 +185,15 @@ class Character : Actor
 
 	enum PlayerGameState {LOGIN_MENU = 0,
 			      ACCOUNT_NAME_ENTRY, ACCOUNT_PASSWORD_ENTRY };
-class Player : IUserEventObserver
+class Player
 {
 	weakref<PlayerConnection> m_connection;
 	Character@ m_char;
 	Player(PlayerConnection@ conn)
 	{
 		@m_connection = conn;
-		conn.AttachUserEventObserver(this);
+		conn.SetInputCallback(InputCallback(OnInputReceived));
+		conn.SetDisconnectCallback(DisconnectCallback(OnDisconnect));
 		@m_char = Character("mychar");
 		m_gamestate = PlayerGameState::LOGIN_MENU;
 	}
@@ -202,36 +203,11 @@ class Player : IUserEventObserver
 		PlayerConnection@ conn = m_connection.get();
 		if(conn !is null)
 		{
-			conn.Send("Received: " + input + "\r\n");
+			conn.Send("You input: " + input + "\n");
 			if(input == "quit")
 			{
-				Log("Disconnecting client from script.\n");
 				conn.Disconnect();
 			}
-			else if("tc" == input)
-			{
-				m_char.QueueAction(TestCommand(5, 7), 0, 0);
-				Send("Command received.\r\n");
-			}
-			else if("tdc" == input)
-			{
-				m_char.QueueAction(TestCommand(1, 9), 6, 0);
-				Send("Command received.\r\n");
-			}
-
-		}
-		else
-		{
-			Log("Attempted to call the method of a dead object.\n");
-		}
-	}
-
-	void OnOutputReceived(string output)
-	{
-		PlayerConnection@ conn = m_connection.get();
-		if(conn !is null)
-		{
-			//	conn.Send("Observed: " + output + "\n");
 		}
 	}
 
@@ -246,7 +222,25 @@ class Player : IUserEventObserver
 
 	void OnDisconnect()
 	{
-		Log("Player disconnecting\n");
+		Log("Callback: Player disconnecting\n");
+		int removeidx = g_players.findByRef(this);
+		if(removeidx >= 0)
+		{
+			Log("Attempting to remove player at idx " + removeidx);
+			int meoweridx = g_meowers.findByRef(GetMeower());
+			game_server.SendToAll("g_meowers size: " + g_meowers.length() + "\r\n");
+
+			game_server.SendToAll("g_meowers size after removal: " + g_meowers.length() + "\r\n");
+			g_players.removeAt(removeidx);
+			game_server.SendToAll("Someone has disconnected. There are now " + g_players.length() + " players connected.\r\n");
+			g_meowers.removeAt(meoweridx);
+		}
+		else
+		{
+			Log("Couldn't find player in g_players.\n");
+		}
+
+
 	}
 
 	~Player()
@@ -321,8 +315,6 @@ void OnPlayerConnect(PlayerConnection@ conn)
 		g_players.insertLast(player);
 		if(g_players.length() >= 2)
 		{
-
-			conn.AttachUserEventObserver(g_players[g_players.length() - 2]);
 			player.Send("Attaching an additional observer.\n");
 		}
 		uuid newuuid;
@@ -350,32 +342,9 @@ void OnPlayerConnect(PlayerConnection@ conn)
 */
 }
 
-void OnPlayerDisconnect(Player@ player)
+void OnPlayerDisconnect(PlayerConnection@ player)
 {
-	Log("OnPlayerDisconnect called.\n");
-	Log("Player named " + player.m_name + " disconnecting.\r\n");
-	int removeidx = g_players.findByRef(player);
-	if(removeidx >= 0)
-	{
-		Log("Attempting to remove player at idx " + removeidx);
-		int meoweridx = g_meowers.findByRef(player.GetMeower());
-		game_server.SendToAll("g_meowers size: " + g_meowers.length() + "\r\n");
-		g_meowers.removeAt(meoweridx);
-		game_server.SendToAll("g_meowers size after removal: " + g_meowers.length() + "\r\n");
-		g_players.removeAt(removeidx);
-		game_server.SendToAll("Someone has disconnected. There are now " + g_players.length() + " players connected.\r\n");
-	}
-	else
-	{
-		Log("Couldn't find player in g_players.\n");
-	}
-/*
-  Log("Someone disconnected.\r\n");
-  if(@hPlayer is @player)
-  {
-  @hPlayer = null;
-  }
-*/
+
 }
 
 void TestDatabase(Player@ player)

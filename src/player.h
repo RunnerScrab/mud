@@ -20,18 +20,6 @@ struct Actor;
 class PlayerConnection
 {
 public:
-	static void SetUserEventObserverType(asITypeInfo *ti)
-	{
-		sm_observertype = ti;
-	}
-
-	static int SetUserEventCallbackMethods(asITypeInfo *ti);
-
-	static asITypeInfo* GetUserEventObserverType()
-	{
-		return sm_observertype;
-	}
-
 	struct Client *m_pClient;
 	struct Actor *m_pActor;
 
@@ -39,15 +27,18 @@ public:
 	void Disconnect();
 	static PlayerConnection* Factory(struct Client *client);
 
-	bool AddUserEventObserver(asIScriptObject *obj);
-	bool RemoveUserEventObserver(asIScriptObject *obj);
-	void RemoveAllUserEventObservers();
+	void SetInputCallback(asIScriptFunction* cb);
+	void SetDisconnectCallback(asIScriptFunction* cb);
 
-	void NotifyObserversOfOutput(const std::string &output,
-			asIScriptContext *ctx);
-	void NotifyObserversOfInput(const std::string &input,
-			asIScriptContext *ctx);
-	void NotifyObserversOfDisconnect(asIScriptContext *ctx);
+	asIScriptFunction* GetInputCallback()
+	{
+		return m_scriptinputcb;
+	}
+
+	asIScriptFunction* GetDisconnectCallback()
+	{
+		return m_scriptdisconnectcb;
+	}
 
 	void AddRef();
 	void Release();
@@ -62,14 +53,8 @@ private:
 	asILockableSharedBool *m_weakrefflag;
 
 	std::atomic<bool> m_bConnected;
-	std::set<asIScriptObject*> m_observers;
-	asIScriptObject *m_firstobserver;
-	pthread_rwlock_t m_observers_rwlock;
 
-	static asITypeInfo *sm_observertype;
-	static asIScriptFunction *sm_observer_output_method;
-	static asIScriptFunction *sm_observer_input_method;
-	static asIScriptFunction *sm_observer_dc_method;
+	asIScriptFunction* m_scriptinputcb, *m_scriptdisconnectcb;
 };
 
 int RegisterPlayerConnectionClass(asIScriptEngine *engine);

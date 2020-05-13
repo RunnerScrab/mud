@@ -27,9 +27,5 @@ void MessageSubscriber::Unsubscribe()
 	{
 		pub->DetachChannel(m_channel);
 	}
-}
-
-void MessageSubscriber::OnReceivedMessage(const std::string& msg)
-{
-
+	m_publisher.reset();
 }

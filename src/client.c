@@ -93,6 +93,11 @@ void Client_Destroy(void *p)
 //to perform stream compression
 int Client_WriteTo(struct Client *pTarget, const char *buf, size_t len)
 {
+	if(pTarget->bDisconnected)
+	{
+		return -1;
+	}
+
 	cv_t color_buf;
 	cv_init(&color_buf, len);
 	ANSIColorizeString(buf, len, &color_buf);
