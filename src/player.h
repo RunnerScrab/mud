@@ -5,15 +5,19 @@
 #include "as_manager.h"
 
 #include <string>
+#include <set>
+#include <atomic>
 
 class asIScriptObject;
 class asILockableSharedBool;
 class asIScriptEngine;
 class asIScriptModule;
+class asITypeInfo;
+class asIScriptContext;
 
 struct Actor;
 
-class Player: public AS_RefCountedObj
+class PlayerConnection
 {
 public:
 	struct Client *m_pClient;
@@ -21,14 +25,38 @@ public:
 
 	void Send(std::string &str);
 	void Disconnect();
-	static Player* Factory();
+	static PlayerConnection* Factory(struct Client *client);
+
+	void SetInputCallback(asIScriptFunction* cb);
+	void SetDisconnectCallback(asIScriptFunction* cb);
+
+	asIScriptFunction* GetInputCallback()
+	{
+		return m_scriptinputcb;
+	}
+
+	asIScriptFunction* GetDisconnectCallback()
+	{
+		return m_scriptdisconnectcb;
+	}
+
+	void AddRef();
+	void Release();
+	asILockableSharedBool* GetWeakRefFlag();
+
 protected:
-	Player(asIScriptObject *obj);
-	~Player();
+	PlayerConnection();
+	~PlayerConnection();
+
+private:
+	int m_refcount;
+	asILockableSharedBool *m_weakrefflag;
+
+	std::atomic<bool> m_bConnected;
+
+	asIScriptFunction* m_scriptinputcb, *m_scriptdisconnectcb;
 };
 
-int LoadPlayerScript(asIScriptEngine *engine, asIScriptModule *module);
-int RegisterPlayerProxyClass(asIScriptEngine *engine);
-asIScriptObject* CreatePlayerProxy(AngelScriptManager *manager,
-		struct Client *pClient);
+int RegisterPlayerConnectionClass(asIScriptEngine *engine);
+
 #endif

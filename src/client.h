@@ -26,6 +26,7 @@ struct Server;
 struct ActionScheduler;
 typedef struct asIScriptObject asIScriptObject;
 struct Actor;
+typedef struct PlayerConnection PlayerConnection;
 
 struct Client
 {
@@ -50,7 +51,7 @@ struct Client
 
 	struct MemoryPool mem_pool;
 
-	asIScriptObject *player_obj;
+	PlayerConnection *player_obj;
 
 	unsigned char bDisconnected;
 	unsigned int refcount;

@@ -17,6 +17,7 @@ extern "C"
 #include "as_addons/scriptarray.h"
 #include "as_addons/scripthelper.h"
 #include "as_addons/scripthandle.h"
+#include "as_addons/weakref.h"
 #include "./angelscriptsdk/sdk/angelscript/include/angelscript.h"
 #include "./angelscriptsdk/sdk/angelscript/source/as_jit.h"
 
@@ -41,7 +42,8 @@ void as_MessageCallback(const asSMessageInfo *msg, void *param)
 			msg->section, msg->row, msg->col, type, msg->message);
 }
 
-int AngelScriptManager_InitEngine(AngelScriptManager *manager, struct Server* server)
+int AngelScriptManager_InitEngine(AngelScriptManager *manager,
+		struct Server *server)
 {
 	MemoryPool_Init(&manager->mem_pool);
 	manager->server = server;
@@ -59,6 +61,7 @@ int AngelScriptManager_InitEngine(AngelScriptManager *manager, struct Server* se
 	RegisterStdString(manager->engine);
 	RegisterScriptArray(manager->engine, true);
 	RegisterScriptHandle(manager->engine);
+	RegisterScriptWeakRef(manager->engine);
 	RegisterExceptionRoutines(manager->engine);
 	manager->engine->SetMessageCallback(asFUNCTION(as_MessageCallback), 0,
 			asCALL_CDECL);
@@ -100,7 +103,7 @@ static size_t GetFileLength(FILE *fp)
 int AngelScriptManager_InitAPI(AngelScriptManager *manager)
 {
 	int result = 0;
-	struct Server* server = manager->server;
+	struct Server *server = manager->server;
 	asIScriptEngine *pEngine = manager->engine;
 	result = RegisterUUIDClass(manager);
 	RETURNFAIL_IF(result < 0);
@@ -116,7 +119,7 @@ int AngelScriptManager_InitAPI(AngelScriptManager *manager)
 
 	ServerLog(SERVERLOG_STATUS, "Registered actor class.");
 
-	result = RegisterPlayerProxyClass(pEngine);
+	result = RegisterPlayerConnectionClass(pEngine);
 	RETURNFAIL_IF(result < 0);
 
 	result = pEngine->RegisterObjectType("Server", 0,
@@ -134,7 +137,7 @@ int AngelScriptManager_InitAPI(AngelScriptManager *manager)
 	RETURNFAIL_IF(result < 0);
 
 	result = pEngine->RegisterObjectMethod("Server",
-			"void DebugVariables(Player_t@ player)",
+			"void DebugVariables(PlayerConnection@ player)",
 			asFUNCTION(ASAPI_DebugVariables), asCALL_CDECL_OBJFIRST);
 	RETURNFAIL_IF(result < 0);
 
@@ -150,8 +153,8 @@ int AngelScriptManager_InitAPI(AngelScriptManager *manager)
 	RETURNFAIL_IF(result < 0);
 
 	result = pEngine->RegisterGlobalFunction(
-			"string TrimString(const string& in)",
-			asFUNCTION(ASAPI_TrimString), asCALL_CDECL);
+			"string TrimString(const string& in)", asFUNCTION(ASAPI_TrimString),
+			asCALL_CDECL);
 
 	RETURNFAIL_IF(result < 0);
 
@@ -226,7 +229,7 @@ void AngelScriptManager_CleanTypeSchemaUserData(asITypeInfo *pType)
 {
 	dbgprintf("In cleanup function for type %s\n", pType->GetName());
 	SQLiteTable *pTable = reinterpret_cast<SQLiteTable*>(pType->GetUserData(
-			AS_USERDATA_TYPESCHEMA));
+	AS_USERDATA_TYPESCHEMA));
 	if (pTable)
 	{
 		dbgprintf("Freeing %s's userdata.\n", pType->GetName());
@@ -339,7 +342,6 @@ int AngelScriptManager_LoadScripts(AngelScriptManager *manager,
 			manager->main_module->AddScriptSection("game", &script[0], len) < 0);
 
 	RETURNFAIL_IF(LoadActorProxyScript(manager->main_module));
-	RETURNFAIL_IF(LoadPlayerScript(manager->engine, manager->main_module));
 	RETURNFAIL_IF(manager->main_module->Build() < 0);
 
 #ifdef DEBUG
@@ -356,12 +358,12 @@ int AngelScriptManager_LoadScripts(AngelScriptManager *manager,
 	RETURNFAIL_IF(0 == manager->world_tick_func);
 
 	manager->on_player_connect_func = manager->main_module->GetFunctionByDecl(
-			"void OnPlayerConnect(Player@ player)");
+			"void OnPlayerConnect(PlayerConnection@ player)");
 	RETURNFAIL_IF(0 == manager->on_player_connect_func);
 
 	manager->on_player_disconnect_func =
 			manager->main_module->GetFunctionByDecl(
-					"void OnPlayerDisconnect(Player@ player)");
+					"void OnPlayerDisconnect(PlayerConnection@ player)");
 	RETURNFAIL_IF(0 == manager->on_player_disconnect_func);
 
 	manager->on_player_input_func = manager->main_module->GetFunctionByDecl(
@@ -377,28 +379,43 @@ void AngelScriptManager_CallOnPlayerDisconnect(AngelScriptManager *manager,
 		struct Client *pClient)
 {
 	dbgprintf("Calling on player disconnect.\n");
-	size_t idx = ASContextPool_GetFreeContextIndex(&manager->ctx_pool);
-	asIScriptContext *ctx = ASContextPool_GetContextAt(&manager->ctx_pool, idx);
-	ctx->Prepare(manager->on_player_disconnect_func);
+	PlayerConnection *pPlayer =
+			reinterpret_cast<PlayerConnection*>(pClient->player_obj);
+	asIScriptFunction *fun = pPlayer->GetDisconnectCallback();
 
-	ctx->SetArgObject(0, pClient->player_obj);
-	ctx->Execute();
+	if (fun)
+	{
+		//Call player disconnect callback
+		size_t idx = ASContextPool_GetFreeContextIndex(&manager->ctx_pool);
+		asIScriptContext *ctx = ASContextPool_GetContextAt(&manager->ctx_pool, idx);
 
-	ASContextPool_ReturnContextByIndex(&manager->ctx_pool, idx);
+		ctx->Prepare(fun);
+		ctx->Execute();
+
+		ASContextPool_ReturnContextByIndex(&manager->ctx_pool, idx);
+	}
+
 }
 
 void AngelScriptManager_CallOnPlayerInput(AngelScriptManager *manager,
 		struct Client *pClient, const char *input)
 {
-	size_t idx = ASContextPool_GetFreeContextIndex(&manager->ctx_pool);
-	asIScriptContext *ctx = ASContextPool_GetContextAt(&manager->ctx_pool, idx);
-	ctx->Prepare(manager->on_player_input_func);
-	ctx->SetArgObject(0, pClient->player_obj);
-	std::string strarg(input);
-	ctx->SetArgObject(1, &strarg);
-	ctx->Execute();
+	PlayerConnection *pPlayer =
+			reinterpret_cast<PlayerConnection*>(pClient->player_obj);
+	asIScriptFunction *fun = pPlayer->GetInputCallback();
 
-	ASContextPool_ReturnContextByIndex(&manager->ctx_pool, idx);
+	if (fun)
+	{
+		size_t idx = ASContextPool_GetFreeContextIndex(&manager->ctx_pool);
+		asIScriptContext *ctx = ASContextPool_GetContextAt(&manager->ctx_pool,
+				idx);
+		std::string temp(input);
+		ctx->Prepare(fun);
+		ctx->SetArgObject(0, &temp);
+		ctx->Execute();
+		ASContextPool_ReturnContextByIndex(&manager->ctx_pool, idx);
+	}
+
 }
 
 void AngelScriptManager_CallOnPlayerConnect(AngelScriptManager *manager,
@@ -407,14 +424,19 @@ void AngelScriptManager_CallOnPlayerConnect(AngelScriptManager *manager,
 	size_t idx = ASContextPool_GetFreeContextIndex(&manager->ctx_pool);
 	asIScriptContext *ctx = ASContextPool_GetContextAt(&manager->ctx_pool, idx);
 	ctx->Prepare(manager->on_player_connect_func);
-	asIScriptObject *playerobj = CreatePlayerProxy(manager, pClient);
-
-	pClient->player_obj = playerobj;
-
-	ctx->SetArgObject(0, playerobj);
-	ctx->Execute();
-
+	PlayerConnection *playerobj = PlayerConnection::Factory(pClient);
+	if (!playerobj)
+	{
+		ServerLog(SERVERLOG_ERROR, "Failed to create playerconnection object!");
+	}
+	else
+	{
+		pClient->player_obj = playerobj;
+		ctx->SetArgObject(0, playerobj);
+		ctx->Execute();
+	}
 	ASContextPool_ReturnContextByIndex(&manager->ctx_pool, idx);
+
 }
 
 void AngelScriptManager_RunWorldTick(AngelScriptManager *manager)

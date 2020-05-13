@@ -112,7 +112,7 @@ void ASAPI_DebugArray(CScriptArray &arr)
 	ServerLog(SERVERLOG_DEBUG, "Array has type of %s\n", arrtype->GetName());
 }
 
-void ASAPI_DebugVariables(struct Server *server, Player *playerobj)
+void ASAPI_DebugVariables(struct Server *server, PlayerConnection *playerobj)
 {
 	if (playerobj)
 	{

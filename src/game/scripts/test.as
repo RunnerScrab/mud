@@ -1,7 +1,7 @@
 class TestCommand : IAction
 {
-	private int a;
-     	private int b;
+private int a;
+	     private int b;
 
 	TestCommand(int a, int b)
 	{
@@ -81,16 +81,16 @@ class Meower : TestInterface, IPersistent
 			DBTable@ testpodtable = table.GetSubTable("testpodarray");
 
 			for(int i = 0, len = m_testpods.length();
-				i < len; ++i)
-				{
-					//tptrow.ClearValues();
-					TestPOD@ thispod = m_testpods[i];
-					DBRow@ tptrow = DBRow(testpodtable);
-					tptrow.SetColValue("subtable_index", i);
-					tptrow.SetColValue("name", thispod.m_name);
-					tptrow.SetColValue("ability", thispod.m_ability);
-					row.StoreChildRow(tptrow);
-				}
+			    i < len; ++i)
+			{
+//tptrow.ClearValues();
+				TestPOD@ thispod = m_testpods[i];
+				DBRow@ tptrow = DBRow(testpodtable);
+				tptrow.SetColValue("subtable_index", i);
+				tptrow.SetColValue("name", thispod.m_name);
+				tptrow.SetColValue("ability", thispod.m_ability);
+				row.StoreChildRow(tptrow);
+			}
 
 		}
 		else
@@ -183,20 +183,70 @@ class Character : Actor
 	}
 }
 
-enum PlayerGameState {LOGIN_MENU = 0,
-		      ACCOUNT_NAME_ENTRY, ACCOUNT_PASSWORD_ENTRY };
-class Player : PlayerConnection
+	enum PlayerGameState {LOGIN_MENU = 0,
+			      ACCOUNT_NAME_ENTRY, ACCOUNT_PASSWORD_ENTRY };
+class Player
 {
+	weakref<PlayerConnection> m_connection;
 	Character@ m_char;
-	Player()
+	Player(PlayerConnection@ conn)
 	{
+		@m_connection = conn;
+		conn.SetInputCallback(InputCallback(OnInputReceived));
+		conn.SetDisconnectCallback(DisconnectCallback(OnDisconnect));
 		@m_char = Character("mychar");
-		//super();
 		m_gamestate = PlayerGameState::LOGIN_MENU;
+	}
+
+	void OnInputReceived(string input)
+	{
+		PlayerConnection@ conn = m_connection.get();
+		if(conn !is null)
+		{
+			conn.Send("You input: " + input + "\n");
+			if(input == "quit")
+			{
+				conn.Disconnect();
+			}
+		}
+	}
+
+	void Send(string input)
+	{
+		PlayerConnection@ conn = m_connection.get();
+		if(conn !is null)
+		{
+			conn.Send(input);
+		}
+	}
+
+	void OnDisconnect()
+	{
+		Log("Callback: Player disconnecting\n");
+		int removeidx = g_players.findByRef(this);
+		if(removeidx >= 0)
+		{
+			Log("Attempting to remove player at idx " + removeidx);
+			int meoweridx = g_meowers.findByRef(GetMeower());
+			game_server.SendToAll("g_meowers size: " + g_meowers.length() + "\r\n");
+
+			game_server.SendToAll("g_meowers size after removal: " + g_meowers.length() + "\r\n");
+			g_players.removeAt(removeidx);
+			game_server.SendToAll("Someone has disconnected. There are now " + g_players.length() + " players connected.\r\n");
+			g_meowers.removeAt(meoweridx);
+		}
+		else
+		{
+			Log("Couldn't find player in g_players.\n");
+		}
+
 
 	}
+
 	~Player()
 	{
+		Log("Calling script player destructor.\n");
+//m_connection.DetachUserEventObserver(this);
 	}
 
 	PlayerGameState GetPlayerGameState()
@@ -229,9 +279,9 @@ class Player : PlayerConnection
 		Send(msg);
 	}
 
-	private PlayerGameState m_gamestate;
-					   string m_name;
-								private Meower@ m_meower;
+private PlayerGameState m_gamestate;
+	string m_name;
+		     private Meower@ m_meower;
 };
 
 TestCommand tc(1, 2);
@@ -257,25 +307,24 @@ void GameTick()
 
 
 
-void OnPlayerConnect(Player@ player)
+void OnPlayerConnect(PlayerConnection@ conn)
 {
 //	try
 	{
-		player.SetName("Meowmaster");
-		player.Send("Account: ");
-		//ref@ h = @player;
-		/*
-		player.Send("Hello!\r\n");
-
+		Player@ player = Player(conn);
+		g_players.insertLast(player);
+		if(g_players.length() >= 2)
+		{
+			player.Send("Attaching an additional observer.\n");
+		}
 		uuid newuuid;
 		newuuid.Generate();
 		player.Send("\r\n" + newuuid.ToString() + "\r\n");
 		g_meowers.insertLast(SuperMeower());
 		player.SetMeower(g_meowers[g_meowers.length() - 1]);
-		g_players.insertLast(player);
 
 		game_server.SendToAll("\r\nSomeone has connected. There are " + g_players.length() + " players connected.\r\n");
-		*/
+
 	}
 //	catch
 //	{
@@ -293,32 +342,9 @@ void OnPlayerConnect(Player@ player)
 */
 }
 
-void OnPlayerDisconnect(Player@ player)
+void OnPlayerDisconnect(PlayerConnection@ player)
 {
-	Log("OnPlayerDisconnect called.\n");
-	Log("Player named " + player.m_name + " disconnecting.\r\n");
-	int removeidx = g_players.findByRef(player);
-	if(removeidx >= 0)
-	{
-		Log("Attempting to remove player at idx " + removeidx);
-		int meoweridx = g_meowers.findByRef(player.GetMeower());
-		game_server.SendToAll("g_meowers size: " + g_meowers.length() + "\r\n");
-		g_meowers.removeAt(meoweridx);
-		game_server.SendToAll("g_meowers size after removal: " + g_meowers.length() + "\r\n");
-		g_players.removeAt(removeidx);
-		game_server.SendToAll("Someone has disconnected. There are now " + g_players.length() + " players connected.\r\n");
-	}
-	else
-	{
-		Log("Couldn't find player in g_players.\n");
-	}
-/*
-  Log("Someone disconnected.\r\n");
-  if(@hPlayer is @player)
-  {
-  @hPlayer = null;
-  }
-*/
+
 }
 
 void TestDatabase(Player@ player)
@@ -383,7 +409,7 @@ void TestDatabaseRead(Player@ player)
 				for(int i = 0, len = meower.m_testpods.length(); i < len; ++i)
 				{
 					player.Send("Meower testpod name: " +meower.m_testpods[i].m_name +
-							    " ability: " + meower.m_testpods[i].m_ability + "\r\n");
+						    " ability: " + meower.m_testpods[i].m_ability + "\r\n");
 				}
 			}
 			else
@@ -408,8 +434,8 @@ void OnPlayerInput(Player@ player, string rawinput)
 {
 	string input = TrimString(rawinput);
 
-	//This command handling is for testing only
-	//Real Commands should be put in a map and assisted with an argument parsing/tokenizing function
+//This command handling is for testing only
+//Real Commands should be put in a map and assisted with an argument parsing/tokenizing function
 	if("makeuuid" == rawinput)
 	{
 		uuid newuuid;
@@ -418,10 +444,6 @@ void OnPlayerInput(Player@ player, string rawinput)
 		uuid uuid2;
 		uuid2 = newuuid;
 		player.Send("Copy has uuid " + uuid2.ToString() + "\r\n");
-	}
-	else if("debugvars" == rawinput)
-	{
-		game_server.DebugVariables(player);
 	}
 	else if ("testcolor" == rawinput)
 	{

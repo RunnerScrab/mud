@@ -9,104 +9,164 @@
 #include "poolalloc.h"
 #include "angelscript.h"
 
-static const char *playerscript = "shared abstract class PlayerConnection"
-		"{"
-		"PlayerConnection()"
-		"{"
-		"@m_obj = Player_t();"
-		"}"
-		"void Send(string msg){m_obj.Send(msg);}"
-		"void Disconnect(){m_obj.Disconnect();}"
-		"Player_t @opImplCast() {return @m_obj;}"
-		"private Player_t @m_obj;"
-		"}";
-
-Player::Player(asIScriptObject *obj) :
-		AS_RefCountedObj(obj)
+void PlayerConnection::Release()
 {
-
-}
-
-Player::~Player()
-{
-
-}
-
-void Player::Send(std::string &str)
-{
-	dbgprintf("Trying to send: %s\n", str.c_str());
-	Client_WriteTo(m_pClient, str.c_str(), str.length());
-}
-
-void Player::Disconnect()
-{
-	Client_Disconnect(m_pClient);
-}
-
-Player* Player::Factory()
-{
-	asIScriptContext *ctx = asGetActiveContext();
-	asIScriptFunction *func = ctx->GetFunction(0);
-	if (func->GetObjectType() == 0
-			|| std::string(func->GetObjectType()->GetName())
-					!= "PlayerConnection")
+	if (1 == m_refcount && m_weakrefflag)
 	{
-		ctx->SetException("Invalid attempt to manually instantiate Player_t");
-		return 0;
+		m_weakrefflag->Set(true);
 	}
 
-	// Get the this pointer from the calling function so the Player C++
-	// class can be linked with the Player script class
-	asIScriptObject *obj =
-			reinterpret_cast<asIScriptObject*>(ctx->GetThisPointer(0));
-	return new Player(obj);
+	if (!asAtomicDec(m_refcount))
+	{
+		delete this;
+	}
 }
 
-int LoadPlayerScript(asIScriptEngine *engine, asIScriptModule *module)
+void PlayerConnection::AddRef()
 {
-	return module->AddScriptSection("game", playerscript, strlen(playerscript));
+	asAtomicInc(m_refcount);
 }
 
-int RegisterPlayerProxyClass(asIScriptEngine *engine)
+asILockableSharedBool* PlayerConnection::GetWeakRefFlag()
 {
-	if (engine->RegisterObjectType("Player_t", 0, asOBJ_REF) < 0)
+	if (!m_weakrefflag)
+	{
+		asAcquireExclusiveLock();
+		if (!m_weakrefflag)
+		{
+			m_weakrefflag = asCreateLockableSharedBool();
+		}
+		asReleaseExclusiveLock();
+	}
+	return m_weakrefflag;
+}
+
+PlayerConnection::PlayerConnection() :
+		m_scriptinputcb(0), m_scriptdisconnectcb(0)
+{
+	m_refcount = 1;
+	m_weakrefflag = 0;
+
+	m_bConnected = true;
+}
+
+PlayerConnection::~PlayerConnection()
+{
+	ServerLog(SERVERLOG_DEBUG, "PlayerConnection being destroyed.");
+
+	if (m_weakrefflag)
+	{
+		m_weakrefflag->Release();
+	}
+
+	if (m_scriptinputcb)
+	{
+		m_scriptinputcb->Release();
+		m_scriptinputcb = 0;
+	}
+
+	if(m_scriptdisconnectcb)
+	{
+		m_scriptdisconnectcb->Release();
+		m_scriptdisconnectcb = 0;
+	}
+}
+
+void PlayerConnection::Send(std::string &str)
+{
+	if (m_bConnected)
+	{
+		dbgprintf("Trying to send: %s\n", str.c_str());
+		Client_WriteTo(m_pClient, str.c_str(), str.length());
+	}
+}
+
+void PlayerConnection::Disconnect()
+{
+	if (!GetWeakRefFlag()->Get())
+	{
+		m_bConnected = false;
+		Client_Disconnect(m_pClient);
+	}
+}
+
+PlayerConnection* PlayerConnection::Factory(struct Client *client)
+{
+	PlayerConnection *pconn = new PlayerConnection();
+	pconn->m_pClient = client;
+	return pconn;
+}
+
+void PlayerConnection::SetInputCallback(asIScriptFunction *cb)
+{
+	m_scriptinputcb = cb;
+}
+
+void PlayerConnection::SetDisconnectCallback(asIScriptFunction* cb)
+{
+	m_scriptdisconnectcb = cb;
+}
+
+int RegisterPlayerConnectionClass(asIScriptEngine *engine)
+{
+	if (engine->RegisterObjectType("PlayerConnection", 0, asOBJ_REF) < 0)
 		return -1;
-	if (engine->RegisterObjectBehaviour("Player_t", asBEHAVE_FACTORY,
-			"Player_t @f()", asFUNCTION(Player::Factory), asCALL_CDECL) < 0)
-		return -1;
-	if (engine->RegisterObjectBehaviour("Player_t", asBEHAVE_ADDREF, "void f()",
-			asMETHOD(Player, AddRef), asCALL_THISCALL) < 0)
-		return -1;
-	if (engine->RegisterObjectBehaviour("Player_t", asBEHAVE_RELEASE,
-			"void f()", asMETHOD(Player, Release), asCALL_THISCALL) < 0)
-		return -1;
-	if (engine->RegisterObjectMethod("Player_t", "void Send(string& in)",
-			asMETHODPR(Player, Send, (std::string&), void), asCALL_THISCALL)
+
+	if (engine->RegisterObjectBehaviour("PlayerConnection", asBEHAVE_ADDREF,
+			"void f()", asMETHOD(PlayerConnection, AddRef), asCALL_THISCALL)
 			< 0)
 		return -1;
-	if (engine->RegisterObjectMethod("Player_t", "void Disconnect()",
-			asMETHOD(Player, Disconnect), asCALL_THISCALL) < 0)
+	if (engine->RegisterObjectBehaviour("PlayerConnection", asBEHAVE_RELEASE,
+			"void f()", asMETHOD(PlayerConnection, Release), asCALL_THISCALL)
+			< 0)
 		return -1;
 
-	return 0;
-}
+	if (engine->RegisterObjectBehaviour("PlayerConnection",
+			asBEHAVE_GET_WEAKREF_FLAG, "int& f()",
+			asMETHOD(PlayerConnection, GetWeakRefFlag), asCALL_THISCALL) < 0)
+		return -1;
 
-asIScriptObject* CreatePlayerProxy(AngelScriptManager *manager,
-		struct Client *pClient)
-{
-	asIScriptEngine *pEngine = manager->engine;
-	asIScriptModule *pModule = manager->main_module;
-	asIScriptObject *obj =
-			reinterpret_cast<asIScriptObject*>(pEngine->CreateScriptObject(
-					pModule->GetTypeInfoByName("Player")));
-	if (obj)
+	if (engine->RegisterObjectMethod("PlayerConnection",
+			"void Send(string& in)",
+			asMETHODPR(PlayerConnection, Send, (std::string&), void),
+			asCALL_THISCALL) < 0)
+		return -1;
+
+	if (engine->RegisterObjectMethod("PlayerConnection", "void Disconnect()",
+			asMETHOD(PlayerConnection, Disconnect), asCALL_THISCALL) < 0)
+		return -1;
+
+	if (engine->RegisterFuncdef("void InputCallback(string msg)") < 0)
 	{
-		Player *pPlayer = *((Player**) obj->GetAddressOfProperty(0));
-		pPlayer->m_pClient = pClient;
+		ServerLog(SERVERLOG_ERROR, "Failed to register callback definition.");
+		return -1;
 	}
-	else
+
+	if (engine->RegisterFuncdef("void DisconnectCallback()") < 0)
 	{
-		ServerLog(SERVERLOG_ERROR, "Failed to find script player class.");
+		ServerLog(SERVERLOG_ERROR,
+				"Failed to register disconnect callback definition.");
+		return -1;
 	}
-	return obj;
+
+	if (engine->RegisterObjectMethod("PlayerConnection",
+			"void SetInputCallback(InputCallback@ cb)",
+			asMETHODPR(PlayerConnection, SetInputCallback, (asIScriptFunction*),
+					void), asCALL_THISCALL) < 0)
+	{
+		ServerLog(SERVERLOG_ERROR,
+				"Failed to register callback setting function.");
+		return -1;
+	}
+
+	if (engine->RegisterObjectMethod("PlayerConnection",
+			"void SetDisconnectCallback(DisconnectCallback@ dc)",
+			asMETHODPR(PlayerConnection, SetDisconnectCallback,
+					(asIScriptFunction*), void), asCALL_THISCALL) < 0)
+	{
+		ServerLog(SERVERLOG_ERROR, "Failed to register disconnect callback.");
+		return -1;
+	}
+
+	return 0;
 }

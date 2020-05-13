@@ -9,7 +9,10 @@ class AS_RefCountedObj
 public:
 	void AddRef();
 	void Release();
-
+	asILockableSharedBool* GetWeakRefFlag()
+	{
+		return m_isDead;
+	}
 protected:
 	AS_RefCountedObj(asIScriptObject *obj);
 	virtual ~AS_RefCountedObj();

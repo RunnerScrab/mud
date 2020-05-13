@@ -17,13 +17,13 @@ ActionScheduler *NativeActor::sm_pActionScheduler = 0;
 AngelScriptManager *NativeActor::sm_pAngelScriptManager = 0;
 
 static const char *actorscript = "shared class Actor"
-		"{"
-		"Actor(){ @m_obj = NativeActor_t();}"
-		"void QueueAction(IAction@+ cmd, uint32 delay_s, uint32 delay_ns)"
-		"{ m_obj.QueueAction(cmd, delay_s, delay_ns);}"
-		"NativeActor_t @opImplCast(){return @m_obj;}"
-		"private NativeActor_t@ m_obj;"
-		"}";
+	"{"
+	"Actor(){ @m_obj = NativeActor_t();}"
+	"void QueueAction(IAction@+ cmd, uint32 delay_s, uint32 delay_ns)"
+	"{ m_obj.QueueAction(cmd, delay_s, delay_ns);}"
+	"NativeActor_t @opImplCast(){return @m_obj;}"
+	"private NativeActor_t@ m_obj;"
+	"}";
 
 void NativeActor::SetActionScheduler(ActionScheduler *as)
 {
@@ -36,7 +36,7 @@ int LoadActorProxyScript(asIScriptModule *module)
 }
 
 int RegisterNativeActorClass(asIScriptEngine *engine,
-		AngelScriptManager *manager)
+			AngelScriptManager *manager)
 {
 	NativeActor::SetAngelScriptManager(manager);
 	NativeActor::SetActionScheduler(manager->action_scheduler);
@@ -46,21 +46,21 @@ int RegisterNativeActorClass(asIScriptEngine *engine,
 	RETURNFAIL_IF(result < 0);
 
 	result = engine->RegisterObjectBehaviour("NativeActor_t", asBEHAVE_FACTORY,
-			"NativeActor_t @f()", asFUNCTION(NativeActor::Factory),
-			asCALL_CDECL);
+						"NativeActor_t @f()", asFUNCTION(NativeActor::Factory),
+						asCALL_CDECL);
 	RETURNFAIL_IF(result < 0);
 
 	result = engine->RegisterObjectBehaviour("NativeActor_t", asBEHAVE_ADDREF,
-			"void f()", asMETHOD(NativeActor, AddRef), asCALL_THISCALL);
+						"void f()", asMETHOD(NativeActor, AddRef), asCALL_THISCALL);
 	RETURNFAIL_IF(result < 0);
 
 	result = engine->RegisterObjectBehaviour("NativeActor_t", asBEHAVE_RELEASE,
-			"void f()", asMETHOD(NativeActor, Release), asCALL_THISCALL);
+						"void f()", asMETHOD(NativeActor, Release), asCALL_THISCALL);
 	RETURNFAIL_IF(result < 0);
 
 	result = engine->RegisterObjectMethod("NativeActor_t",
-			"void QueueAction(IAction@+ cmd, uint32 delay_s, uint32 delay_ns)",
-			asMETHOD(NativeActor, QueueScriptAction), asCALL_THISCALL);
+					"void QueueAction(IAction@+ cmd, uint32 delay_s, uint32 delay_ns)",
+					asMETHOD(NativeActor, QueueScriptAction), asCALL_THISCALL);
 	RETURNFAIL_IF(result < 0);
 
 	return result;
@@ -71,18 +71,18 @@ NativeActor* NativeActor::Factory()
 	asIScriptContext *ctx = asGetActiveContext();
 	asIScriptFunction *func = ctx->GetFunction(0);
 	if (0 == func->GetObjectType()
-			|| std::string(func->GetObjectType()->GetName()) != "Actor")
+		|| std::string(func->GetObjectType()->GetName()) != "Actor")
 	{
 		ctx->SetException("Invalid attempt to manually instantiate Actor");
 	}
 
 	asIScriptObject *obj =
-			reinterpret_cast<asIScriptObject*>(ctx->GetThisPointer(0));
+		reinterpret_cast<asIScriptObject*>(ctx->GetThisPointer(0));
 	return new NativeActor(obj);
 }
 
 NativeActor::NativeActor(asIScriptObject *obj) :
-		AS_RefCountedObj(obj)
+	AS_RefCountedObj(obj)
 {
 	hrt_prioq_create(&m_action_queue, 32);
 	pthread_mutex_init(&m_action_queue_mtx, 0);
@@ -101,7 +101,7 @@ NativeActor::~NativeActor()
 	while (hrt_prioq_get_size(&m_action_queue) > 0)
 	{
 		struct ThreadTask *pTask = (struct ThreadTask*) hrt_prioq_extract_min(
-				&m_action_queue);
+			&m_action_queue);
 		struct RunScriptCmdPkg *pPkg = (struct RunScriptCmdPkg*) pTask->pArgs;
 		pPkg->cmd->Release();
 	}
@@ -112,15 +112,15 @@ NativeActor::~NativeActor()
 }
 
 void NativeActor::QueueScriptAction(asIScriptObject *obj, unsigned int delay_s,
-		unsigned int delay_ns)
+				unsigned int delay_ns)
 {
 	//Wraps a script action in a threadpool task
 	if (obj)
 	{
 		obj->AddRef();
 		struct RunScriptCmdPkg *pkg =
-				(struct RunScriptCmdPkg*) MemoryPool_Alloc(&m_mem_pool,
-						sizeof(struct RunScriptCmdPkg));
+			(struct RunScriptCmdPkg*) MemoryPool_Alloc(&m_mem_pool,
+								sizeof(struct RunScriptCmdPkg));
 		AngelScriptManager *manager = GetAngelScriptManager();
 		pkg->cmd = obj;
 		pkg->cmdtype = manager->main_module->GetTypeInfoByDecl("IAction");
@@ -128,22 +128,32 @@ void NativeActor::QueueScriptAction(asIScriptObject *obj, unsigned int delay_s,
 		pkg->engine = manager->engine;
 		pkg->context_pool = &manager->ctx_pool;
 
-		struct timespec curtime;
-		if (clock_gettime(CLOCK_MONOTONIC, &curtime) >= 0)
+		if(!delay_s && !delay_ns)
 		{
-			QueueAction(ASAPI_RunScriptAction, curtime.tv_sec + delay_s,
+			//If there is no delay, give the task directly to the threadpool
+			ThreadPool_AddTask(&GetAngelScriptManager()->server->thread_pool,
+					ASAPI_RunScriptAction, 0, pkg, 0);
+			ServerLog(SERVERLOG_STATUS, "Action fed straight to threadpool.");
+		}
+		else
+		{
+			struct timespec curtime;
+			if (clock_gettime(CLOCK_MONOTONIC, &curtime) >= 0)
+			{
+				QueueAction(ASAPI_RunScriptAction, curtime.tv_sec + delay_s,
 					curtime.tv_nsec + delay_ns, pkg, 0);
+			}
 		}
 	}
 }
 
 void NativeActor::QueueAction(void* (*taskfn)(void*), time_t runtime_s,
-		long runtime_ns, void *args, void (*argreleaserfn)(void*))
+			long runtime_ns, void *args, void (*argreleaserfn)(void*))
 {
 
 	//Queues a threadpool task into the scheduler
 	struct ThreadTask *pTask = (struct ThreadTask*) MemoryPool_Alloc(
-			&m_mem_pool, sizeof(struct ThreadTask));
+		&m_mem_pool, sizeof(struct ThreadTask));
 	pTask->taskfn = taskfn;
 	pTask->pArgs = args;
 	pTask->releasefn = argreleaserfn;

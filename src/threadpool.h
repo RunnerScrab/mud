@@ -4,7 +4,6 @@
 #include <sys/sysinfo.h>
 #include "poolalloc.h"
 #include "prioq.h"
-#include "deque.h"
 
 #ifdef __cplusplus
 extern "C" {

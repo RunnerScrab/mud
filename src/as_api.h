@@ -23,7 +23,7 @@ struct RunScriptCmdPkg
 };
 
 void* ASAPI_RunScriptAction(void *pArgs);
-void ASAPI_DebugVariables(struct Server *server, Player *playerobj);
+void ASAPI_DebugVariables(struct Server *server, PlayerConnection *playerobj);
 void ASAPI_DebugObject(CScriptHandle obj);
 void ASAPI_DebugArray(CScriptArray &arr);
 

@@ -5,7 +5,9 @@
 #include <stdio.h>
 #include <pthread.h>
 #include <time.h>
+#include <errno.h>
 
+#include "utils.h"
 #include "threadpool.h"
 #include "zcompressor.h"
 #include "iohelper.h"
@@ -81,7 +83,8 @@ void Client_Destroy(void *p)
 
 	pthread_mutex_destroy(&pClient->connection_state_mtx);
 
-	asIScriptObject_Release(&pClient->player_obj);
+	PlayerConnection_Release(&pClient->player_obj);
+
 	pthread_rwlock_destroy(&pClient->refcount_rwlock);
 	tfree(pClient);
 }
@@ -90,6 +93,11 @@ void Client_Destroy(void *p)
 //to perform stream compression
 int Client_WriteTo(struct Client *pTarget, const char *buf, size_t len)
 {
+	if(pTarget->bDisconnected)
+	{
+		return -1;
+	}
+
 	cv_t color_buf;
 	cv_init(&color_buf, len);
 	ANSIColorizeString(buf, len, &color_buf);
@@ -113,6 +121,13 @@ int Client_WriteTo(struct Client *pTarget, const char *buf, size_t len)
 		}
 
 		int result = write_from_cv_raw(pTarget->sock, &compout);
+		if(result < 0)
+		{
+			int err = errno;
+			char msg[512] = {0};
+			strerror_r(err, msg, 512);
+			dbgprintf("Socket write error: %s\n", msg);
+		}
 		pthread_mutex_unlock(&pTarget->connection_state_mtx);
 		cv_destroy(&compout);
 		cv_destroy(&color_buf);
@@ -121,8 +136,15 @@ int Client_WriteTo(struct Client *pTarget, const char *buf, size_t len)
 	default:
 	{
 		//Don't send the null terminator
-		size_t written = write_full_raw(pTarget->sock, color_buf.data,
+		int written = write_full_raw(pTarget->sock, color_buf.data,
 				color_buf.length - 1);
+		if(written < 0)
+		{
+			int err = errno;
+			char msg[512] = {0};
+			strerror_r(err, msg, 512);
+			dbgprintf("Socket write error: %s\n", msg);
+		}
 		cv_destroy(&color_buf);
 		pthread_mutex_unlock(&pTarget->connection_state_mtx);
 		return written;
