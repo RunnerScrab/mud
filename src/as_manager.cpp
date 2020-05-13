@@ -270,48 +270,56 @@ int AngelScriptManager_PrepareScriptPersistenceLayer(
 			AngelScriptManager_CleanTypeSchemaUserData,
 			AS_USERDATA_TYPESCHEMA);
 
-	for (; idx < object_type_count; ++idx)
+	std::vector<asITypeInfo*> pPersistentTypes;
+	pPersistentTypes.reserve(object_type_count);
+	for (idx = 0; idx < object_type_count; ++idx)
 	{
+		//Precreate table objects so that the table structure definition
+		//functions called below will have access to all their names
 		asITypeInfo *pInfo = manager->main_module->GetObjectTypeByIndex(idx);
-		dbgprintf("Class %lu: %s\n", idx, pInfo->GetName());
 		if (pInfo->Implements(pPersistentType))
 		{
 			dbgprintf("CREATING a new table for class %s.\n", pInfo->GetName());
 			SQLiteTable *pTable = new SQLiteTable(pSQLiteDB, pInfo->GetName());
 			pTable->AddRef();
 			pInfo->SetUserData((void*) pTable, AS_USERDATA_TYPESCHEMA);
-			//We want to reuse this table for every parent class of the type in pInfo.
-			///Every class and subclass will have its own table which includes all the
-			//columns of its parent classes.
-			while (pInfo)
+			pPersistentTypes.push_back(pInfo);
+		}
+	}
+
+	for (asITypeInfo *pInfo : pPersistentTypes)
+	{
+		SQLiteTable *pTable = (SQLiteTable*) pInfo->GetUserData(AS_USERDATA_TYPESCHEMA);
+		//We want to reuse this table for every parent class of the type in pInfo.
+		///Every class and subclass will have its own table which includes all the
+		//columns of its parent classes.
+		while (pInfo)
+		{
+			//Do not get the virtual implementation
+			asIScriptFunction *pDSfun = pInfo->GetMethodByName("OnDefineSchema",
+					false);
+			if (pDSfun)
 			{
-				//Do not get the virtual implementation
-				asIScriptFunction *pDSfun = pInfo->GetMethodByName(
-						"OnDefineSchema", false);
-				if (pDSfun)
-				{
-					dbgprintf("Found %s's OnDefineSchema()", pInfo->GetName());
-					ctx->Prepare(pDSfun);
-					ctx->SetObject(0);
-					ctx->SetArgObject(0, pTable);
-					ctx->Execute();
+				dbgprintf("Found %s's OnDefineSchema()", pInfo->GetName());
+				ctx->Prepare(pDSfun);
+				ctx->SetObject(0);
+				ctx->SetArgObject(0, pTable);
+				ctx->Execute();
 
-					//Breaking here stops automatic calling of superclass IPersistent
-					//OnDefineSchema, which is against convention and confusing to
-					//people experienced with OOP
-					break;
-				}
-				pInfo = pInfo->GetBaseType();
-				if (pInfo)
-				{
-					dbgprintf("Found base type %s", pInfo->GetName());
-				}
-				else
-				{
-					dbgprintf("Did not find base type.");
-				}
+				//Breaking here stops automatic calling of superclass IPersistent
+				//OnDefineSchema, which is against convention and confusing to
+				//people experienced with OOP
+				break;
 			}
-
+			pInfo = pInfo->GetBaseType();
+			if (pInfo)
+			{
+				dbgprintf("Found base type %s", pInfo->GetName());
+			}
+			else
+			{
+				dbgprintf("Did not find base type.");
+			}
 		}
 	}
 
@@ -387,7 +395,8 @@ void AngelScriptManager_CallOnPlayerDisconnect(AngelScriptManager *manager,
 	{
 		//Call player disconnect callback
 		size_t idx = ASContextPool_GetFreeContextIndex(&manager->ctx_pool);
-		asIScriptContext *ctx = ASContextPool_GetContextAt(&manager->ctx_pool, idx);
+		asIScriptContext *ctx = ASContextPool_GetContextAt(&manager->ctx_pool,
+				idx);
 
 		ctx->Prepare(fun);
 		ctx->Execute();

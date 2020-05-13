@@ -208,6 +208,15 @@ class Player
 			{
 				conn.Disconnect();
 			}
+			else if ("testdb" == input)
+			{
+				TestDatabase(this);
+				Send("Ran TestDatabase().\r\n");
+			}
+			else if("testdbread" == input)
+			{
+				TestDatabaseRead(this);
+			}
 		}
 	}
 
@@ -290,26 +299,24 @@ array<Player@> g_players;
 array<Meower@> g_meowers;
 void GameTick()
 {
-/*
-  game_server.SendToAll("`red`Hello!`default`");
-  game_server.QueueScriptCommand(tc, 4);
-  game_server.QueueScriptCommand(tc, 2);
-  if(hPlayer !is null)
-  {
-  hPlayer.Send("Ticking for player\r\n");
-  }
-  else
-  {
-  Log("There are no players connected.\r\n");
-  }
-*/
+	return;
+	game_server.SendToAll("`red`Hello!`default`");
+	game_server.QueueGlobalAction(tc, 4);
+	game_server.QueueGlobalAction(tc, 2);
+	if(hPlayer !is null)
+	{
+		hPlayer.Send("Ticking for player\r\n");
+	}
+	else
+	{
+		Log("There are no players connected.\r\n");
+	}
+
 }
-
-
 
 void OnPlayerConnect(PlayerConnection@ conn)
 {
-//	try
+	try
 	{
 		Player@ player = Player(conn);
 		g_players.insertLast(player);
@@ -326,20 +333,10 @@ void OnPlayerConnect(PlayerConnection@ conn)
 		game_server.SendToAll("\r\nSomeone has connected. There are " + g_players.length() + " players connected.\r\n");
 
 	}
-//	catch
-//	{
-//		player.Send("Exception thrown!\r\n" + getExceptionInfo() + "\r\n");
-//	}
-/*
-  Log("OnPlayerConnect()");
-  player.Send("WELCOME!\r\n");
-
-  @hPlayer = @player;
-  if(hPlayer !is null)
-  {
-  hPlayer.Send("Handle assigned.\r\n");
-  }
-*/
+	catch
+	{
+		Log("Exception thrown!\r\n" + getExceptionInfo() + "\r\n");
+	}
 }
 
 void OnPlayerDisconnect(PlayerConnection@ player)
@@ -390,7 +387,7 @@ void TestDatabaseRead(Player@ player)
 	testtable.AddTextCol("name");
 	DBRow@ testrow = testtable.MakeRow();
 	uuid keyuuid;
-	keyuuid.FromString("0e6e8006-698a-46ec-8aa4-211fa6a1892c");
+	keyuuid.FromString("0f808916-8723-409a-84de-9713ea82f10d");
 	testrow.SetColValue("uuid", keyuuid);
 	testrow.LoadFromDB();
 	string name;
@@ -398,7 +395,7 @@ void TestDatabaseRead(Player@ player)
 
 	SuperMeower meower;
 
-	if(keyuuid.FromString("4659f400-0466-4d79-ab8b-5f0d700e2d4a"))
+	if(keyuuid.FromString("0f808916-8723-409a-84de-9713ea82f10d"))
 	{
 		try
 		{
