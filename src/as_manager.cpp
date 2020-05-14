@@ -240,6 +240,10 @@ void AngelScriptManager_CleanTypeSchemaUserData(asITypeInfo *pType)
 int AngelScriptManager_PrepareScriptPersistenceLayer(
 		AngelScriptManager *manager)
 {
+	//This isn't done at the same time as the Database API initialization
+	//because this requires the scripts to be loaded, and the database API needs to be initialized
+	//before scripts are loaded
+
 	//TODO: Remove this - debug script class information
 	dbgprintf("-Class information-\n");
 	size_t idx = 0, object_type_count =

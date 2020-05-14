@@ -10,6 +10,7 @@ class asIScriptEngine;
 class CScriptArray;
 #endif
 
+struct Database;
 class SQLiteRow;
 class SQLiteTable;
 //Contains column name, value type, key type, and may be used to
@@ -100,6 +101,10 @@ public:
 	static sqlite3 *m_static_pDB;
 	static void SetDBConnection(sqlite3 *pDB);
 	static sqlite3* GetDBConnection();
+	static Database* m_pDatabaseMetadata;
+
+	static void SetDatabaseMetadataPtr(struct Database* dbd);
+	static struct Database* GetDatabaseMetadataPtr();
 
 	sqlite3* GetDBPtr()
 	{

@@ -7,6 +7,9 @@
 extern "C"
 {
 #endif
+
+typedef struct asIScriptModule asIScriptModule;
+
 struct Database
 {
 	sqlite3 *pDB;
@@ -14,6 +17,7 @@ struct Database
 	size_t table_count;
 
 	struct Server *pServer;
+	asIScriptModule *pMainScriptModule; //Persistent classes should always be in the main script module
 };
 
 int Database_Init(struct Database *asdb, struct Server *server,

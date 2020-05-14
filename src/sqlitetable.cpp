@@ -50,6 +50,7 @@ SQLiteColumn::SQLiteColumn(SQLiteColumn &&other)
 }
 
 sqlite3 *SQLiteTable::m_static_pDB = 0;
+struct Database* SQLiteTable::m_pDatabaseMetadata = 0;
 
 void SQLiteTable::SetDBConnection(sqlite3 *pDB)
 {
@@ -60,6 +61,17 @@ sqlite3* SQLiteTable::GetDBConnection()
 {
 	return m_static_pDB;
 }
+
+void SQLiteTable::SetDatabaseMetadataPtr(struct Database* dbd)
+{
+	m_pDatabaseMetadata = dbd;
+}
+
+struct Database* SQLiteTable::GetDatabaseMetadataPtr()
+{
+	return m_pDatabaseMetadata;
+}
+
 
 #ifndef TESTING_
 int RegisterDBTable(sqlite3 *sqldb, asIScriptEngine *sengine)

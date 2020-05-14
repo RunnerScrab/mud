@@ -92,7 +92,7 @@ bool ASAPI_LoadObjectStrKey(asIScriptObject *obj, const std::string &key)
 		asITypeInfo *obj_ti = obj->GetObjectType();
 		SQLiteTable *type_table =
 				reinterpret_cast<SQLiteTable*>(obj_ti->GetUserData(
-						AS_USERDATA_TYPESCHEMA));
+				AS_USERDATA_TYPESCHEMA));
 		SQLiteColumn *primary_keycol = type_table->GetPrimaryKeyColAt(0);
 		//Use the calling context
 		asIScriptContext *ctx = asGetActiveContext();
@@ -135,7 +135,7 @@ bool ASAPI_LoadObjectUUIDKey(asIScriptObject *obj, const UUID &key)
 		asITypeInfo *obj_ti = obj->GetObjectType();
 		SQLiteTable *type_table =
 				reinterpret_cast<SQLiteTable*>(obj_ti->GetUserData(
-						AS_USERDATA_TYPESCHEMA));
+				AS_USERDATA_TYPESCHEMA));
 		SQLiteColumn *primary_keycol = type_table->GetPrimaryKeyColAt(0);
 		//Use the calling context
 		asIScriptContext *ctx = asGetActiveContext();
@@ -177,7 +177,7 @@ template<typename T> bool ASAPI_LoadObjectIntKey(asIScriptObject *obj,
 		asITypeInfo *obj_ti = obj->GetObjectType();
 		SQLiteTable *type_table =
 				reinterpret_cast<SQLiteTable*>(obj_ti->GetUserData(
-						AS_USERDATA_TYPESCHEMA));
+				AS_USERDATA_TYPESCHEMA));
 		SQLiteColumn *primary_keycol = type_table->GetPrimaryKeyColAt(0);
 		//Use the calling context
 		asIScriptContext *ctx = asGetActiveContext();
@@ -220,11 +220,37 @@ SQLiteTable* ASAPI_GetClassTable(asIScriptObject *obj)
 		asITypeInfo *obj_ti = obj->GetObjectType();
 		SQLiteTable *type_table =
 				reinterpret_cast<SQLiteTable*>(obj_ti->GetUserData(
-						AS_USERDATA_TYPESCHEMA));
+				AS_USERDATA_TYPESCHEMA));
 		obj->Release();
 		return type_table;
 	}
 	return 0;
+}
+
+SQLiteTable* ASAPI_GetClassTableByName(const std::string &name)
+{
+	asIScriptModule *module =
+			SQLiteTable::GetDatabaseMetadataPtr()->pServer->as_manager.main_module;
+	asITypeInfo *pPersistentType = module->GetTypeInfoByName("IPersistent");
+	if (!module)
+	{
+		ServerLog(SERVERLOG_ERROR, "Module could not be found.");
+		return 0;
+	}
+	asITypeInfo *classtype =
+			module->GetTypeInfoByName(
+					name.c_str());
+	if (!classtype)
+	{
+		return 0;
+	}
+
+	if (!classtype->Implements(pPersistentType))
+	{
+		return 0;
+	}
+
+	return (SQLiteTable*) classtype->GetUserData(AS_USERDATA_TYPESCHEMA);
 }
 
 bool ASAPI_SaveObject(asIScriptObject *obj)
@@ -235,7 +261,7 @@ bool ASAPI_SaveObject(asIScriptObject *obj)
 		asITypeInfo *obj_ti = obj->GetObjectType();
 		SQLiteTable *type_table =
 				reinterpret_cast<SQLiteTable*>(obj_ti->GetUserData(
-						AS_USERDATA_TYPESCHEMA));
+				AS_USERDATA_TYPESCHEMA));
 
 		//Use the calling context
 		asIScriptContext *ctx = asGetActiveContext();
@@ -349,6 +375,7 @@ static int RegisterDatabaseAPI(struct Database *asdb)
 		return -1;
 	}
 
+	SQLiteTable::SetDatabaseMetadataPtr(asdb);
 	SQLiteTable::SetDBConnection(sqldb);
 	int result = 0;
 
@@ -417,6 +444,11 @@ static int RegisterDatabaseAPI(struct Database *asdb)
 	result = sengine->RegisterGlobalFunction(
 			"const DBTable@ DBGetClassTable(IPersistent@ obj)",
 			asFUNCTION(ASAPI_GetClassTable), asCALL_CDECL);
+	RETURNFAIL_IF(result < 0);
+
+	result = sengine->RegisterGlobalFunction(
+			"const DBTable@ DBGetClassTableByName(const string& in)",
+			asFUNCTION(ASAPI_GetClassTableByName), asCALL_CDECL);
 
 	return result;
 }
@@ -428,7 +460,9 @@ int Database_Init(struct Database *asdb, struct Server *server,
 {
 	ServerLog(SERVERLOG_STATUS, "Initializing database.");
 	asdb->pServer = server;
+	asdb->pMainScriptModule = server->as_manager.main_module;
 	strcpy(asdb->path, path);
+
 	int resultcode = sqlite3_open(path, &asdb->pDB);
 
 	if (SQLITE_OK != resultcode)

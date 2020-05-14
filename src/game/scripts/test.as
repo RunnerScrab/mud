@@ -420,7 +420,8 @@ void TestDatabaseRead(Player@ player)
 		}
 	}
 
-	const DBTable@ hTable = DBGetClassTable(meower);
+	//const DBTable@ hTable = DBGetClassTable(meower);
+	const DBTable@ hTable = DBGetClassTableByName("SuperMeower");
 	if(hTable !is null)
 	{
 		player.Send("Acquired table name: " + hTable.GetName() + "\r\n");
