@@ -21,7 +21,7 @@ CXXDEPS := $(CXXSOURCE:.cpp=.d)
 
 OBJS := $(COBJS) $(CXXOBJS)
 DEPS := $(CDEPS) $(CXXDEPS)
-LIBS = libangelscript.a libsqlite3.a
+LIBS = libangelscript.a libsqlite3.a libsodium.so
 
 all: mud
 mud: ${OBJS} ${LIBS}
@@ -38,6 +38,8 @@ angelscript:
 	make -C angelscriptsdk/sdk/angelscript/projects/gnuc/
 	cp angelscriptsdk/sdk/angelscript/include/angelscript.h .
 	cp angelscriptsdk/sdk/angelscript/lib/libangelscript.a .
+
+libangelscript.a: angelscript
 
 libsodium.so:
 	(cd ./libsodium && ./autogen.sh)
