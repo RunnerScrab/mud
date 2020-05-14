@@ -21,7 +21,7 @@ CXXDEPS := $(CXXSOURCE:.cpp=.d)
 
 OBJS := $(COBJS) $(CXXOBJS)
 DEPS := $(CDEPS) $(CXXDEPS)
-LIBS = libangelscript.a libsqlite3.a libsodium.so
+LIBS = libangelscript.a libsqlite3.a libsodium.so libgmp.a
 
 all: mud
 mud: ${OBJS} ${LIBS}
@@ -41,6 +41,11 @@ angelscript:
 
 libangelscript.a: angelscript
 
+libgmp.a:
+	(cd ./gmp && ./configure)
+	make -C gmp/
+	cp gmp/.libs/libgmp.a .
+
 libsodium.so:
 	(cd ./libsodium && ./autogen.sh)
 	(cd ./libsodium/ && ./configure)
@@ -50,7 +55,7 @@ libsodium.so:
 -include ${DEPS}
 
 clean:
-	rm -f *.o mud *.d *~
+	rm -f *.o mud *.d *~ ${LIBS}
 	cd angelscriptsdk/sdk/angelscript/projects/gnuc/ && make clean
 
 etags:
