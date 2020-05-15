@@ -17,7 +17,7 @@ class asIScriptContext;
 
 struct Actor;
 
-class PlayerConnection
+class PlayerConnection : public AS_RefCountedObj
 {
 public:
 	struct Client *m_pClient;
@@ -39,10 +39,6 @@ public:
 	{
 		return m_scriptdisconnectcb;
 	}
-
-	void AddRef();
-	void Release();
-	asILockableSharedBool* GetWeakRefFlag();
 
 protected:
 	PlayerConnection();

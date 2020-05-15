@@ -9,55 +9,15 @@
 #include "poolalloc.h"
 #include "angelscript.h"
 
-void PlayerConnection::Release()
-{
-	if (1 == m_refcount && m_weakrefflag)
-	{
-		m_weakrefflag->Set(true);
-	}
-
-	if (!asAtomicDec(m_refcount))
-	{
-		delete this;
-	}
-}
-
-void PlayerConnection::AddRef()
-{
-	asAtomicInc(m_refcount);
-}
-
-asILockableSharedBool* PlayerConnection::GetWeakRefFlag()
-{
-	if (!m_weakrefflag)
-	{
-		asAcquireExclusiveLock();
-		if (!m_weakrefflag)
-		{
-			m_weakrefflag = asCreateLockableSharedBool();
-		}
-		asReleaseExclusiveLock();
-	}
-	return m_weakrefflag;
-}
-
 PlayerConnection::PlayerConnection() :
 		m_scriptinputcb(0), m_scriptdisconnectcb(0)
 {
-	m_refcount = 1;
-	m_weakrefflag = 0;
-
 	m_bConnected = true;
 }
 
 PlayerConnection::~PlayerConnection()
 {
 	ServerLog(SERVERLOG_DEBUG, "PlayerConnection being destroyed.");
-
-	if (m_weakrefflag)
-	{
-		m_weakrefflag->Release();
-	}
 
 	if (m_scriptinputcb)
 	{
