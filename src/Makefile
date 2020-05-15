@@ -34,12 +34,10 @@ libsqlite3.a: sqlite/sqlite3.c
 	${SQLITECC} -c sqlite/sqlite3.c ${CFLAGS}
 	ar rcs libsqlite3.a sqlite3.o
 
-angelscript:
+libangelscript.a:
 	make -C angelscriptsdk/sdk/angelscript/projects/gnuc/
 	cp angelscriptsdk/sdk/angelscript/include/angelscript.h .
 	cp angelscriptsdk/sdk/angelscript/lib/libangelscript.a .
-
-libangelscript.a: angelscript
 
 libgmp.a:
 	(cd ./gmp && ./configure)
