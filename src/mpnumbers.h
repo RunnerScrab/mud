@@ -13,7 +13,7 @@ class asIScriptEngine;
 class asILockableSharedBool;
 
 class MPInt:
-		AS_RefCountedObj
+		public AS_RefCountedObj
 {
 
 public:
@@ -36,6 +36,41 @@ public:
 	bool operator==(const MPInt &other)
 	{
 		return 0 == mpz_cmp(m_value, other.m_value);
+	}
+
+	bool operator!=(const MPInt &other)
+	{
+		return 0;
+	}
+
+	bool operator>(const MPInt &other)
+	{
+		return mpz_cmp(m_value, other.m_value) > 0;
+	}
+
+	bool operator<(const MPInt &other)
+	{
+		return mpz_cmp(m_value, other.m_value) < 0;
+	}
+
+	bool operator>=(const MPInt &other)
+	{
+		return mpz_cmp(m_value, other.m_value) >= 0;
+	}
+
+	bool operator<=(const MPInt &other)
+	{
+		return mpz_cmp(m_value, other.m_value) <= 0;
+	}
+
+	bool isSame(const MPInt& other)
+	{
+		return &m_value == &other.m_value;
+	}
+
+	bool isNotSame(const MPInt& other)
+	{
+		return !isSame(other);
 	}
 
 private:
