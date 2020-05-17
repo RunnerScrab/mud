@@ -12,6 +12,7 @@ extern "C"
 #include "player.h"
 #include "uuid.h"
 #include "sqlitetable.h"
+#include "mpnumbers.h"
 
 #include "as_addons/scriptstdstring.h"
 #include "as_addons/scriptarray.h"
@@ -63,6 +64,7 @@ int AngelScriptManager_InitEngine(AngelScriptManager *manager,
 	RegisterScriptHandle(manager->engine);
 	RegisterScriptWeakRef(manager->engine);
 	RegisterExceptionRoutines(manager->engine);
+
 	manager->engine->SetMessageCallback(asFUNCTION(as_MessageCallback), 0,
 			asCALL_CDECL);
 
@@ -105,6 +107,9 @@ int AngelScriptManager_InitAPI(AngelScriptManager *manager)
 	int result = 0;
 	struct Server *server = manager->server;
 	asIScriptEngine *pEngine = manager->engine;
+	result = RegisterMPNumberClasses(manager->engine);
+	RETURNFAIL_IF(result < 0);
+
 	result = RegisterUUIDClass(manager);
 	RETURNFAIL_IF(result < 0);
 

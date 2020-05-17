@@ -217,6 +217,11 @@ class Player
 			{
 				TestDatabaseRead(this);
 			}
+			else if("testmp" == input)
+			{
+				MPInt@ num = MPInt(12345);
+				Send("MPInt test: " + num.toString() + "\r\n");
+			}
 		}
 	}
 
