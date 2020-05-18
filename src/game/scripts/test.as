@@ -203,7 +203,7 @@ class Player
 		PlayerConnection@ conn = m_connection.get();
 		if(conn !is null)
 		{
-			conn.Send("You input: " + input + "\n");
+			conn.Send("You input: " + input + "\r\n");
 			if(input == "quit")
 			{
 				conn.Disconnect();
@@ -219,8 +219,11 @@ class Player
 			}
 			else if("testmp" == input)
 			{
-				MPInt@ num = MPInt(12345);
-				Send("MPInt test: " + num.toString() + "\r\n");
+				MPInt@ num = MPInt(-12345);
+				Send("MPInt test: '" + num.toString() + "'\r\n");
+				num = 67890;
+
+				Send("MPInt test two: '" + num.toString() + "'\r\n");
 			}
 		}
 	}

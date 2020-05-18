@@ -1,6 +1,7 @@
 #ifndef MPNUMBERS_H_
 #define MPNUMBERS_H_
 #include <string>
+#include "utils.h"
 #include "gmp/gmp.h"
 #include "as_refcountedobj.h"
 
@@ -18,44 +19,54 @@ class MPInt:
 {
 
 public:
-	static MPInt* Factory(long int initvalue)
+	static MPInt* Factory(int initvalue)
 	{
+		dbgprintf("MPInt construction with value: %d\n", initvalue);
 		return new MPInt(initvalue);
 	}
 
-	MPInt(long int initvalue = 0)
+	MPInt(int initvalue = 0)
 	{
 		mpz_init(m_value);
-		mpz_set_ui(m_value, initvalue);
+		mpz_set_si(m_value, initvalue);
 	}
 
 	~MPInt()
 	{
+		dbgprintf("Destroying mpint\n");
 		mpz_clear(m_value);
 	}
 
 	//Assignment operators
 	MPInt& operator=(const MPInt& other)
 	{
+		dbgprintf("MPInt copy assignment\n");
 		mpz_set(m_value, other.m_value);
+		AddRef();
 		return *this;
 	}
 
 	MPInt& operator=(const unsigned int num)
 	{
+		dbgprintf("Unsigned int assignment\n");
 		mpz_set_ui(m_value, num);
+		AddRef();
 		return *this;
 	}
 
-	MPInt& operator=(const long int num)
+	MPInt& operator=(const int num)
 	{
+		dbgprintf("Signed int assignment: %d\n", num);
 		mpz_set_si(m_value, num);
+		AddRef();
 		return *this;
 	}
 
 	MPInt& operator=(const double num)
 	{
+		dbgprintf("Double assignment.\n");
 		mpz_set_d(m_value, num);
+		AddRef();
 		return *this;
 	}
 
@@ -101,14 +112,7 @@ public:
 	}
 
 	//Conversion operators
-	const std::string toString()
-	{
-		std::string retval;
-		size_t minsize = mpz_sizeinbase(m_value, 10) + 2;
-		retval.resize(minsize);
-		mpz_get_str(&retval[0], 10, m_value);
-		return retval;
-	}
+	const std::string toString();
 private:
 	mpz_t m_value;
 };

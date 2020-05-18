@@ -2737,7 +2737,7 @@ configure:21372: $? = 0
 configure:21372: result: yes
 configure:21372: checking for attr_get
 configure:21372: gcc -o conftest -O2 -pedantic -fomit-frame-pointer -m64 -mtune=skylake -march=broadwell   conftest.c  >&5
-/usr/bin/ld: /tmp/ccCElm8I.o: in function `main':
+/usr/bin/ld: /tmp/ccLUJYPN.o: in function `main':
 conftest.c:(.text.startup+0x7): undefined reference to `attr_get'
 collect2: error: ld returned 1 exit status
 configure:21372: $? = 1
@@ -2854,7 +2854,7 @@ configure:21372: $? = 0
 configure:21372: result: yes
 configure:21372: checking for cputime
 configure:21372: gcc -o conftest -O2 -pedantic -fomit-frame-pointer -m64 -mtune=skylake -march=broadwell   conftest.c  >&5
-/usr/bin/ld: /tmp/cc4pJKay.o: in function `main':
+/usr/bin/ld: /tmp/ccstq66C.o: in function `main':
 conftest.c:(.text.startup+0x7): undefined reference to `cputime'
 collect2: error: ld returned 1 exit status
 configure:21372: $? = 1
@@ -2980,7 +2980,7 @@ configure:21372: $? = 0
 configure:21372: result: yes
 configure:21372: checking for getsysinfo
 configure:21372: gcc -o conftest -O2 -pedantic -fomit-frame-pointer -m64 -mtune=skylake -march=broadwell   conftest.c  >&5
-/usr/bin/ld: /tmp/ccFa992d.o: in function `main':
+/usr/bin/ld: /tmp/cciIeFag.o: in function `main':
 conftest.c:(.text.startup+0x7): undefined reference to `getsysinfo'
 collect2: error: ld returned 1 exit status
 configure:21372: $? = 1
@@ -3131,7 +3131,7 @@ configure:21372: $? = 0
 configure:21372: result: yes
 configure:21372: checking for processor_info
 configure:21372: gcc -o conftest -O2 -pedantic -fomit-frame-pointer -m64 -mtune=skylake -march=broadwell   conftest.c  >&5
-/usr/bin/ld: /tmp/ccHTrjEQ.o: in function `main':
+/usr/bin/ld: /tmp/ccpp8Clk.o: in function `main':
 conftest.c:(.text.startup+0x7): undefined reference to `processor_info'
 collect2: error: ld returned 1 exit status
 configure:21372: $? = 1
@@ -3255,7 +3255,7 @@ configure: failed program was:
 configure:21372: result: no
 configure:21372: checking for pstat_getprocessor
 configure:21372: gcc -o conftest -O2 -pedantic -fomit-frame-pointer -m64 -mtune=skylake -march=broadwell   conftest.c  >&5
-/usr/bin/ld: /tmp/ccGNWp8c.o: in function `main':
+/usr/bin/ld: /tmp/ccwrqi0B.o: in function `main':
 conftest.c:(.text.startup+0x7): undefined reference to `pstat_getprocessor'
 collect2: error: ld returned 1 exit status
 configure:21372: $? = 1
@@ -3383,7 +3383,7 @@ configure:21372: $? = 0
 configure:21372: result: yes
 configure:21372: checking for read_real_time
 configure:21372: gcc -o conftest -O2 -pedantic -fomit-frame-pointer -m64 -mtune=skylake -march=broadwell   conftest.c  >&5
-/usr/bin/ld: /tmp/cc2VbBb2.o: in function `main':
+/usr/bin/ld: /tmp/ccG88rxW.o: in function `main':
 conftest.c:(.text.startup+0x7): undefined reference to `read_real_time'
 collect2: error: ld returned 1 exit status
 configure:21372: $? = 1
@@ -3516,13 +3516,13 @@ configure:21372: $? = 0
 configure:21372: result: yes
 configure:21372: checking for sigstack
 configure:21372: gcc -o conftest -O2 -pedantic -fomit-frame-pointer -m64 -mtune=skylake -march=broadwell   conftest.c  >&5
-/usr/bin/ld: /tmp/ccJuaSme.o: in function `main':
+/usr/bin/ld: /tmp/ccrACsHq.o: in function `main':
 conftest.c:(.text.startup+0x7): warning: the `sigstack' function is dangerous.  `sigaltstack' should be used instead.
 configure:21372: $? = 0
 configure:21372: result: yes
 configure:21372: checking for syssgi
 configure:21372: gcc -o conftest -O2 -pedantic -fomit-frame-pointer -m64 -mtune=skylake -march=broadwell   conftest.c  >&5
-/usr/bin/ld: /tmp/ccXjlZqU.o: in function `main':
+/usr/bin/ld: /tmp/ccIzEu57.o: in function `main':
 conftest.c:(.text.startup+0x7): undefined reference to `syssgi'
 collect2: error: ld returned 1 exit status
 configure:21372: $? = 1
@@ -3687,7 +3687,7 @@ configure:21372: $? = 0
 configure:21372: result: yes
 configure:21372: checking for sysctlbyname
 configure:21372: gcc -o conftest -O2 -pedantic -fomit-frame-pointer -m64 -mtune=skylake -march=broadwell   conftest.c  >&5
-/usr/bin/ld: /tmp/ccjSSwh0.o: in function `main':
+/usr/bin/ld: /tmp/ccwkjKF7.o: in function `main':
 conftest.c:(.text.startup+0x7): undefined reference to `sysctlbyname'
 collect2: error: ld returned 1 exit status
 configure:21372: $? = 1
@@ -4572,10 +4572,10 @@ configure:24596: checking lex output file root
 configure:24610: result: lex.yy
 configure:24615: checking lex library
 configure:24629: gcc -o conftest -O2 -pedantic -fomit-frame-pointer -m64 -mtune=skylake -march=broadwell   conftest.c   >&5
-/usr/bin/ld: /tmp/ccVQZLCW.o: in function `yylex':
+/usr/bin/ld: /tmp/cc60whid.o: in function `yylex':
 conftest.c:(.text+0xed9): undefined reference to `yywrap'
 /usr/bin/ld: conftest.c:(.text+0x116b): undefined reference to `yywrap'
-/usr/bin/ld: /tmp/ccVQZLCW.o: in function `main':
+/usr/bin/ld: /tmp/cc60whid.o: in function `main':
 conftest.c:(.text.startup+0x9): undefined reference to `yywrap'
 collect2: error: ld returned 1 exit status
 configure:24629: $? = 1

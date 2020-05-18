@@ -1,6 +1,7 @@
 #include "mpnumbers.h"
 #include "angelscript.h"
 #include "utils.h"
+#include <vector>
 
 int RegisterMPIntClass(asIScriptEngine* engine)
 {
@@ -19,7 +20,7 @@ int RegisterMPIntClass(asIScriptEngine* engine)
 						"int& f()", asMETHOD(MPInt, GetWeakRefFlag),
 						asCALL_THISCALL);
 	result = engine->RegisterObjectBehaviour("MPInt", asBEHAVE_FACTORY,
-						"MPInt@ f(int num = 0)", asFUNCTION(MPInt::Factory),
+						"MPInt@ f(int32 num = 0)", asFUNCTION(MPInt::Factory),
 						asCALL_CDECL);
 	RETURNFAIL_IF(result < 0);
 
@@ -37,7 +38,7 @@ int RegisterMPIntClass(asIScriptEngine* engine)
 
 
 	result = engine->RegisterObjectMethod("MPInt", "MPInt@ opAssign(const int n)",
-					asMETHODPR(MPInt, operator=, (const long int), MPInt&),
+					asMETHODPR(MPInt, operator=, (const int), MPInt&),
 					asCALL_THISCALL);
 	RETURNFAIL_IF(result < 0);
 
@@ -56,7 +57,7 @@ int RegisterMPIntClass(asIScriptEngine* engine)
 	//Comparison operators
 
 	//Conversion operations
-	result = engine->RegisterObjectMethod("MPInt", "string toString()",
+	result = engine->RegisterObjectMethod("MPInt", "const string toString()",
 					asMETHOD(MPInt, toString), asCALL_THISCALL);
 	return result;
 }
@@ -67,3 +68,16 @@ int RegisterMPNumberClasses(asIScriptEngine* engine)
 	result = RegisterMPIntClass(engine);
 	return result;
 }
+
+const std::string MPInt::toString()
+{
+	size_t minsize = mpz_sizeinbase(m_value, 10) + 2;
+	std::string retval;
+	retval.resize(minsize);
+	mpz_get_str(&retval[0], 10, m_value);
+	retval.resize(retval.find('\0'));
+	dbgprintf("Converting mpint to %s\n", retval.c_str());
+	return retval;
+}
+
+
