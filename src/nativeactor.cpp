@@ -82,7 +82,7 @@ NativeActor* NativeActor::Factory()
 }
 
 NativeActor::NativeActor(asIScriptObject *obj) :
-	AS_RefCountedObj(obj)
+	AS_RefCountedProxiedObj(obj)
 {
 	hrt_prioq_create(&m_action_queue, 32);
 	pthread_mutex_init(&m_action_queue_mtx, 0);

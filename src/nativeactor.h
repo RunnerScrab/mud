@@ -14,7 +14,7 @@ class asIScriptEngine;
 
 //The application-backed portion of the script Actor class
 
-class NativeActor : public AS_RefCountedObj
+class NativeActor : public AS_RefCountedProxiedObj
 {
 	struct hrt_prioq m_action_queue;
 	pthread_mutex_t m_action_queue_mtx;
