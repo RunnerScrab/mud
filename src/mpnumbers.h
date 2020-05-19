@@ -18,26 +18,27 @@ class asILockableSharedBool;
 class MemoryPoolAllocator
 {
 public:
-	MemoryPoolAllocator(size_t size)
+	MemoryPoolAllocator()
 	{
-		AllocPool_Init(&m_allocpool, 64, size);
+		MemoryPool_Init(&m_mempool, 64);
 	}
+
 	~MemoryPoolAllocator()
 	{
-		AllocPool_Destroy(&m_allocpool);
+		MemoryPool_Destroy(&m_mempool);
 	}
 
 	void* Alloc(size_t size)
 	{
-		return AllocPool_Alloc(&m_allocpool);
+		return MemoryPool_Alloc(&m_mempool, size);
 	}
 
 	void Free(size_t size, void* p)
 	{
-		AllocPool_Free(&m_allocpool, p);
+		MemoryPool_Free(&m_mempool, size, p);
 	}
 private:
-	AllocPool m_allocpool;
+	MemoryPool m_mempool;
 };
 
 class MPInt:
@@ -48,15 +49,17 @@ public:
 	static MPInt* Factory(int initvalue)
 	{
 		dbgprintf("MPInt construction with value: %d\n", initvalue);
-		void* pMem = m_static_mempool.Alloc(sizeof(MPInt));
-		return new(pMem) MPInt(initvalue);
+		//void* pMem = m_static_mempool.Alloc(sizeof(MPInt));
+		//return new(pMem) MPInt(initvalue);
+		return new MPInt(initvalue);
 	}
 
-	void operator delete(void* p)
+/*	void operator delete(void* p)
 	{
 		dbgprintf("Freeing MPInt mempool slot.\n");
 		m_static_mempool.Free(sizeof(MPInt), p);
 	}
+*/
 
 	MPInt(int initvalue = 0)
 	{

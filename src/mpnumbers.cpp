@@ -3,8 +3,7 @@
 #include "utils.h"
 #include <vector>
 
-MemoryPoolAllocator MPInt::m_static_mempool(sizeof(MPInt));
-
+MemoryPoolAllocator MPInt::m_static_mempool;
 
 int RegisterMPIntClass(asIScriptEngine* engine)
 {
