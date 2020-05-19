@@ -3,6 +3,9 @@
 #include "utils.h"
 #include <vector>
 
+MemoryPoolAllocator MPInt::m_static_mempool(sizeof(MPInt));
+
+
 int RegisterMPIntClass(asIScriptEngine* engine)
 {
 	int result = 0;
@@ -79,5 +82,3 @@ const std::string MPInt::toString()
 	dbgprintf("Converting mpint to %s\n", retval.c_str());
 	return retval;
 }
-
-

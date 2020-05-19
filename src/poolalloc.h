@@ -43,9 +43,10 @@ struct MemoryPool
 	ssize_t alloc_pool_count;
 	ssize_t default_init_elcount;
 	pthread_mutex_t mtx;
+	unsigned char bIsInitialized;
 };
 
-void MemoryPool_Init(struct MemoryPool *mp);
+void MemoryPool_Init(struct MemoryPool *mp, size_t init_capacity);
 
 //Uses internal mutex
 void* MemoryPool_Alloc(struct MemoryPool *mp, ssize_t block_size);

@@ -46,7 +46,7 @@ void as_MessageCallback(const asSMessageInfo *msg, void *param)
 int AngelScriptManager_InitEngine(AngelScriptManager *manager,
 		struct Server *server)
 {
-	MemoryPool_Init(&manager->mem_pool);
+	MemoryPool_Init(&manager->mem_pool, 32);
 	manager->server = server;
 	manager->engine = asCreateScriptEngine();
 	manager->engine->SetEngineProperty(asEP_BUILD_WITHOUT_LINE_CUES, true);

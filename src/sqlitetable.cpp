@@ -50,7 +50,7 @@ SQLiteColumn::SQLiteColumn(SQLiteColumn &&other)
 }
 
 sqlite3 *SQLiteTable::m_static_pDB = 0;
-struct Database* SQLiteTable::m_pDatabaseMetadata = 0;
+struct Database *SQLiteTable::m_pDatabaseMetadata = 0;
 
 void SQLiteTable::SetDBConnection(sqlite3 *pDB)
 {
@@ -62,7 +62,7 @@ sqlite3* SQLiteTable::GetDBConnection()
 	return m_static_pDB;
 }
 
-void SQLiteTable::SetDatabaseMetadataPtr(struct Database* dbd)
+void SQLiteTable::SetDatabaseMetadataPtr(struct Database *dbd)
 {
 	m_pDatabaseMetadata = dbd;
 }
@@ -71,7 +71,6 @@ struct Database* SQLiteTable::GetDatabaseMetadataPtr()
 {
 	return m_pDatabaseMetadata;
 }
-
 
 #ifndef TESTING_
 int RegisterDBTable(sqlite3 *sqldb, asIScriptEngine *sengine)
@@ -784,7 +783,7 @@ int SQLiteTable::StoreRow(SQLiteRow *pRow, SQLiteRow *pParentRow)
 		return SQLITE_ERROR;
 	}
 
-	std::set < std::string > columnset;
+	std::set<std::string> columnset;
 	if (SQLITE_OK != GetTableColumns(m_pDB, m_tablename.c_str(), columnset))
 	{
 		dbgprintf("Couldn't get table columns.\n");
@@ -860,6 +859,8 @@ int SQLiteTable::PerformUpsert(SQLiteRow *pRow, SQLiteRow *pParentRow)
 		SQLiteColumn *pcol = m_columns[idx];
 		SQLiteVariant *var = pRow->GetColumnValue(pcol->GetName());
 
+		//The code in this if is specifically for when no foreign key
+		//has been provided
 		if (pcol && pcol->IsForeignKey() && !var)
 		{
 			dbgprintf("Found foreign keycol '%s'\n", pcol->GetName().c_str());

@@ -86,7 +86,7 @@ NativeActor::NativeActor(asIScriptObject *obj) :
 {
 	hrt_prioq_create(&m_action_queue, 32);
 	pthread_mutex_init(&m_action_queue_mtx, 0);
-	MemoryPool_Init(&m_mem_pool);
+	MemoryPool_Init(&m_mem_pool, 32);
 	ActionScheduler *scheduler = GetActionScheduler();
 	if (scheduler)
 	{

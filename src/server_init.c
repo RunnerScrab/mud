@@ -98,7 +98,7 @@ static int Server_InitializeADTs(struct Server *server)
 	}
 	ServerLog(SERVERLOG_STATUS, "Initialized cryptographic module.");
 
-	MemoryPool_Init(&server->mem_pool);
+	MemoryPool_Init(&server->mem_pool, 32);
 
 	return 0;
 }

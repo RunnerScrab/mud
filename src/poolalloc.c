@@ -5,12 +5,13 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-void MemoryPool_Init(struct MemoryPool *mp)
+void MemoryPool_Init(struct MemoryPool *mp, size_t init_capacity)
 {
 	pthread_mutex_init(&(mp->mtx), 0);
 	mp->alloc_pools = 0;
 	mp->alloc_pool_count = 0;
-	mp->default_init_elcount = 32;
+	mp->default_init_elcount = init_capacity;
+	mp->bIsInitialized = 1;
 }
 
 struct AllocPool* MemoryPool_FindAllocPool(struct MemoryPool *mp,

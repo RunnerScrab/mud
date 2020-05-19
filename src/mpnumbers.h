@@ -1,6 +1,7 @@
 #ifndef MPNUMBERS_H_
 #define MPNUMBERS_H_
 #include <string>
+#include "poolalloc.h"
 #include "utils.h"
 #include "gmp/gmp.h"
 #include "as_refcountedobj.h"
@@ -14,21 +15,52 @@
 class asIScriptEngine;
 class asILockableSharedBool;
 
+class MemoryPoolAllocator
+{
+public:
+	MemoryPoolAllocator(size_t size)
+	{
+		AllocPool_Init(&m_allocpool, 64, size);
+	}
+	~MemoryPoolAllocator()
+	{
+		AllocPool_Destroy(&m_allocpool);
+	}
+
+	void* Alloc(size_t size)
+	{
+		return AllocPool_Alloc(&m_allocpool);
+	}
+
+	void Free(size_t size, void* p)
+	{
+		AllocPool_Free(&m_allocpool, p);
+	}
+private:
+	AllocPool m_allocpool;
+};
+
 class MPInt:
 	public AS_RefCountedObj
 {
-
+	static MemoryPoolAllocator m_static_mempool;
 public:
 	static MPInt* Factory(int initvalue)
 	{
 		dbgprintf("MPInt construction with value: %d\n", initvalue);
-		return new MPInt(initvalue);
+		void* pMem = m_static_mempool.Alloc(sizeof(MPInt));
+		return new(pMem) MPInt(initvalue);
+	}
+
+	void operator delete(void* p)
+	{
+		dbgprintf("Freeing MPInt mempool slot.\n");
+		m_static_mempool.Free(sizeof(MPInt), p);
 	}
 
 	MPInt(int initvalue = 0)
 	{
-		mpz_init(m_value);
-		mpz_set_si(m_value, initvalue);
+		mpz_init_set_si(m_value, initvalue);
 	}
 
 	~MPInt()
@@ -109,6 +141,42 @@ public:
 	bool isNotSame(const MPInt& other)
 	{
 		return !isSame(other);
+	}
+
+	//Arithmetic operators
+	MPInt* operator+(const MPInt& other)
+	{
+		MPInt* temporary = MPInt::Factory(0);
+		mpz_add(temporary->m_value, m_value, other.m_value);
+		return temporary;
+	}
+
+	MPInt* operator-()
+	{
+		MPInt* temporary = MPInt::Factory(0);
+		mpz_neg(temporary->m_value, m_value);
+		return temporary;
+	}
+
+	MPInt* operator-(const MPInt& other)
+	{
+		MPInt* temporary = MPInt::Factory(0);
+		mpz_sub(temporary->m_value, m_value, other.m_value);
+		return temporary;
+	}
+
+	MPInt* operator*(const MPInt& other)
+	{
+		MPInt* temporary = MPInt::Factory(0);
+		mpz_mul(temporary->m_value, m_value, other.m_value);
+		return temporary;
+	}
+
+	MPInt* Abs()
+	{
+		MPInt* temporary = MPInt::Factory(0);
+		mpz_abs(temporary->m_value, m_value);
+		return temporary;
 	}
 
 	//Conversion operators

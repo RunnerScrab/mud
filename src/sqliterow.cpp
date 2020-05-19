@@ -77,47 +77,52 @@ int RegisterDBRow(sqlite3 *sqldb, asIScriptEngine *engine)
 	RETURNFAIL_IF(result < 0);
 
 	result = engine->RegisterObjectMethod("DBRow",
-			"bool GetColValue(const string& in, int& out)",
-			asMETHODPR(SQLiteRow, GetColumnValue, (const std::string&, int&),
-					bool), asCALL_THISCALL);
+			"bool GetColValue(const string& in, int& out, int dv = 0)",
+			asMETHODPR(SQLiteRow, GetColumnValue,
+					(const std::string&, int&, int), bool), asCALL_THISCALL);
 	RETURNFAIL_IF(result < 0);
 
 	result = engine->RegisterObjectMethod("DBRow",
-			"bool GetColValue(const string& in, uint32& out)",
+			"bool GetColValue(const string& in, uint32& out, uint32 dv = 0)",
 			asMETHODPR(SQLiteRow, GetColumnValue,
-					(const std::string&, unsigned int&), bool),
+					(const std::string&, unsigned int&, unsigned int), bool),
 			asCALL_THISCALL);
 	RETURNFAIL_IF(result < 0);
 
 	result = engine->RegisterObjectMethod("DBRow",
-			"bool GetColValue(const string& in, int64& out)",
+			"bool GetColValue(const string& in, int64& out, int64 dv = 0)",
 			asMETHODPR(SQLiteRow, GetColumnValue,
-					(const std::string&, long long&), bool), asCALL_THISCALL);
+					(const std::string&, long long&, long long), bool),
+			asCALL_THISCALL);
+	RETURNFAIL_IF(result < 0);
+
+	result =
+			engine->RegisterObjectMethod("DBRow",
+					"bool GetColValue(const string& in, uint64& out, uint64 dv = 0)",
+					asMETHODPR(SQLiteRow, GetColumnValue,
+							(const std::string&, unsigned long long&, unsigned long long),
+							bool), asCALL_THISCALL);
 	RETURNFAIL_IF(result < 0);
 
 	result = engine->RegisterObjectMethod("DBRow",
-			"bool GetColValue(const string& in, uint64& out)",
+			"bool GetColValue(const string& in, float& out, float dv = 0.f)",
 			asMETHODPR(SQLiteRow, GetColumnValue,
-					(const std::string&, unsigned long long&), bool),
+					(const std::string&, float&, float), bool),
 			asCALL_THISCALL);
 	RETURNFAIL_IF(result < 0);
 
 	result = engine->RegisterObjectMethod("DBRow",
-			"bool GetColValue(const string& in, float& out)",
-			asMETHODPR(SQLiteRow, GetColumnValue, (const std::string&, float&),
-					bool), asCALL_THISCALL);
-	RETURNFAIL_IF(result < 0);
-
-	result = engine->RegisterObjectMethod("DBRow",
-			"bool GetColValue(const string& in, double& out)",
-			asMETHODPR(SQLiteRow, GetColumnValue, (const std::string&, double&),
-					bool), asCALL_THISCALL);
-	RETURNFAIL_IF(result < 0);
-
-	result = engine->RegisterObjectMethod("DBRow",
-			"bool GetColValue(const string& in, string& out)",
+			"bool GetColValue(const string& in, double& out, double dv = 0.0)",
 			asMETHODPR(SQLiteRow, GetColumnValue,
-					(const std::string&, std::string&), bool), asCALL_THISCALL);
+					(const std::string&, double&, double), bool),
+			asCALL_THISCALL);
+	RETURNFAIL_IF(result < 0);
+
+	result = engine->RegisterObjectMethod("DBRow",
+			"bool GetColValue(const string& in, string& out, string dv = \"\")",
+			asMETHODPR(SQLiteRow, GetColumnValue,
+					(const std::string&, std::string&, std::string), bool),
+			asCALL_THISCALL);
 	RETURNFAIL_IF(result < 0);
 
 	result = engine->RegisterObjectMethod("DBRow",
@@ -365,7 +370,7 @@ SQLiteVariant* SQLiteRow::GetColumnValue(const std::string &colname)
 	return m_valuemap[colname];
 }
 
-bool SQLiteRow::GetColumnValue(const std::string &colname, int &out)
+bool SQLiteRow::GetColumnValue(const std::string &colname, int &out, int defval)
 {
 	SQLiteVariant *var = m_valuemap[colname];
 	if (var)
@@ -375,11 +380,13 @@ bool SQLiteRow::GetColumnValue(const std::string &colname, int &out)
 	}
 	else
 	{
+		out = defval;
 		return false;
 	}
 }
 
-bool SQLiteRow::GetColumnValue(const std::string &colname, unsigned int &out)
+bool SQLiteRow::GetColumnValue(const std::string &colname, unsigned int &out,
+		unsigned int defval)
 {
 	SQLiteVariant *var = m_valuemap[colname];
 	if (var)
@@ -389,11 +396,13 @@ bool SQLiteRow::GetColumnValue(const std::string &colname, unsigned int &out)
 	}
 	else
 	{
+		out = defval;
 		return false;
 	}
 }
 
-bool SQLiteRow::GetColumnValue(const std::string &colname, long long &out)
+bool SQLiteRow::GetColumnValue(const std::string &colname, long long &out,
+		long long defval)
 {
 	SQLiteVariant *var = m_valuemap[colname];
 	if (var)
@@ -403,12 +412,13 @@ bool SQLiteRow::GetColumnValue(const std::string &colname, long long &out)
 	}
 	else
 	{
+		out = defval;
 		return false;
 	}
 }
 
 bool SQLiteRow::GetColumnValue(const std::string &colname,
-		unsigned long long &out)
+		unsigned long long &out, unsigned long long defval)
 {
 	SQLiteVariant *var = m_valuemap[colname];
 	if (var)
@@ -418,11 +428,13 @@ bool SQLiteRow::GetColumnValue(const std::string &colname,
 	}
 	else
 	{
+		out = defval;
 		return false;
 	}
 }
 
-bool SQLiteRow::GetColumnValue(const std::string &colname, float &out)
+bool SQLiteRow::GetColumnValue(const std::string &colname, float &out,
+		float defval)
 {
 	SQLiteVariant *var = m_valuemap[colname];
 	if (var)
@@ -432,11 +444,13 @@ bool SQLiteRow::GetColumnValue(const std::string &colname, float &out)
 	}
 	else
 	{
+		out = defval;
 		return false;
 	}
 }
 
-bool SQLiteRow::GetColumnValue(const std::string &colname, double &out)
+bool SQLiteRow::GetColumnValue(const std::string &colname, double &out,
+		double defval)
 {
 	SQLiteVariant *var = m_valuemap[colname];
 	if (var)
@@ -446,11 +460,13 @@ bool SQLiteRow::GetColumnValue(const std::string &colname, double &out)
 	}
 	else
 	{
+		out = defval;
 		return false;
 	}
 }
 
-bool SQLiteRow::GetColumnValue(const std::string &colname, std::string &out)
+bool SQLiteRow::GetColumnValue(const std::string &colname, std::string &out,
+		std::string defval)
 {
 	SQLiteVariant *var = m_valuemap[colname];
 	if (var)
@@ -460,6 +476,7 @@ bool SQLiteRow::GetColumnValue(const std::string &colname, std::string &out)
 	}
 	else
 	{
+		out = defval;
 		return false;
 	}
 }
@@ -467,6 +484,7 @@ bool SQLiteRow::GetColumnValue(const std::string &colname, std::string &out)
 bool SQLiteRow::GetColumnValue(const std::string &colname,
 		std::vector<char> &out)
 {
+	//A default value for a raw data makes no sense
 	SQLiteVariant *var = m_valuemap[colname];
 	if (var)
 	{
@@ -491,6 +509,8 @@ bool SQLiteRow::GetColumnValue(const std::string &colname, UUID &uuidout)
 	}
 	else
 	{
+		//The default value provided by the UUID class is
+		//the only default value which makes sense
 		return false;
 	}
 }

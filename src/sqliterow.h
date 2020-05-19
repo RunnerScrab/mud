@@ -52,13 +52,16 @@ public:
 
 	SQLiteVariant* GetColumnValue(const std::string &colname);
 
-	bool GetColumnValue(const std::string &colname, int &out);
-	bool GetColumnValue(const std::string &colname, unsigned int &out);
-	bool GetColumnValue(const std::string &colname, long long &out);
-	bool GetColumnValue(const std::string &colname, unsigned long long &out);
-	bool GetColumnValue(const std::string &colname, float &out);
-	bool GetColumnValue(const std::string &colname, double &out);
-	bool GetColumnValue(const std::string &colname, std::string &out);
+	bool GetColumnValue(const std::string &colname, int &out, int defval = 0);
+	bool GetColumnValue(const std::string &colname, unsigned int &out,
+			unsigned int defval = 0);
+	bool GetColumnValue(const std::string &colname, long long &out,
+			long long defval = 0);
+	bool GetColumnValue(const std::string &colname, unsigned long long &out,
+			unsigned long long defval = 0);
+	bool GetColumnValue(const std::string &colname, float &out, float defval = 0.f);
+	bool GetColumnValue(const std::string &colname, double &out, double defval = 0.0);
+	bool GetColumnValue(const std::string &colname, std::string &out, std::string defval = "");
 	bool GetColumnValue(const std::string &colname, std::vector<char> &out);
 	bool GetColumnValue(const std::string &colname, UUID &uuidout);
 
