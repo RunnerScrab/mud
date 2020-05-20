@@ -3,7 +3,20 @@
 #include "utils.h"
 #include <vector>
 
-MemoryPoolAllocator MPInt::m_static_mempool;
+MemoryPoolAllocator* MPInt::m_static_mempool;
+
+int MultiPrecisionLibrary_Init()
+{
+	MPInt::m_static_mempool = new MemoryPoolAllocator(sizeof(MPInt));
+	return 0;
+}
+
+int MultiPrecisionLibrary_Teardown()
+{
+	delete MPInt::m_static_mempool;
+	MPInt::m_static_mempool = 0;
+	return 0;
+}
 
 int RegisterMPIntClass(asIScriptEngine* engine)
 {

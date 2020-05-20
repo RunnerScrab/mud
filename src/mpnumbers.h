@@ -1,65 +1,80 @@
 #ifndef MPNUMBERS_H_
 #define MPNUMBERS_H_
+
+#ifdef __cplusplus
 #include <string>
+#include "as_refcountedobj.h"
+#endif
+
 #include "poolalloc.h"
 #include "utils.h"
 #include "gmp/gmp.h"
-#include "as_refcountedobj.h"
+
 
 /*
   Angelscript bindings to gmp multiprecision library. We bind
   the C interface directly, as Angelscript objects need special
   handling for reference counting
 */
-
+#ifdef __cplusplus
 class asIScriptEngine;
 class asILockableSharedBool;
 
 class MemoryPoolAllocator
 {
 public:
-	MemoryPoolAllocator()
+	MemoryPoolAllocator(size_t size)
 	{
-		MemoryPool_Init(&m_mempool, 64);
+		AllocPool_Init(&m_allocpool, 64, size);
 	}
 
 	~MemoryPoolAllocator()
 	{
-		MemoryPool_Destroy(&m_mempool);
+		AllocPool_Destroy(&m_allocpool);
 	}
 
-	void* Alloc(size_t size)
+	void* Alloc()
 	{
-		return MemoryPool_Alloc(&m_mempool, size);
+		return AllocPool_Alloc(&m_allocpool);
 	}
 
-	void Free(size_t size, void* p)
+	void Free(void* p)
 	{
-		MemoryPool_Free(&m_mempool, size, p);
+		AllocPool_Free(&m_allocpool, p);
 	}
 private:
-	MemoryPool m_mempool;
+	AllocPool m_allocpool;
 };
 
 class MPInt:
 	public AS_RefCountedObj
 {
-	static MemoryPoolAllocator m_static_mempool;
 public:
+	static MemoryPoolAllocator* m_static_mempool;
+
 	static MPInt* Factory(int initvalue)
 	{
-		dbgprintf("MPInt construction with value: %d\n", initvalue);
-		//void* pMem = m_static_mempool.Alloc(sizeof(MPInt));
-		//return new(pMem) MPInt(initvalue);
-		return new MPInt(initvalue);
+		if(m_static_mempool)
+		{
+			dbgprintf("MPInt construction with value: %d\n", initvalue);
+			void* pMem = m_static_mempool->Alloc();
+			return new(pMem) MPInt(initvalue);
+		}
+		else
+		{
+			return 0;
+		}
 	}
 
-/*	void operator delete(void* p)
+	void operator delete(void* p)
 	{
 		dbgprintf("Freeing MPInt mempool slot.\n");
-		m_static_mempool.Free(sizeof(MPInt), p);
+		if(m_static_mempool)
+		{
+			m_static_mempool->Free(p);
+		}
 	}
-*/
+
 
 	MPInt(int initvalue = 0)
 	{
@@ -191,4 +206,12 @@ private:
 int RegisterMPIntClass(asIScriptEngine* engine);
 int RegisterMPNumberClasses(asIScriptEngine *engine);
 
+extern "C"
+{
+#endif
+	int MultiPrecisionLibrary_Init();
+	int MultiPrecisionLibrary_Teardown();
+#ifdef __cplusplus
+}
+#endif
 #endif

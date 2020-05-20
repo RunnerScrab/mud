@@ -24,6 +24,7 @@
 #include "ansicolor.h"
 #include "rand.h"
 #include "crypto.h"
+#include "mpnumbers.h"
 
 #include "tickthread.h"
 
@@ -65,6 +66,14 @@ static int Server_LoadMOTD(struct Server *server)
 
 static int Server_InitializeADTs(struct Server *server)
 {
+	if(FAILURE(MultiPrecisionLibrary_Init()))
+	{
+		ServerLog(SERVERLOG_ERROR,
+			"Failed to initialize multiprecision library.");
+		Server_Stop(server);
+		return -1;
+	}
+
 	pthread_mutex_init(&server->timed_queue_mtx, 0);
 	prioq_create(&server->timed_queue, 32);
 
@@ -83,7 +92,7 @@ static int Server_InitializeADTs(struct Server *server)
 	if (FAILURE(RandGenerator_Init(&server->rand_generator)))
 	{
 		ServerLog(SERVERLOG_ERROR,
-				"FATAL: Failed to initialize random number generator!");
+			"FATAL: Failed to initialize random number generator!");
 		Server_Stop(server);
 		return -1;
 	}
@@ -368,4 +377,10 @@ void Server_Stop(struct Server *server)
 	//cannot release certain objects while the rest of the mud
 	//engine retains references to them.
 	Server_StopScriptEngine(server);
+}
+
+int Server_Teardown(struct Server* server)
+{
+	MultiPrecisionLibrary_Teardown();
+	return 0;
 }

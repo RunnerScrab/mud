@@ -106,6 +106,7 @@ int main(int argc, char **argv)
 
 	ServerLog(SERVERLOG_STATUS, "Server shutting down.");
 	Server_Stop(&server);
+	Server_Teardown(&server);
 	ServerLog(SERVERLOG_DEBUG, "%d unfreed allocations.\n",
 			toutstanding_allocs());
 	return 0;
