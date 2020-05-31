@@ -20,6 +20,8 @@
 class asIScriptEngine;
 class asILockableSharedBool;
 
+//What is really needed is a pool of mp numbers which have already been allocated
+//and only need to be cleared to reuse. The structs' functions internally perform dynamic allocation
 class MemoryPoolAllocator
 {
 public:
@@ -49,6 +51,7 @@ private:
 class MPInt:
 	public AS_RefCountedObj
 {
+	friend MPInt* operator-(const unsigned int a, const MPInt& mpnum);
 public:
 	static MemoryPoolAllocator* m_static_mempool;
 
@@ -56,7 +59,6 @@ public:
 	{
 		if(m_static_mempool)
 		{
-			dbgprintf("MPInt construction with value: %d\n", initvalue);
 			void* pMem = m_static_mempool->Alloc();
 			return new(pMem) MPInt(initvalue);
 		}
@@ -68,7 +70,6 @@ public:
 
 	void operator delete(void* p)
 	{
-		dbgprintf("Freeing MPInt mempool slot.\n");
 		if(m_static_mempool)
 		{
 			m_static_mempool->Free(p);
@@ -83,119 +84,61 @@ public:
 
 	~MPInt()
 	{
-		dbgprintf("Destroying mpint\n");
 		mpz_clear(m_value);
 	}
 
 	//Assignment operators
-	MPInt& operator=(const MPInt& other)
-	{
-		dbgprintf("MPInt copy assignment\n");
-		mpz_set(m_value, other.m_value);
-		AddRef();
-		return *this;
-	}
+	MPInt& operator=(const MPInt& other);
+	MPInt& operator=(const unsigned int num);
+	MPInt& operator=(const int num);
+	MPInt& operator=(const double num);
 
-	MPInt& operator=(const unsigned int num)
-	{
-		dbgprintf("Unsigned int assignment\n");
-		mpz_set_ui(m_value, num);
-		AddRef();
-		return *this;
-	}
-
-	MPInt& operator=(const int num)
-	{
-		dbgprintf("Signed int assignment: %d\n", num);
-		mpz_set_si(m_value, num);
-		AddRef();
-		return *this;
-	}
-
-	MPInt& operator=(const double num)
-	{
-		dbgprintf("Double assignment.\n");
-		mpz_set_d(m_value, num);
-		AddRef();
-		return *this;
-	}
+	//Assignment-arithmetic
+	MPInt& operator+=(const MPInt& other);
+	MPInt& operator+=(const unsigned int num);
+	MPInt& operator-=(const MPInt& other);
+	MPInt& operator-=(const unsigned int num);
+	MPInt& operator*=(const MPInt& other);
+	MPInt& operator*=(const unsigned int num);
+	MPInt& operator*=(const int num);
+	MPInt& operator/=(const MPInt& other);
+	MPInt& operator/=(const unsigned int num);
+	MPInt& operator%=(const MPInt& other);
+	MPInt& operator%=(const unsigned int);
 
 	//Comparison operators
-	bool operator==(const MPInt &other)
-	{
-		return 0 == mpz_cmp(m_value, other.m_value);
-	}
+	bool operator==(const MPInt &other) const;
+	bool operator==(const double num) const;
+	bool operator==(const int num) const;
+	bool operator==(const unsigned int num) const;
 
-	bool operator!=(const MPInt &other)
-	{
-		return 0;
-	}
+	int opCmp(const MPInt& other) const;
+	int opCmp(const double num) const;
+	int opCmp(const int num) const;
+	int opCmp(const unsigned int num) const;
 
-	bool operator>(const MPInt &other)
-	{
-		return mpz_cmp(m_value, other.m_value) > 0;
-	}
-
-	bool operator<(const MPInt &other)
-	{
-		return mpz_cmp(m_value, other.m_value) < 0;
-	}
-
-	bool operator>=(const MPInt &other)
-	{
-		return mpz_cmp(m_value, other.m_value) >= 0;
-	}
-
-	bool operator<=(const MPInt &other)
-	{
-		return mpz_cmp(m_value, other.m_value) <= 0;
-	}
-
-	bool isSame(const MPInt& other)
-	{
-		return &m_value == &other.m_value;
-	}
-
-	bool isNotSame(const MPInt& other)
-	{
-		return !isSame(other);
-	}
+	bool isSame(const MPInt& other) const; //Compares object references
+	bool isNotSame(const MPInt& other) const;
 
 	//Arithmetic operators
-	MPInt* operator+(const MPInt& other)
-	{
-		MPInt* temporary = MPInt::Factory(0);
-		mpz_add(temporary->m_value, m_value, other.m_value);
-		return temporary;
-	}
+	MPInt* operator+(const MPInt& other);
+	MPInt* operator+(const unsigned int num);
 
-	MPInt* operator-()
-	{
-		MPInt* temporary = MPInt::Factory(0);
-		mpz_neg(temporary->m_value, m_value);
-		return temporary;
-	}
+	MPInt* operator-();
+	MPInt* operator-(const MPInt& other);
+	MPInt* operator-(const unsigned int num);
 
-	MPInt* operator-(const MPInt& other)
-	{
-		MPInt* temporary = MPInt::Factory(0);
-		mpz_sub(temporary->m_value, m_value, other.m_value);
-		return temporary;
-	}
+	MPInt* operator*(const MPInt& other);
+	MPInt* operator*(const unsigned int num);
+	MPInt* operator*(const int num);
 
-	MPInt* operator*(const MPInt& other)
-	{
-		MPInt* temporary = MPInt::Factory(0);
-		mpz_mul(temporary->m_value, m_value, other.m_value);
-		return temporary;
-	}
+	MPInt* operator/(const MPInt& other);
+	MPInt* operator/(const unsigned int num);
 
-	MPInt* Abs()
-	{
-		MPInt* temporary = MPInt::Factory(0);
-		mpz_abs(temporary->m_value, m_value);
-		return temporary;
-	}
+	MPInt* operator%(const MPInt& other);
+	MPInt* operator%(const unsigned int);
+	MPInt* pow(const unsigned int power);
+	MPInt* Abs();
 
 	//Conversion operators
 	const std::string toString();
@@ -205,6 +148,8 @@ private:
 
 int RegisterMPIntClass(asIScriptEngine* engine);
 int RegisterMPNumberClasses(asIScriptEngine *engine);
+
+MPInt* operator-(const unsigned int a, const MPInt& mpnum);
 
 extern "C"
 {

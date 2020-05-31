@@ -107,6 +107,7 @@ void Server_HandleClientDisconnect(struct Server *pServer,
 	ServerLog(SERVERLOG_DEBUG, "Client has a refcount of %lu\n", cref);
 	if (!cref)
 	{
+
 		AngelScriptManager_CallOnPlayerDisconnect(&pServer->as_manager,
 				pClient);
 		size_t foundkey = 0;

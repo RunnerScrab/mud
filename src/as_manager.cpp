@@ -102,6 +102,11 @@ static size_t GetFileLength(FILE *fp)
 	return len;
 }
 
+asIScriptModule* AngelScriptManager_GetMainModule(AngelScriptManager* manager)
+{
+	return manager->main_module;
+}
+
 int AngelScriptManager_InitAPI(AngelScriptManager *manager)
 {
 	int result = 0;

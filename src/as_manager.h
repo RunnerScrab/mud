@@ -68,34 +68,37 @@ typedef struct
 extern "C"
 {
 #endif
-extern int AngelScriptManager_InitEngine(AngelScriptManager *manager, struct
-		Server* server);
-extern int AngelScriptManager_LoadServerConfig(AngelScriptManager *manager,
-		struct ServerConfig *server);
-extern int AngelScriptManager_LoadScripts(AngelScriptManager *manager,
-		const char *script_dir);
-extern int AngelScriptManager_InitAPI(AngelScriptManager *manager);
-extern void AngelScriptManager_RunWorldTick(AngelScriptManager *manager);
-extern void AngelScriptManager_ReleaseEngine(AngelScriptManager *manager);
 
-extern int AngelScriptManager_PrepareScriptPersistenceLayer(
+asIScriptModule* AngelScriptManager_GetMainModule(AngelScriptManager* manager);
+
+int AngelScriptManager_InitEngine(AngelScriptManager *manager, struct
+		Server* server);
+int AngelScriptManager_LoadServerConfig(AngelScriptManager *manager,
+		struct ServerConfig *server);
+int AngelScriptManager_LoadScripts(AngelScriptManager *manager,
+		const char *script_dir);
+int AngelScriptManager_InitAPI(AngelScriptManager *manager);
+void AngelScriptManager_RunWorldTick(AngelScriptManager *manager);
+void AngelScriptManager_ReleaseEngine(AngelScriptManager *manager);
+
+int AngelScriptManager_PrepareScriptPersistenceLayer(
 		AngelScriptManager *manager);
 
-extern void AngelScriptManager_CallOnPlayerConnect(AngelScriptManager *manager,
+void AngelScriptManager_CallOnPlayerConnect(AngelScriptManager *manager,
 		struct Client *pClient);
-extern void AngelScriptManager_CallOnPlayerDisconnect(
+void AngelScriptManager_CallOnPlayerDisconnect(
 		AngelScriptManager *manager, struct Client *pClient);
-extern void AngelScriptManager_CallOnPlayerInput(AngelScriptManager *manager,
+void AngelScriptManager_CallOnPlayerInput(AngelScriptManager *manager,
 		struct Client *pClient, const char *input);
 
-extern int ASContextPool_Init(ASContextPool*, asIScriptEngine*,
+int ASContextPool_Init(ASContextPool*, asIScriptEngine*,
 		AngelScriptManager*, size_t);
-extern asIScriptContext* ASContextPool_GetContextAt(ASContextPool *pPool,
+asIScriptContext* ASContextPool_GetContextAt(ASContextPool *pPool,
 		size_t idx);
-extern void ASContextPool_ReturnContextByIndex(ASContextPool *pPool,
+void ASContextPool_ReturnContextByIndex(ASContextPool *pPool,
 		size_t idx);
-extern size_t ASContextPool_GetFreeContextIndex(ASContextPool *pPool);
-extern void ASContextPool_Destroy(ASContextPool *pPool);
+size_t ASContextPool_GetFreeContextIndex(ASContextPool *pPool);
+void ASContextPool_Destroy(ASContextPool *pPool);
 
 #ifdef __cplusplus
 }
