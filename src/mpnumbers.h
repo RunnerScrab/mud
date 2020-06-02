@@ -4,6 +4,7 @@
 #ifdef __cplusplus
 #include <string>
 #include "as_refcountedobj.h"
+#include "rwlockingobj.h"
 #endif
 
 #include "poolalloc.h"
@@ -49,13 +50,26 @@ private:
 };
 
 class MPInt:
-	public AS_RefCountedObj
+	public AS_RefCountedObj, public RWLockingObject
 {
 	friend MPInt* operator-(const unsigned int a, const MPInt& mpnum);
 public:
 	static MemoryPoolAllocator* m_static_mempool;
 
-	static MPInt* Factory(int initvalue)
+	template <typename T> static MPInt* Factory(const T initvalue)
+	{
+		if(m_static_mempool)
+		{
+			void* pMem = m_static_mempool->Alloc();
+			return new(pMem) MPInt(initvalue);
+		}
+		else
+		{
+			return 0;
+		}
+	}
+
+	static MPInt* Factory(const MPInt& initvalue)
 	{
 		if(m_static_mempool)
 		{
@@ -76,10 +90,34 @@ public:
 		}
 	}
 
-
-	MPInt(int initvalue = 0)
+	MPInt(const MPInt& other)
 	{
-		mpz_init_set_si(m_value, initvalue);
+		other.ReadLock();
+		WriteLock();
+		mpz_init_set(m_value, other.m_value);
+		Unlock();
+		other.Unlock();
+	}
+
+	MPInt(const int initval = 0)
+	{
+		WriteLock();
+		mpz_init_set_si(m_value, initval);
+		Unlock();
+	}
+
+	MPInt(const unsigned int initval)
+	{
+		WriteLock();
+		mpz_init_set_ui(m_value, initval);
+		Unlock();
+	}
+
+	MPInt(const double initval)
+	{
+		WriteLock();
+		mpz_init_set_d(m_value, initval);
+		Unlock();
 	}
 
 	~MPInt()
@@ -105,7 +143,7 @@ public:
 	MPInt& operator/=(const unsigned int num);
 	MPInt& operator%=(const MPInt& other);
 	MPInt& operator%=(const unsigned int);
-
+	MPInt& powassign(const unsigned int power);
 	//Comparison operators
 	bool operator==(const MPInt &other) const;
 	bool operator==(const double num) const;

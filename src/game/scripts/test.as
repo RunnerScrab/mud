@@ -222,8 +222,12 @@ class Player
 				MPInt@ num = MPInt(-12345);
 				Send("MPInt test: '" + num.toString() + "'\r\n");
 				num = 67890;
-				MPInt@ num2 = num**3;
+
+				MPInt@ num2 = MPInt(num);
+				Send("MPInt num2 initialized to: " + num2.toString() + "\r\n");
+				num2 *= 3;
 				Send("MPInt test two: '" + num2.toString() + "'\r\n");
+
 			}
 		}
 	}

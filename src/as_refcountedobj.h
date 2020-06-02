@@ -38,7 +38,7 @@ public:
 	void AddRef();
 	void Release();
 	asILockableSharedBool* GetWeakRefFlag();
-private:
+protected:
 	int m_refcount;
 	asILockableSharedBool* m_weakrefflag;
 };
