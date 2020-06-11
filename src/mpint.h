@@ -5,11 +5,13 @@
 #include "as_refcountedobj.h"
 #include "rwlockingobj.h"
 #include "mpnumbers.h"
+#include "mpfloat.h"
 #include "poolalloc.h"
 #include "utils.h"
 #include "gmp/gmp.h"
 
 
+class MPFloat;
 /*
   Angelscript bindings to gmp multiprecision library. We bind
   the C interface directly, as Angelscript objects need special
@@ -19,6 +21,7 @@
 class MPInt:
 	public AS_RefCountedObj, public RWLockingObject
 {
+	friend class MPFloat;
 	friend MPInt* operator-(const unsigned int a, const MPInt& mpnum);
 public:
 	static MemoryPoolAllocator* m_static_mempool;
@@ -35,7 +38,7 @@ public:
 			return 0;
 		}
 	}
-
+/*
 	static MPInt* Factory(const MPInt& initvalue)
 	{
 		if(m_static_mempool)
@@ -48,7 +51,7 @@ public:
 			return 0;
 		}
 	}
-
+*/
 	void operator delete(void* p)
 	{
 		if(m_static_mempool)
@@ -56,6 +59,9 @@ public:
 			m_static_mempool->Free(p);
 		}
 	}
+
+
+	MPInt(const MPFloat& other);
 
 	MPInt(const MPInt& other)
 	{
@@ -97,6 +103,7 @@ public:
 	MPInt& operator=(const unsigned int num);
 	MPInt& operator=(const int num);
 	MPInt& operator=(const double num);
+	MPInt& operator=(const MPFloat& other);
 
 	//Assignment-arithmetic
 	MPInt& operator+=(const MPInt& other);

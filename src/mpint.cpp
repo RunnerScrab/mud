@@ -10,13 +10,13 @@ int RegisterMPIntClass(asIScriptEngine* engine)
 	result = engine->RegisterObjectType("MPInt", 0, asOBJ_REF);
 	RETURNFAIL_IF(result < 0);
 	/*
-	result = engine->RegisterObjectBehaviour("val", asBEHAVE_CONSTRUCT, "void f()",
-						 asFUNCTION(Constructor), asCALL_CDECL_OBJLAST);
-	RETURNFAIL_IF(result < 0);
+	  result = engine->RegisterObjectBehaviour("val", asBEHAVE_CONSTRUCT, "void f()",
+	  asFUNCTION(Constructor), asCALL_CDECL_OBJLAST);
+	  RETURNFAIL_IF(result < 0);
 
-	result = engine->RegisterObjectBehaviour("val", asBEHAVE_DESTRUCT, "void f()",
-					 asFUNCTION(Destructor), asCALL_CDECL_OBJLAST);
-	RETURNFAIL_IF(result < 0);
+	  result = engine->RegisterObjectBehaviour("val", asBEHAVE_DESTRUCT, "void f()",
+	  asFUNCTION(Destructor), asCALL_CDECL_OBJLAST);
+	  RETURNFAIL_IF(result < 0);
 	*/
 	//Reference and memory management
 	result = engine->RegisterObjectBehaviour("MPInt", asBEHAVE_ADDREF, "void f()",
@@ -254,6 +254,16 @@ int RegisterMPIntClass(asIScriptEngine* engine)
 	return result;
 }
 
+
+MPInt::MPInt(const MPFloat& other)
+{
+	other.ReadLock();
+	WriteLock();
+	mpz_init(m_value);
+	mpz_set_f(m_value, other.m_value);
+	Unlock();
+	other.Unlock();
+}
 
 const std::string MPInt::toString()
 {
