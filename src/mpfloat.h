@@ -33,19 +33,6 @@ public:
 		}
 	}
 
-/*	static MPFloat* Factory(const MPFloat& initvalue)
-	{
-		if(m_static_mempool)
-		{
-			void* pMem = m_static_mempool->Alloc();
-			return new(pMem) MPFloat(initvalue);
-		}
-		else
-		{
-			return 0;
-		}
-	}
-*/
 	void operator delete(void* p)
 	{
 		if(m_static_mempool)
@@ -92,6 +79,7 @@ public:
 	}
 
 	//Assignment operators
+	MPFloat& operator=(const MPInt& other);
 	MPFloat& operator=(const MPFloat& other);
 	MPFloat& operator=(const unsigned int num);
 	MPFloat& operator=(const int num);

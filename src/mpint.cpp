@@ -7,8 +7,6 @@ int RegisterMPIntClass(asIScriptEngine* engine)
 {
 	int result = 0;
 	//result = engine->RegisterObjectType("MPInt", sizeof(MPInt), asOBJ_VALUE);
-	result = engine->RegisterObjectType("MPInt", 0, asOBJ_REF);
-	RETURNFAIL_IF(result < 0);
 	/*
 	  result = engine->RegisterObjectBehaviour("val", asBEHAVE_CONSTRUCT, "void f()",
 	  asFUNCTION(Constructor), asCALL_CDECL_OBJLAST);
@@ -35,6 +33,13 @@ int RegisterMPIntClass(asIScriptEngine* engine)
 						 asFUNCTIONPR(MPInt::Factory, (const MPInt&), MPInt*),
 						 asCALL_CDECL);
 	RETURNFAIL_IF(result < 0);
+
+	result = engine->RegisterObjectBehaviour("MPInt", asBEHAVE_FACTORY,
+						 "MPInt@ f(const MPFloat& in)",
+						 asFUNCTIONPR(MPInt::Factory, (const MPFloat&), MPInt*),
+						 asCALL_CDECL);
+	RETURNFAIL_IF(result < 0);
+
 
 	result = engine->RegisterObjectBehaviour("MPInt", asBEHAVE_FACTORY,
 						 "MPInt@ f(const int32 num = 0)",

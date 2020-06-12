@@ -7,8 +7,6 @@ int RegisterMPFloatClass(asIScriptEngine* engine)
 {
 	int result = 0;
 	//result = engine->RegisterObjectType("MPFloat", sizeof(MPFloat), asOBJ_VALUE);
-	result = engine->RegisterObjectType("MPFloat", 0, asOBJ_REF);
-	RETURNFAIL_IF(result < 0);
 	/*
 	result = engine->RegisterObjectBehaviour("val", asBEHAVE_CONSTRUCT, "void f()",
 						 asFUNCTION(Constructor), asCALL_CDECL_OBJLAST);
@@ -35,6 +33,13 @@ int RegisterMPFloatClass(asIScriptEngine* engine)
 						 asFUNCTIONPR(MPFloat::Factory, (const MPFloat&), MPFloat*),
 						 asCALL_CDECL);
 	RETURNFAIL_IF(result < 0);
+
+	result = engine->RegisterObjectBehaviour("MPFloat", asBEHAVE_FACTORY,
+						 "MPFloat@ f(const MPInt& in)",
+						 asFUNCTIONPR(MPFloat::Factory, (const MPInt&), MPFloat*),
+						 asCALL_CDECL);
+	RETURNFAIL_IF(result < 0);
+
 
 	result = engine->RegisterObjectBehaviour("MPFloat", asBEHAVE_FACTORY,
 						 "MPFloat@ f(const int32 num = 0)",
@@ -221,7 +226,6 @@ int RegisterMPFloatClass(asIScriptEngine* engine)
 					      asCALL_THISCALL);
 	RETURNFAIL_IF(result < 0);
 
-
 	//Conversion operations
 	result = engine->RegisterObjectMethod("MPFloat", "const string toString(int digits = 3)",
 					      asMETHOD(MPFloat, toString), asCALL_THISCALL);
@@ -268,6 +272,18 @@ MPFloat& MPFloat::operator=(const MPFloat& other)
 	other.ReadLock();
 	WriteLock();
 	mpf_set(m_value, other.m_value);
+	AddRef();
+	Unlock();
+	other.Unlock();
+	return *this;
+}
+
+MPFloat& MPFloat::operator=(const MPInt& other)
+{
+	other.ReadLock();
+	WriteLock();
+	mpf_init(m_value);
+	mpf_set_z(m_value, other.m_value);
 	AddRef();
 	Unlock();
 	other.Unlock();

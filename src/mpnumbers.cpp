@@ -30,6 +30,17 @@ int MultiPrecisionLibrary_Teardown()
 int RegisterMPNumberClasses(asIScriptEngine* engine)
 {
 	int result = 0;
+
+	result = engine->RegisterObjectType("MPInt", 0, asOBJ_REF);
+	RETURNFAIL_IF(result < 0);
+
+	result = engine->RegisterObjectType("MPFloat", 0, asOBJ_REF);
+	RETURNFAIL_IF(result < 0);
+
 	result = RegisterMPIntClass(engine);
+	RETURNFAIL_IF(result < 0);
+
+	result = RegisterMPFloatClass(engine);
+
 	return result;
 }
