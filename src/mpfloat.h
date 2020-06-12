@@ -69,6 +69,7 @@ public:
 	MPFloat(const double initval)
 	{
 		WriteLock();
+		dbgprintf("MPFloat double constructor called.\n");
 		mpf_init_set_d(m_value, initval);
 		Unlock();
 	}

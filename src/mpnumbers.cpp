@@ -16,6 +16,7 @@ int MultiPrecisionLibrary_Init()
 {
 	g_static_mempool = new MemoryPoolAllocator(sizeof(MPInt));
 	MPInt::m_static_mempool = g_static_mempool;
+	MPFloat::m_static_mempool = new MemoryPoolAllocator(sizeof(MPFloat));
 	return 0;
 }
 
@@ -23,6 +24,7 @@ int MultiPrecisionLibrary_Teardown()
 {
 	delete g_static_mempool;
 	MPInt::m_static_mempool = 0;
+	delete MPFloat::m_static_mempool;
 	return 0;
 }
 

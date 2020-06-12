@@ -227,7 +227,8 @@ class Player
 				Send("MPInt num2 initialized to: " + num2.toString() + "\r\n");
 				num2 *= 3;
 				Send("MPInt test two: '" + num2.toString() + "'\r\n");
-
+				MPFloat@ fpoint = MPFloat(1.5);
+				Send("MPFloat test result: " + fpoint.toString() + "\r\n");
 			}
 		}
 	}
