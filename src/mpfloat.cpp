@@ -6,78 +6,33 @@ MemoryPoolAllocator* MPFloat::m_static_mempool;
 int RegisterMPFloatClass(asIScriptEngine* engine)
 {
 	int result = 0;
-	//result = engine->RegisterObjectType("MPFloat", sizeof(MPFloat), asOBJ_VALUE);
-	/*
-	result = engine->RegisterObjectBehaviour("val", asBEHAVE_CONSTRUCT, "void f()",
-						 asFUNCTION(Constructor), asCALL_CDECL_OBJLAST);
+
+	result = engine->RegisterObjectBehaviour("MPFloat", asBEHAVE_CONSTRUCT, "void f()",
+						 asFUNCTION(MPFloat::ASConstructor), asCALL_CDECL_OBJLAST);
 	RETURNFAIL_IF(result < 0);
 
-	result = engine->RegisterObjectBehaviour("val", asBEHAVE_DESTRUCT, "void f()",
-					 asFUNCTION(Destructor), asCALL_CDECL_OBJLAST);
+	result = engine->RegisterObjectBehaviour("MPFloat", asBEHAVE_DESTRUCT, "void f()",
+						 asFUNCTION(MPFloat::ASDestructor), asCALL_CDECL_OBJLAST);
 	RETURNFAIL_IF(result < 0);
-	*/
-	//Reference and memory management
-	result = engine->RegisterObjectBehaviour("MPFloat", asBEHAVE_ADDREF, "void f()",
-						 asMETHOD(MPFloat, AddRef), asCALL_THISCALL);
-	RETURNFAIL_IF(result < 0);
-	result = engine->RegisterObjectBehaviour("MPFloat", asBEHAVE_RELEASE, "void f()",
-						 asMETHOD(MPFloat, Release), asCALL_THISCALL);
-	RETURNFAIL_IF(result < 0);
-	result = engine->RegisterObjectBehaviour("MPFloat", asBEHAVE_GET_WEAKREF_FLAG,
-						 "int& f()", asMETHOD(MPFloat, GetWeakRefFlag),
-						 asCALL_THISCALL);
-	RETURNFAIL_IF(result < 0);
-
-	result = engine->RegisterObjectBehaviour("MPFloat", asBEHAVE_FACTORY,
-						 "MPFloat@ f(const MPFloat& in)",
-						 asFUNCTIONPR(MPFloat::Factory, (const MPFloat&), MPFloat*),
-						 asCALL_CDECL);
-	RETURNFAIL_IF(result < 0);
-
-	result = engine->RegisterObjectBehaviour("MPFloat", asBEHAVE_FACTORY,
-						 "MPFloat@ f(const MPInt& in)",
-						 asFUNCTIONPR(MPFloat::Factory, (const MPInt&), MPFloat*),
-						 asCALL_CDECL);
-	RETURNFAIL_IF(result < 0);
-
-
-	result = engine->RegisterObjectBehaviour("MPFloat", asBEHAVE_FACTORY,
-						 "MPFloat@ f(const int32 num = 0)",
-						 asFUNCTIONPR(MPFloat::Factory, (const int), MPFloat*),
-						 asCALL_CDECL);
-	RETURNFAIL_IF(result < 0);
-
-	result = engine->RegisterObjectBehaviour("MPFloat", asBEHAVE_FACTORY,
-						 "MPFloat@ f(const uint32 num)",
-						 asFUNCTIONPR(MPFloat::Factory, (const unsigned int), MPFloat*),
-						 asCALL_CDECL);
-	RETURNFAIL_IF(result < 0);
-
-	result = engine->RegisterObjectBehaviour("MPFloat", asBEHAVE_FACTORY,
-						 "MPFloat@ f(const double num)",
-						 asFUNCTIONPR(MPFloat::Factory, (const double), MPFloat*),
-						 asCALL_CDECL);
-	RETURNFAIL_IF(result < 0);
-
 	//Assignment operators
 
-	result = engine->RegisterObjectMethod("MPFloat", "MPFloat@ opAssign(const MPFloat &in)",
+	result = engine->RegisterObjectMethod("MPFloat", "MPFloat& opAssign(const MPFloat &in)",
 					      asMETHODPR(MPFloat, operator=, (const MPFloat&), MPFloat&),
 					      asCALL_THISCALL);
 	RETURNFAIL_IF(result < 0);
 
-	result = engine->RegisterObjectMethod("MPFloat", "MPFloat@ opAssign(const uint32 n)",
+	result = engine->RegisterObjectMethod("MPFloat", "MPFloat& opAssign(const uint32 n)",
 					      asMETHODPR(MPFloat, operator=, (const unsigned int), MPFloat&),
 					      asCALL_THISCALL);
 	RETURNFAIL_IF(result < 0);
 
 
-	result = engine->RegisterObjectMethod("MPFloat", "MPFloat@ opAssign(const int n)",
+	result = engine->RegisterObjectMethod("MPFloat", "MPFloat& opAssign(const int n)",
 					      asMETHODPR(MPFloat, operator=, (const int), MPFloat&),
 					      asCALL_THISCALL);
 	RETURNFAIL_IF(result < 0);
 
-	result = engine->RegisterObjectMethod("MPFloat", "MPFloat@ opAssign(const double n)",
+	result = engine->RegisterObjectMethod("MPFloat", "MPFloat& opAssign(const double n)",
 					      asMETHODPR(MPFloat, operator=, (const double), MPFloat&),
 					      asCALL_THISCALL);
 	RETURNFAIL_IF(result < 0);
@@ -123,105 +78,99 @@ int RegisterMPFloatClass(asIScriptEngine* engine)
 					      asCALL_THISCALL);
 	RETURNFAIL_IF(result < 0);
 
-	result = engine->RegisterObjectMethod("MPFloat", "bool opEquals(const MPFloat@ h)",
-					      asMETHODPR(MPFloat, isSame, (const MPFloat&) const, bool),
-					      asCALL_THISCALL);
-	RETURNFAIL_IF(result < 0);
-
 	//Arithmetic-assignment operators
 
-	result = engine->RegisterObjectMethod("MPFloat", "MPFloat@ opAddAssign(const MPFloat& in)",
+	result = engine->RegisterObjectMethod("MPFloat", "MPFloat& opAddAssign(const MPFloat& in)",
 					      asMETHODPR(MPFloat, operator+=, (const MPFloat&), MPFloat&),
 					      asCALL_THISCALL);
 	RETURNFAIL_IF(result < 0);
 
-	result = engine->RegisterObjectMethod("MPFloat", "MPFloat@ opAddAssign(const uint32 num)",
+	result = engine->RegisterObjectMethod("MPFloat", "MPFloat& opAddAssign(const uint32 num)",
 					      asMETHODPR(MPFloat, operator+=, (const unsigned int), MPFloat&),
 					      asCALL_THISCALL);
 	RETURNFAIL_IF(result < 0);
 
-	result = engine->RegisterObjectMethod("MPFloat", "MPFloat@ opSubAssign(const MPFloat& in)",
+	result = engine->RegisterObjectMethod("MPFloat", "MPFloat& opSubAssign(const MPFloat& in)",
 					      asMETHODPR(MPFloat, operator-=, (const MPFloat&), MPFloat&),
 					      asCALL_THISCALL);
 	RETURNFAIL_IF(result < 0);
 
-	result = engine->RegisterObjectMethod("MPFloat", "MPFloat@ opSubAssign(const uint32 num)",
+	result = engine->RegisterObjectMethod("MPFloat", "MPFloat& opSubAssign(const uint32 num)",
 					      asMETHODPR(MPFloat, operator-=, (const unsigned int), MPFloat&),
 					      asCALL_THISCALL);
 	RETURNFAIL_IF(result < 0);
 
-	result = engine->RegisterObjectMethod("MPFloat", "MPFloat@ opMulAssign(const MPFloat& in)",
+	result = engine->RegisterObjectMethod("MPFloat", "MPFloat& opMulAssign(const MPFloat& in)",
 					      asMETHODPR(MPFloat, operator*=, (const MPFloat&), MPFloat&),
 					      asCALL_THISCALL);
 	RETURNFAIL_IF(result < 0);
 
-	result = engine->RegisterObjectMethod("MPFloat", "MPFloat@ opMulAssign(const uint32 num)",
+	result = engine->RegisterObjectMethod("MPFloat", "MPFloat& opMulAssign(const uint32 num)",
 					      asMETHODPR(MPFloat, operator*=, (const unsigned int), MPFloat&),
 					      asCALL_THISCALL);
 	RETURNFAIL_IF(result < 0);
-	result = engine->RegisterObjectMethod("MPFloat", "MPFloat@ opDivAssign(const MPFloat& in)",
+	result = engine->RegisterObjectMethod("MPFloat", "MPFloat& opDivAssign(const MPFloat& in)",
 					      asMETHODPR(MPFloat, operator/=, (const MPFloat&), MPFloat&),
 					      asCALL_THISCALL);
 	RETURNFAIL_IF(result < 0);
 
-	result = engine->RegisterObjectMethod("MPFloat", "MPFloat@ opDivAssign(const uint32 num)",
+	result = engine->RegisterObjectMethod("MPFloat", "MPFloat& opDivAssign(const uint32 num)",
 					      asMETHODPR(MPFloat, operator/=, (const unsigned int), MPFloat&),
 					      asCALL_THISCALL);
 	RETURNFAIL_IF(result < 0);
 
-	result = engine->RegisterObjectMethod("MPFloat", "MPFloat@ opPowAssign(const uint32 num)",
+	result = engine->RegisterObjectMethod("MPFloat", "MPFloat& opPowAssign(const uint32 num)",
 					      asMETHODPR(MPFloat, powassign, (const unsigned int), MPFloat&),
 					      asCALL_THISCALL);
 	RETURNFAIL_IF(result < 0);
 
-
 	//Arithmetic operators
-	result = engine->RegisterObjectMethod("MPFloat", "MPFloat@ opAdd(const MPFloat& in)",
+	result = engine->RegisterObjectMethod("MPFloat", "MPFloat& opAdd(const MPFloat& in)",
 					      asMETHODPR(MPFloat, operator+, (const MPFloat&), MPFloat*),
 					      asCALL_THISCALL);
 	RETURNFAIL_IF(result < 0);
 
-	result = engine->RegisterObjectMethod("MPFloat", "MPFloat@ opAdd(const uint32 num)",
+	result = engine->RegisterObjectMethod("MPFloat", "MPFloat& opAdd(const uint32 num)",
 					      asMETHODPR(MPFloat, operator+, (const unsigned int), MPFloat*),
 					      asCALL_THISCALL);
 	RETURNFAIL_IF(result < 0);
 
-	result = engine->RegisterObjectMethod("MPFloat", "MPFloat@ opSub(const MPFloat& in)",
+	result = engine->RegisterObjectMethod("MPFloat", "MPFloat& opSub(const MPFloat& in)",
 					      asMETHODPR(MPFloat, operator+, (const MPFloat&), MPFloat*),
 					      asCALL_THISCALL);
 	RETURNFAIL_IF(result < 0);
 
-	result = engine->RegisterObjectMethod("MPFloat", "MPFloat@ opSub(const uint32 num)",
+	result = engine->RegisterObjectMethod("MPFloat", "MPFloat& opSub(const uint32 num)",
 					      asMETHODPR(MPFloat, operator-, (const unsigned int), MPFloat*),
 					      asCALL_THISCALL);
 	RETURNFAIL_IF(result < 0);
 
-	result = engine->RegisterObjectMethod("MPFloat", "MPFloat@ opNeg(const MPFloat& in)",
+	result = engine->RegisterObjectMethod("MPFloat", "MPFloat& opNeg(const MPFloat& in)",
 					      asMETHODPR(MPFloat, operator-, (void), MPFloat*),
 					      asCALL_THISCALL);
 	RETURNFAIL_IF(result < 0);
 
-	result = engine->RegisterObjectMethod("MPFloat", "MPFloat@ opMul(const MPFloat& in)",
+	result = engine->RegisterObjectMethod("MPFloat", "MPFloat& opMul(const MPFloat& in)",
 					      asMETHODPR(MPFloat, operator*, (const MPFloat&), MPFloat*),
 					      asCALL_THISCALL);
 	RETURNFAIL_IF(result < 0);
 
-	result = engine->RegisterObjectMethod("MPFloat", "MPFloat@ opMul(const uint32 num)",
+	result = engine->RegisterObjectMethod("MPFloat", "MPFloat& opMul(const uint32 num)",
 					      asMETHODPR(MPFloat, operator*, (const unsigned int), MPFloat*),
 					      asCALL_THISCALL);
 	RETURNFAIL_IF(result < 0);
 
-	result = engine->RegisterObjectMethod("MPFloat", "MPFloat@ opDiv(const MPFloat& in)",
+	result = engine->RegisterObjectMethod("MPFloat", "MPFloat& opDiv(const MPFloat& in)",
 					      asMETHODPR(MPFloat, operator/, (const MPFloat&), MPFloat*),
 					      asCALL_THISCALL);
 	RETURNFAIL_IF(result < 0);
 
-	result = engine->RegisterObjectMethod("MPFloat", "MPFloat@ opDiv(const uint32 num)",
+	result = engine->RegisterObjectMethod("MPFloat", "MPFloat& opDiv(const uint32 num)",
 					      asMETHODPR(MPFloat, operator/, (const unsigned int), MPFloat*),
 					      asCALL_THISCALL);
 	RETURNFAIL_IF(result < 0);
 
-	result = engine->RegisterObjectMethod("MPFloat", "MPFloat@ opPow(const int num)",
+	result = engine->RegisterObjectMethod("MPFloat", "MPFloat& opPow(const int num)",
 					      asMETHODPR(MPFloat, pow, (const unsigned int), MPFloat*),
 					      asCALL_THISCALL);
 	RETURNFAIL_IF(result < 0);

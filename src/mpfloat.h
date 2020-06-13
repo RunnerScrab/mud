@@ -20,6 +20,16 @@ class MPFloat:
 public:
 	static MemoryPoolAllocator* m_static_mempool;
 
+	static void ASConstructor(void* pMem)
+	{
+		new(pMem) MPFloat(0.f);
+	}
+
+	static void ASDestructor(void* pMem)
+	{
+		reinterpret_cast<MPFloat*>(pMem)->~MPFloat();
+	}
+
 	template <typename T> static MPFloat* Factory(const T initvalue)
 	{
 		if(m_static_mempool)

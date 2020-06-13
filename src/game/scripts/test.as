@@ -219,15 +219,16 @@ class Player
 			}
 			else if("testmp" == input)
 			{
-				MPInt@ num = MPInt(-12345);
+				MPInt num = -12345;
 				Send("MPInt test: '" + num.toString() + "'\r\n");
 				num = 67890;
 
-				MPInt@ num2 = MPInt(num);
+				MPInt num2 = num;
 				Send("MPInt num2 initialized to: " + num2.toString() + "\r\n");
 				num2 *= 3;
 				Send("MPInt test two: '" + num2.toString() + "'\r\n");
-				MPFloat@ fpoint = MPFloat(1.5);
+				MPFloat fpoint = 1.5;
+				fpoint *= 2;
 				Send("MPFloat test result: " + fpoint.toString() + "\r\n");
 			}
 		}

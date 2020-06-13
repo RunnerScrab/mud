@@ -38,6 +38,15 @@ public:
 			return 0;
 		}
 	}
+	static void ASConstructor(void* pMem)
+	{
+		new(pMem) MPInt(0);
+	}
+
+	static void ASDestructor(void* pMem)
+	{
+		reinterpret_cast<MPInt*>(pMem)->~MPInt();
+	}
 /*
 	static MPInt* Factory(const MPInt& initvalue)
 	{

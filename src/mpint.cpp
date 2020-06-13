@@ -6,85 +6,39 @@ MemoryPoolAllocator* MPInt::m_static_mempool;
 int RegisterMPIntClass(asIScriptEngine* engine)
 {
 	int result = 0;
-	//result = engine->RegisterObjectType("MPInt", sizeof(MPInt), asOBJ_VALUE);
-	/*
-	  result = engine->RegisterObjectBehaviour("val", asBEHAVE_CONSTRUCT, "void f()",
-	  asFUNCTION(Constructor), asCALL_CDECL_OBJLAST);
-	  RETURNFAIL_IF(result < 0);
-
-	  result = engine->RegisterObjectBehaviour("val", asBEHAVE_DESTRUCT, "void f()",
-	  asFUNCTION(Destructor), asCALL_CDECL_OBJLAST);
-	  RETURNFAIL_IF(result < 0);
-	*/
-	//Reference and memory management
-	result = engine->RegisterObjectBehaviour("MPInt", asBEHAVE_ADDREF, "void f()",
-						 asMETHOD(MPInt, AddRef), asCALL_THISCALL);
-	RETURNFAIL_IF(result < 0);
-	result = engine->RegisterObjectBehaviour("MPInt", asBEHAVE_RELEASE, "void f()",
-						 asMETHOD(MPInt, Release), asCALL_THISCALL);
-	RETURNFAIL_IF(result < 0);
-	result = engine->RegisterObjectBehaviour("MPInt", asBEHAVE_GET_WEAKREF_FLAG,
-						 "int& f()", asMETHOD(MPInt, GetWeakRefFlag),
-						 asCALL_THISCALL);
+	result = engine->RegisterObjectBehaviour("MPInt", asBEHAVE_CONSTRUCT, "void f()",
+						 asFUNCTION(MPInt::ASConstructor), asCALL_CDECL_OBJLAST);
 	RETURNFAIL_IF(result < 0);
 
-	result = engine->RegisterObjectBehaviour("MPInt", asBEHAVE_FACTORY,
-						 "MPInt@ f(const MPInt& in)",
-						 asFUNCTIONPR(MPInt::Factory, (const MPInt&), MPInt*),
-						 asCALL_CDECL);
+	result = engine->RegisterObjectBehaviour("MPInt", asBEHAVE_DESTRUCT, "void f()",
+						 asFUNCTION(MPInt::ASDestructor), asCALL_CDECL_OBJLAST);
 	RETURNFAIL_IF(result < 0);
-
-	result = engine->RegisterObjectBehaviour("MPInt", asBEHAVE_FACTORY,
-						 "MPInt@ f(const MPFloat& in)",
-						 asFUNCTIONPR(MPInt::Factory, (const MPFloat&), MPInt*),
-						 asCALL_CDECL);
-	RETURNFAIL_IF(result < 0);
-
-
-	result = engine->RegisterObjectBehaviour("MPInt", asBEHAVE_FACTORY,
-						 "MPInt@ f(const int32 num = 0)",
-						 asFUNCTIONPR(MPInt::Factory, (const int), MPInt*),
-						 asCALL_CDECL);
-	RETURNFAIL_IF(result < 0);
-
-	result = engine->RegisterObjectBehaviour("MPInt", asBEHAVE_FACTORY,
-						 "MPInt@ f(const uint32 num)",
-						 asFUNCTIONPR(MPInt::Factory, (const unsigned int), MPInt*),
-						 asCALL_CDECL);
-	RETURNFAIL_IF(result < 0);
-
-	result = engine->RegisterObjectBehaviour("MPInt", asBEHAVE_FACTORY,
-						 "MPInt@ f(const double num)",
-						 asFUNCTIONPR(MPInt::Factory, (const double), MPInt*),
-						 asCALL_CDECL);
-	RETURNFAIL_IF(result < 0);
-
 	//Assignment operators
 
-	result = engine->RegisterObjectMethod("MPInt", "MPInt@ opAssign(const MPInt &in)",
+	result = engine->RegisterObjectMethod("MPInt", "MPInt& opAssign(const MPInt& in)",
 					      asMETHODPR(MPInt, operator=, (const MPInt&), MPInt&),
 					      asCALL_THISCALL);
 	RETURNFAIL_IF(result < 0);
 
-	result = engine->RegisterObjectMethod("MPInt", "MPInt@ opAssign(const uint32 n)",
+	result = engine->RegisterObjectMethod("MPInt", "MPInt& opAssign(const uint32 n)",
 					      asMETHODPR(MPInt, operator=, (const unsigned int), MPInt&),
 					      asCALL_THISCALL);
 	RETURNFAIL_IF(result < 0);
 
 
-	result = engine->RegisterObjectMethod("MPInt", "MPInt@ opAssign(const int n)",
+	result = engine->RegisterObjectMethod("MPInt", "MPInt& opAssign(const int n)",
 					      asMETHODPR(MPInt, operator=, (const int), MPInt&),
 					      asCALL_THISCALL);
 	RETURNFAIL_IF(result < 0);
 
-	result = engine->RegisterObjectMethod("MPInt", "MPInt@ opAssign(const double n)",
+	result = engine->RegisterObjectMethod("MPInt", "MPInt& opAssign(const double n)",
 					      asMETHODPR(MPInt, operator=, (const double), MPInt&),
 					      asCALL_THISCALL);
 	RETURNFAIL_IF(result < 0);
 
 	//Comparison operators
 
-	result = engine->RegisterObjectMethod("MPInt", "bool opEquals(const MPInt& in)",
+	result = engine->RegisterObjectMethod("MPInt", "bool opEquals(const MPInt& in) const",
 					      asMETHODPR(MPInt, operator==, (const MPInt&) const, bool),
 					      asCALL_THISCALL);
 	RETURNFAIL_IF(result < 0);
@@ -123,135 +77,129 @@ int RegisterMPIntClass(asIScriptEngine* engine)
 					      asCALL_THISCALL);
 	RETURNFAIL_IF(result < 0);
 
-	result = engine->RegisterObjectMethod("MPInt", "bool opEquals(const MPInt@ h)",
-					      asMETHODPR(MPInt, isSame, (const MPInt&) const, bool),
-					      asCALL_THISCALL);
-	RETURNFAIL_IF(result < 0);
-
 	//Arithmetic-assignment operators
 
-	result = engine->RegisterObjectMethod("MPInt", "MPInt@ opAddAssign(const MPInt& in)",
+	result = engine->RegisterObjectMethod("MPInt", "MPInt& opAddAssign(const MPInt& in)",
 					      asMETHODPR(MPInt, operator+=, (const MPInt&), MPInt&),
 					      asCALL_THISCALL);
 	RETURNFAIL_IF(result < 0);
 
-	result = engine->RegisterObjectMethod("MPInt", "MPInt@ opAddAssign(const uint32 num)",
+	result = engine->RegisterObjectMethod("MPInt", "MPInt& opAddAssign(const uint32 num)",
 					      asMETHODPR(MPInt, operator+=, (const unsigned int), MPInt&),
 					      asCALL_THISCALL);
 	RETURNFAIL_IF(result < 0);
 
-	result = engine->RegisterObjectMethod("MPInt", "MPInt@ opSubAssign(const MPInt& in)",
+	result = engine->RegisterObjectMethod("MPInt", "MPInt& opSubAssign(const MPInt& in)",
 					      asMETHODPR(MPInt, operator-=, (const MPInt&), MPInt&),
 					      asCALL_THISCALL);
 	RETURNFAIL_IF(result < 0);
 
-	result = engine->RegisterObjectMethod("MPInt", "MPInt@ opSubAssign(const uint32 num)",
+	result = engine->RegisterObjectMethod("MPInt", "MPInt& opSubAssign(const uint32 num)",
 					      asMETHODPR(MPInt, operator-=, (const unsigned int), MPInt&),
 					      asCALL_THISCALL);
 	RETURNFAIL_IF(result < 0);
 
-	result = engine->RegisterObjectMethod("MPInt", "MPInt@ opMulAssign(const MPInt& in)",
+	result = engine->RegisterObjectMethod("MPInt", "MPInt& opMulAssign(const MPInt& in)",
 					      asMETHODPR(MPInt, operator*=, (const MPInt&), MPInt&),
 					      asCALL_THISCALL);
 	RETURNFAIL_IF(result < 0);
 
-	result = engine->RegisterObjectMethod("MPInt", "MPInt@ opMulAssign(const uint32 num)",
+	result = engine->RegisterObjectMethod("MPInt", "MPInt& opMulAssign(const uint32 num)",
 					      asMETHODPR(MPInt, operator*=, (const unsigned int), MPInt&),
 					      asCALL_THISCALL);
 	RETURNFAIL_IF(result < 0);
 
-	result = engine->RegisterObjectMethod("MPInt", "MPInt@ opMulAssign(const int32 num)",
+	result = engine->RegisterObjectMethod("MPInt", "MPInt& opMulAssign(const int32 num)",
 					      asMETHODPR(MPInt, operator*=, (const int), MPInt&),
 					      asCALL_THISCALL);
 	RETURNFAIL_IF(result < 0);
 
-	result = engine->RegisterObjectMethod("MPInt", "MPInt@ opDivAssign(const MPInt& in)",
+	result = engine->RegisterObjectMethod("MPInt", "MPInt& opDivAssign(const MPInt& in)",
 					      asMETHODPR(MPInt, operator/=, (const MPInt&), MPInt&),
 					      asCALL_THISCALL);
 	RETURNFAIL_IF(result < 0);
 
-	result = engine->RegisterObjectMethod("MPInt", "MPInt@ opDivAssign(const uint32 num)",
+	result = engine->RegisterObjectMethod("MPInt", "MPInt& opDivAssign(const uint32 num)",
 					      asMETHODPR(MPInt, operator/=, (const unsigned int), MPInt&),
 					      asCALL_THISCALL);
 	RETURNFAIL_IF(result < 0);
 
-	result = engine->RegisterObjectMethod("MPInt", "MPInt@ opModAssign(const MPInt& in)",
+	result = engine->RegisterObjectMethod("MPInt", "MPInt& opModAssign(const MPInt& in)",
 					      asMETHODPR(MPInt, operator%=, (const MPInt&), MPInt&),
 					      asCALL_THISCALL);
 	RETURNFAIL_IF(result < 0);
 
-	result = engine->RegisterObjectMethod("MPInt", "MPInt@ opModAssign(const uint32 num)",
+	result = engine->RegisterObjectMethod("MPInt", "MPInt& opModAssign(const uint32 num)",
 					      asMETHODPR(MPInt, operator%=, (const unsigned int), MPInt&),
 					      asCALL_THISCALL);
 	RETURNFAIL_IF(result < 0);
 
-	result = engine->RegisterObjectMethod("MPInt", "MPInt@ opPowAssign(const uint32 num)",
+	result = engine->RegisterObjectMethod("MPInt", "MPInt& opPowAssign(const uint32 num)",
 					      asMETHODPR(MPInt, powassign, (const unsigned int), MPInt&),
 					      asCALL_THISCALL);
 	RETURNFAIL_IF(result < 0);
 
 
 	//Arithmetic operators
-	result = engine->RegisterObjectMethod("MPInt", "MPInt@ opAdd(const MPInt& in)",
+	result = engine->RegisterObjectMethod("MPInt", "MPInt& opAdd(const MPInt& in)",
 					      asMETHODPR(MPInt, operator+, (const MPInt&), MPInt*),
 					      asCALL_THISCALL);
 	RETURNFAIL_IF(result < 0);
 
-	result = engine->RegisterObjectMethod("MPInt", "MPInt@ opAdd(const uint32 num)",
+	result = engine->RegisterObjectMethod("MPInt", "MPInt& opAdd(const uint32 num)",
 					      asMETHODPR(MPInt, operator+, (const unsigned int), MPInt*),
 					      asCALL_THISCALL);
 	RETURNFAIL_IF(result < 0);
 
-	result = engine->RegisterObjectMethod("MPInt", "MPInt@ opSub(const MPInt& in)",
+	result = engine->RegisterObjectMethod("MPInt", "MPInt& opSub(const MPInt& in)",
 					      asMETHODPR(MPInt, operator+, (const MPInt&), MPInt*),
 					      asCALL_THISCALL);
 	RETURNFAIL_IF(result < 0);
 
-	result = engine->RegisterObjectMethod("MPInt", "MPInt@ opSub(const uint32 num)",
+	result = engine->RegisterObjectMethod("MPInt", "MPInt& opSub(const uint32 num)",
 					      asMETHODPR(MPInt, operator-, (const unsigned int), MPInt*),
 					      asCALL_THISCALL);
 	RETURNFAIL_IF(result < 0);
 
-	result = engine->RegisterObjectMethod("MPInt", "MPInt@ opNeg(const MPInt& in)",
+	result = engine->RegisterObjectMethod("MPInt", "MPInt& opNeg(const MPInt& in)",
 					      asMETHODPR(MPInt, operator-, (void), MPInt*),
 					      asCALL_THISCALL);
 	RETURNFAIL_IF(result < 0);
 
-	result = engine->RegisterObjectMethod("MPInt", "MPInt@ opMul(const MPInt& in)",
+	result = engine->RegisterObjectMethod("MPInt", "MPInt& opMul(const MPInt& in)",
 					      asMETHODPR(MPInt, operator*, (const MPInt&), MPInt*),
 					      asCALL_THISCALL);
 	RETURNFAIL_IF(result < 0);
 
-	result = engine->RegisterObjectMethod("MPInt", "MPInt@ opMul(const int num)",
+	result = engine->RegisterObjectMethod("MPInt", "MPInt& opMul(const int num)",
 					      asMETHODPR(MPInt, operator*, (const int), MPInt*),
 					      asCALL_THISCALL);
 	RETURNFAIL_IF(result < 0);
 
-	result = engine->RegisterObjectMethod("MPInt", "MPInt@ opMul(const uint32 num)",
+	result = engine->RegisterObjectMethod("MPInt", "MPInt& opMul(const uint32 num)",
 					      asMETHODPR(MPInt, operator*, (const unsigned int), MPInt*),
 					      asCALL_THISCALL);
 	RETURNFAIL_IF(result < 0);
 
-	result = engine->RegisterObjectMethod("MPInt", "MPInt@ opDiv(const MPInt& in)",
+	result = engine->RegisterObjectMethod("MPInt", "MPInt& opDiv(const MPInt& in)",
 					      asMETHODPR(MPInt, operator/, (const MPInt&), MPInt*),
 					      asCALL_THISCALL);
 	RETURNFAIL_IF(result < 0);
 
-	result = engine->RegisterObjectMethod("MPInt", "MPInt@ opDiv(const uint32 num)",
+	result = engine->RegisterObjectMethod("MPInt", "MPInt& opDiv(const uint32 num)",
 					      asMETHODPR(MPInt, operator/, (const unsigned int), MPInt*),
 					      asCALL_THISCALL);
 	RETURNFAIL_IF(result < 0);
 
-	result = engine->RegisterObjectMethod("MPInt", "MPInt@ opMod(const MPInt& in)",
+	result = engine->RegisterObjectMethod("MPInt", "MPInt& opMod(const MPInt& in)",
 					      asMETHODPR(MPInt, operator%, (const MPInt&), MPInt*),
 					      asCALL_THISCALL);
 	RETURNFAIL_IF(result < 0);
 
-	result = engine->RegisterObjectMethod("MPInt", "MPInt@ opPow(const int num)",
+	result = engine->RegisterObjectMethod("MPInt", "MPInt& opPow(const int num)",
 					      asMETHODPR(MPInt, pow, (const unsigned int), MPInt*),
 					      asCALL_THISCALL);
 	RETURNFAIL_IF(result < 0);
-
 
 	//Conversion operations
 	result = engine->RegisterObjectMethod("MPInt", "const string toString()",
