@@ -1,6 +1,6 @@
 #ifndef MPINT_H_
 #define MPINT_H_
-
+#include <vector>
 #include <string>
 #include "as_refcountedobj.h"
 #include "rwlockingobj.h"
@@ -38,6 +38,7 @@ public:
 			return 0;
 		}
 	}
+
 	static void ASConstructor(void* pMem)
 	{
 		new(pMem) MPInt(0);
@@ -47,28 +48,6 @@ public:
 	{
 		reinterpret_cast<MPInt*>(pMem)->~MPInt();
 	}
-/*
-	static MPInt* Factory(const MPInt& initvalue)
-	{
-		if(m_static_mempool)
-		{
-			void* pMem = m_static_mempool->Alloc();
-			return new(pMem) MPInt(initvalue);
-		}
-		else
-		{
-			return 0;
-		}
-	}
-*/
-	void operator delete(void* p)
-	{
-		if(m_static_mempool)
-		{
-			m_static_mempool->Free(p);
-		}
-	}
-
 
 	MPInt(const MPFloat& other);
 
@@ -113,7 +92,7 @@ public:
 	MPInt& operator=(const int num);
 	MPInt& operator=(const double num);
 	MPInt& operator=(const MPFloat& other);
-
+	MPInt& operator=(const std::string& str);
 	//Assignment-arithmetic
 	MPInt& operator+=(const MPInt& other);
 	MPInt& operator+=(const unsigned int num);
@@ -163,6 +142,9 @@ public:
 
 	//Conversion operators
 	const std::string toString();
+
+	void SerializeOut(std::vector<char>& outbuffer) const;
+	void SerializeIn(const char* inbuffer, const size_t len);
 private:
 	mpz_t m_value;
 };

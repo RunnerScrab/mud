@@ -36,6 +36,11 @@ int RegisterMPIntClass(asIScriptEngine* engine)
 					      asCALL_THISCALL);
 	RETURNFAIL_IF(result < 0);
 
+	result = engine->RegisterObjectMethod("MPInt", "MPInt& opAssign(const string& in)",
+					      asMETHODPR(MPInt, operator=, (const std::string&), MPInt&),
+					      asCALL_THISCALL);
+	RETURNFAIL_IF(result < 0);
+
 	//Comparison operators
 
 	result = engine->RegisterObjectMethod("MPInt", "bool opEquals(const MPInt& in) const",
@@ -231,6 +236,36 @@ const std::string MPInt::toString()
 	return retval;
 }
 
+void MPInt::SerializeOut(std::vector<char>& outbuffer) const
+{
+	size_t countp = 0;
+	char* data = reinterpret_cast<char*>(mpz_export(0, &countp, 1, 1, 1, 0, m_value));
+	unsigned char sign = (mpz_sgn(m_value) >= 0) ? 0 : 1;
+
+	if(data)
+	{
+		outbuffer.resize(countp + 1);
+		memcpy(&outbuffer[0], &sign, sizeof(char));
+		memcpy(&outbuffer[1], data, countp);
+
+		free(data);
+	}
+}
+
+void MPInt::SerializeIn(const char* inbuffer, const size_t len)
+{
+	unsigned char sign = 0;
+	memcpy(&sign, inbuffer, sizeof(char));
+
+	mpz_import(m_value, len - 1,
+		   1, 1, 1, 0, inbuffer + 1);
+	if(sign)
+	{
+		mpz_neg(m_value, m_value);
+	}
+}
+
+
 MPInt* operator-(const unsigned int a, const MPInt& mpnum)
 {
 	mpnum.ReadLock();
@@ -238,6 +273,14 @@ MPInt* operator-(const unsigned int a, const MPInt& mpnum)
 	mpz_ui_sub(temporary->m_value, a, mpnum.m_value);
 	mpnum.Unlock();
 	return temporary;
+}
+
+MPInt& MPInt::operator=(const std::string& str)
+{
+	WriteLock();
+	mpz_set_str(m_value, str.c_str(), 10);
+	Unlock();
+	return *this;
 }
 
 MPInt& MPInt::operator=(const MPInt& other)

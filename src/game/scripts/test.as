@@ -39,11 +39,14 @@ class Meower : TestInterface, IPersistent
 	uuid m_uuid;
 	string m_name;
 	array<TestPOD@> m_testpods;
+	MPInt m_xval;
 
 	void OnLoad(DBTable@ table, DBRow@ row)
 	{
 		row.GetColValue("uuid", m_uuid);
 		row.GetColValue("name", m_name);
+		row.GetColValue("xcoord", m_xval);
+
 		array<DBRow@> resultarr;
 		DBTable@ podsubtable = table.GetSubTable("testpodarray");
 		if(@podsubtable !is null)
@@ -66,6 +69,7 @@ class Meower : TestInterface, IPersistent
 		Log("Calling Meower's DefineSchema()\n");
 		table.AddUUIDCol("uuid", DBKEYTYPE_PRIMARY);
 		table.AddTextCol("name");
+		table.AddMPIntCol("xcoord");
 		DBTable@ testpodtable = table.CreateSubTable("testpodarray");
 		testpodtable.AddTextCol("name");
 		testpodtable.AddTextCol("ability");
@@ -78,6 +82,7 @@ class Meower : TestInterface, IPersistent
 		{
 			row.SetColValue("uuid", m_uuid);
 			row.SetColValue("name", m_name);
+			row.SetColValue("xcoord", m_xval);
 			DBTable@ testpodtable = table.GetSubTable("testpodarray");
 
 			for(int i = 0, len = m_testpods.length();
@@ -109,9 +114,11 @@ class Meower : TestInterface, IPersistent
 		Log("Meower constructing.\n");
 		TestInterfaceMethod();
 		m_name = "Meower";
+		m_xval = 123456;
 		m_uuid.Generate();
 		Log("Trying to make a meower. это - кошка!\n");
 		Log("Meower uuid: " + m_uuid.ToString() + "\n");
+		Log("Meower coord: " + m_xval.toString() + "\n");
 	}
 	~Meower()
 	{
@@ -219,7 +226,7 @@ class Player
 			}
 			else if("testmp" == input)
 			{
-				MPInt num = -12345;
+				MPInt num = "-1234567891011121314151617";
 				Send("MPInt test: '" + num.toString() + "'\r\n");
 				num = 67890;
 
@@ -227,7 +234,7 @@ class Player
 				Send("MPInt num2 initialized to: " + num2.toString() + "\r\n");
 				num2 *= 3;
 				Send("MPInt test two: '" + num2.toString() + "'\r\n");
-				MPFloat fpoint = 1.5;
+				MPFloat fpoint = "1.5092384230498230498234082";
 				fpoint *= 2;
 				Send("MPFloat test result: " + fpoint.toString() + "\r\n");
 			}
@@ -401,7 +408,9 @@ void TestDatabaseRead(Player@ player)
 	testtable.AddTextCol("name");
 	DBRow@ testrow = testtable.MakeRow();
 	uuid keyuuid;
-	keyuuid.FromString("0f808916-8723-409a-84de-9713ea82f10d");
+
+	keyuuid.FromString("4494a92a-232e-414f-a778-e30bc01e756c");
+
 	testrow.SetColValue("uuid", keyuuid);
 	testrow.LoadFromDB();
 	string name;
@@ -409,7 +418,7 @@ void TestDatabaseRead(Player@ player)
 
 	SuperMeower meower;
 
-	if(keyuuid.FromString("0f808916-8723-409a-84de-9713ea82f10d"))
+	if(keyuuid.FromString("2aa63706-bb74-46e4-8919-741f093c6029"))
 	{
 		try
 		{
@@ -417,6 +426,7 @@ void TestDatabaseRead(Player@ player)
 			{
 				player.Send("Successfully loaded meower with name " + meower.m_name + ".\r\n");
 				player.Send("Meower power: " + meower.m_superpowername + "\r\n");
+				player.Send("Meower xcoord: " + meower.m_xval.toString() + "\r\n");
 				for(int i = 0, len = meower.m_testpods.length(); i < len; ++i)
 				{
 					player.Send("Meower testpod name: " +meower.m_testpods[i].m_name +

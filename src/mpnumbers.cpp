@@ -12,6 +12,8 @@ void SetASException(const char* msg)
 
 int MultiPrecisionLibrary_Init()
 {
+	MPInt::m_static_mempool = new MemoryPoolAllocator(sizeof(MPInt));
+	MPFloat::m_static_mempool = new MemoryPoolAllocator(sizeof(MPFloat));
 	return 0;
 }
 

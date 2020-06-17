@@ -1,5 +1,6 @@
 #include "mpfloat.h"
 #include "angelscript.h"
+#include <vector>
 
 MemoryPoolAllocator* MPFloat::m_static_mempool;
 
@@ -36,6 +37,12 @@ int RegisterMPFloatClass(asIScriptEngine* engine)
 					      asMETHODPR(MPFloat, operator=, (const double), MPFloat&),
 					      asCALL_THISCALL);
 	RETURNFAIL_IF(result < 0);
+
+	result = engine->RegisterObjectMethod("MPFloat", "MPFloat& opAssign(const string& in)",
+					      asMETHODPR(MPFloat, operator=, (const std::string&), MPFloat&),
+					      asCALL_THISCALL);
+	RETURNFAIL_IF(result < 0);
+
 
 	//Comparison operators
 
@@ -191,6 +198,52 @@ MPFloat::MPFloat(const MPInt& other)
 	other.Unlock();
 }
 
+void MPFloat::SerializeOut(std::vector<char>& outbuffer) const
+{
+	mpz_t zpart;
+	int expt = m_value->_mp_exp;
+	size_t nz = m_value->_mp_size;
+	unsigned char sign = (mpf_sgn(m_value) >= 0) ? 0 : 1;
+
+	zpart->_mp_alloc = nz;
+	zpart->_mp_size = nz;
+	zpart->_mp_d = m_value->_mp_d;
+
+	size_t countp = 0;
+	char* data = reinterpret_cast<char*>(mpz_export(0, &countp, 1,
+							1, 1, 0, zpart));
+	if(data)
+	{
+		outbuffer.resize(countp + sizeof(int) + 1);
+		memcpy(&outbuffer[0], &sign, sizeof(char));
+		memcpy(&outbuffer[1], &expt, sizeof(int));
+		memcpy(&outbuffer[sizeof(int) + 1], data, countp);
+		free(data);
+	}
+}
+
+void MPFloat::SerializeIn(const char* inbuffer, const size_t len)
+{
+	mpz_t temp;
+	int exp = 0;
+	unsigned char sign = 0;
+
+	memcpy(&sign, inbuffer, sizeof(char));
+	memcpy(&exp, inbuffer + 1, sizeof(int));
+
+	mpz_init(temp);
+	mpz_import(temp, len - 1 - sizeof(int),
+		1, 1, 1, 0, inbuffer + (sizeof(int) + 1));
+	mpf_set_z(m_value, temp);
+	m_value->_mp_exp = exp;
+
+	if(sign)
+	{
+		mpf_neg(m_value, m_value);
+	}
+
+	mpz_clear(temp);
+}
 
 const std::string MPFloat::toString(int digits)
 {
@@ -265,6 +318,14 @@ MPFloat& MPFloat::operator=(const double num)
 	dbgprintf("Double assignment.\n");
 	mpf_set_d(m_value, num);
 	AddRef();
+	Unlock();
+	return *this;
+}
+
+MPFloat& MPFloat::operator=(const std::string& str)
+{
+	WriteLock();
+	mpf_set_str(m_value, str.c_str(), 10);
 	Unlock();
 	return *this;
 }

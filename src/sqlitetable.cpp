@@ -154,6 +154,25 @@ int RegisterDBTable(sqlite3 *sqldb, asIScriptEngine *sengine)
 							bool), asCALL_THISCALL);
 	RETURNFAIL_IF(result < 0);
 
+	result =
+			sengine->RegisterObjectMethod("DBTable",
+					"void AddMPIntCol(const string& in, DBColKeyType keytype"
+							" = DBKEYTYPE_NOTKEY, DBTable@ foreign_table = null, const string& in = \"\")",
+					asMETHODPR(SQLiteTable, AddBlobColumn,
+							(const std::string&, SQLiteColumn::KeyType, SQLiteTable*, const std::string&),
+							bool), asCALL_THISCALL);
+	RETURNFAIL_IF(result < 0);
+
+	result =
+			sengine->RegisterObjectMethod("DBTable",
+					"void AddMPFloatCol(const string& in, DBColKeyType keytype"
+							" = DBKEYTYPE_NOTKEY, DBTable@ foreign_table = null, const string& in = \"\")",
+					asMETHODPR(SQLiteTable, AddBlobColumn,
+							(const std::string&, SQLiteColumn::KeyType, SQLiteTable*, const std::string&),
+							bool), asCALL_THISCALL);
+	RETURNFAIL_IF(result < 0);
+
+
 	result = sengine->RegisterObjectMethod("DBTable",
 			"DBTable@ CreateSubTable(const string& in)",
 			asMETHODPR(SQLiteTable, CreateSubTable, (const std::string&),

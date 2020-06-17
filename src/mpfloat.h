@@ -1,6 +1,6 @@
 #ifndef MPFLOAT_H_
 #define MPFLOAT_H_
-
+#include <vector>
 #include <string>
 #include "as_refcountedobj.h"
 #include "rwlockingobj.h"
@@ -95,6 +95,7 @@ public:
 	MPFloat& operator=(const unsigned int num);
 	MPFloat& operator=(const int num);
 	MPFloat& operator=(const double num);
+	MPFloat& operator=(const std::string& str);
 
 	//Assignment-arithmetic
 	MPFloat& operator+=(const MPFloat& other);
@@ -141,6 +142,9 @@ public:
 
 	//Conversion operators
 	const std::string toString(int digits = 3);
+
+	void SerializeOut(std::vector<char>& outbuffer) const;
+	void SerializeIn(const char* inbuffer, const size_t len);
 private:
 	mpf_t m_value;
 };

@@ -12,6 +12,8 @@ struct Database;
 class asIScriptEngine;
 #endif
 
+class MPInt;
+class MPFloat;
 class SQLiteTable;
 struct sqlite3;
 //Contains the values of the row
@@ -49,6 +51,9 @@ public:
 	void SetColumnValue(const std::string &colname, const char *data,
 			const size_t datalen);
 	void SetColumnValue(const std::string &colname, const UUID &uuid);
+	void SetColumnValue(const std::string &colname, const MPFloat& mpfin);
+	void SetColumnValue(const std::string &colname, const MPInt& mpzin);
+
 
 	SQLiteVariant* GetColumnValue(const std::string &colname);
 
@@ -64,6 +69,8 @@ public:
 	bool GetColumnValue(const std::string &colname, std::string &out, std::string defval = "");
 	bool GetColumnValue(const std::string &colname, std::vector<char> &out);
 	bool GetColumnValue(const std::string &colname, UUID &uuidout);
+	bool GetColumnValue(const std::string &colname, MPFloat& mpfout);
+	bool GetColumnValue(const std::string &colname, MPInt& mpzout);
 
 	//These load/store functions just wrap SQLiteTable's
 	bool LoadFromDB();
