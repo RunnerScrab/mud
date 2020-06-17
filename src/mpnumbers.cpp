@@ -19,6 +19,8 @@ int MultiPrecisionLibrary_Init()
 
 int MultiPrecisionLibrary_Teardown()
 {
+	delete MPInt::m_static_mempool;
+	delete MPFloat::m_static_mempool;
 	return 0;
 }
 

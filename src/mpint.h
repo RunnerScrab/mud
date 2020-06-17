@@ -30,8 +30,8 @@ public:
 	{
 		if(m_static_mempool)
 		{
-			void* pMem = m_static_mempool->Alloc();
-			return new(pMem) MPInt(initvalue);
+			//void* pMem = m_static_mempool->Alloc();
+			return new MPInt(initvalue);
 		}
 		else
 		{

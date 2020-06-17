@@ -34,8 +34,8 @@ public:
 	{
 		if(m_static_mempool)
 		{
-			void* pMem = m_static_mempool->Alloc();
-			return new(pMem) MPFloat(initvalue);
+			//void* pMem = m_static_mempool->Alloc();
+			return new MPFloat(initvalue);
 		}
 		else
 		{
