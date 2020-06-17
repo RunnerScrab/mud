@@ -5,17 +5,21 @@
 \usepackage[T1]{fontenc}
 
 \lstset{
-	showstringspaces=false,
-	upquote=true,
-	language=c++,
-    frame=single, % draw a frame at the top and bottom of the code block
-    tabsize=4, % tab space width
-    basicstyle=\ttfamily,
-    keywordstyle=\color{blue}\ttfamily,
-    stringstyle=\color{red}\ttfamily,
-    commentstyle=\color{olive}\ttfamily,
-    morecomment=[l][\color{magenta}]{\#},
-    numbers=left % display line numbers on the left
+  showstringspaces=false,
+  upquote=true,
+  language=c++,
+  frame=single, % draw a frame at the top and bottom of the code block
+  tabsize=4, % tab space width
+  basicstyle=\ttfamily,
+  keywordstyle=\color{blue}\ttfamily,
+  stringstyle=\color{red}\ttfamily,
+  commentstyle=\color{olive}\ttfamily,
+  morecomment=[l][\color{magenta}]{\#},
+  numbers=left, % display line numbers on the left
+  columns=fullflexible,
+  frame=single,
+  breaklines=true,
+  postbreak=\mbox{\textcolor{red}{$\hookrightarrow$}\space},
 }
 
 \begin{document}
@@ -27,29 +31,43 @@ color codes, which the engine will translate into ANSI escape sequences. ANSI
 be used with hexadecimal RGB sequences (as in HTML).
 
 \begin{figure}[h!]
-\caption{Color codes}
-\begin{center}
-\begin{tabular}{|c|c|}
-\hline
-\texttt{\char0 black\char0} &Black foreground\\
-\texttt{\char0 blue\char0} &Blue foreground\\
-\texttt{\char0 cyan\char0} &Cyan foreground\\
-\texttt{\char0 default\char0} & reset terminal (bg/fg)\\
-\texttt{\char0 green\char0} &Green foreground\\
-\texttt{\char0 magenta\char0} &Magenta foreground\\
-\texttt{\char0 white\char0} &White foreground\\
-\texttt{\char0 yellow\char0}&Yellow foreground\\
-\texttt{\char0 \#RRGGBB\char0}& Foreground to hex RGB color\\
-\texttt{\char0 @RRGGBB\char0}&Background to hex RGB color\\
-\hline
-\end{tabular}
-\end{center}
+  \caption{Color codes}
+  \begin{center}
+    \begin{tabular}{|c|c|}
+      \hline
+      \texttt{\char0 black\char0} &Black foreground\\
+      \texttt{\char0 blue\char0} &Blue foreground\\
+      \texttt{\char0 cyan\char0} &Cyan foreground\\
+      \texttt{\char0 default\char0} & reset terminal (bg/fg)\\
+      \texttt{\char0 green\char0} &Green foreground\\
+      \texttt{\char0 magenta\char0} &Magenta foreground\\
+      \texttt{\char0 white\char0} &White foreground\\
+      \texttt{\char0 yellow\char0}&Yellow foreground\\
+
+      \texttt{\char0 bgblack\char0}&Black background\\
+      \texttt{\char0 bgblue\char0}&Blue background\\
+      \texttt{\char0 bgcyan\char0}&Cyan background\\
+      \texttt{\char0 bggreen\char0}&Green background\\
+      \texttt{\char0 bgmagenta\char0}&Magenta background\\
+      \texttt{\char0 bgred\char0}&Red background\\
+      \texttt{\char0 bgwhite\char0}&White background\\
+      \texttt{\char0 bgyellow\char0}&Yellow background\\
+
+      \texttt{\char0 blink\char0}&Blink (default resets)\\
+      \texttt{\char0 rvid\char0}&Reverse video (default resets)\\
+
+      \texttt{\char0 \#RRGGBB\char0}& Foreground to hex RGB color\\
+      \texttt{\char0 @RRGGBB\char0}&Background to hex RGB color\\
+      \hline
+    \end{tabular}
+  \end{center}
 \end{figure}
 
 For example, the command \texttt{player.Send("\char0 red\char0 WARNING\char0
   default\char0");} would send the player red text that says WARNING. (Note that
 it is good practice to end any colorized string with \texttt{\char0
   default\char0} to keep the last color used from bleeding into the next text.)
+
 
 \section{Global Event Handlers}
 
@@ -58,58 +76,63 @@ functions. Low level tasks like I/O, connection management, and command
 scheduling are done by the engine and do not need to be dealt with by the
 scripter in these.
 
-\subsection{\texttt{void OnPlayerConnect(PlayerConnection@ player)}}
-  Called each time a player connects to the server. The argument is a handle to
-  an engine-implemented object that represents the connecting player. A
-  scripter-defined subclass of \texttt{PlayerConnection} may and should be used
-  with this function in lieu of the base class for game-specific data/behavior,
-  e.g:
+\subsection{\texttt{void GameTick()}}
+Called by the engine every second. Use to perform global game-specific logic
+which must occur periodically and synchronously with respect to itself.
+
+\subsection{\texttt{void OnPlayerConnect(PlayerConnection@ conn)}}
+\texttt{OnPlayerConnect()} is called by the engine each time a player connection
+is made. A \texttt{PlayerConnection} object representing the new connection is
+passed by the engine as an argument to this event handler, and can be used to
+receive input and other connection-related events from that player.
+
+\texttt{PlayerConnection} has two functions which set the callbacks for the
+input and disconnect events of its particular player. The callbacks may be any
+functions, but an obvious configuration is for them to be member functions
+of a Player class, as in the following example:
+
 \begin{lstlisting}
-class Player : PlayerConnection
-{
-	// ...
-	void SetGameSpecificVariable(int v)
-	{
-		somevalue = v;
-	}
-	int somevalue;
-};
+  array<Player@> g_players;
 
-//PlayerConnection@ has been swapped out with Player@
-void OnPlayerConnect(Player@ player)
-{
-	player.SetGameSpecificVariable(123);
-	// ...
-}
-
-void OnPlayerDisconnect(Player@ player)
-{
-	if(123 == player.somevalue)
-	{
-		Log("This will always print");
+  void OnPlayerConnect(PlayerConnection@ conn)
+  {
+    try
+    {
+      Player@ hPlayer = Player(conn);
+      g_players.insertLast(hPlayer)
     }
-}
+    catch
+    {
+      Log("Exception thrown!\r\n" + getExceptionInfo() + "\r\n");
+    }
+
+  }
+
+  class Player
+  {
+    weakref<PlayerConnection> m_connection;
+    Player(PlayerConnection@ conn)
+    {
+      @m_connection = conn;
+      conn.SetInputCallback(InputCallback(OnInputReceived));
+      conn.SetDisconnectCallback(DisconnectCallback(OnDisconnect));
+    }
+
+    void OnInputReceived(string input)
+    {
+      // Handle player input here
+    }
+
+    void OnDisconnect()
+    {
+      // Handle player disconnect here
+    }
+
+    // Other Player related stuff
+  };
+
 \end{lstlisting}
 
-The subclass's data must be set directly or via setter (only the base class
-constructor will have been called by the engine), but the engine will otherwise
-behave as if the subclass were built in - the extra data are stored properly and
-without slicing.
-
-
-\subsection{\texttt{void OnPlayerDisconnect(PlayerConnection@ player)}}
-  The counterpart function of \texttt{OnPlayerConnect}, called after a player
-  disconnects. The handle passed for a given connection will point to the same
-  object as it did for \texttt{OnPlayerConnect}.
-
-\subsection{\texttt{void GameTick()}}
-  Called by the engine every second. Use to perform global game-specific logic
-  which must occur periodically and synchronously with respect to itself.
-
-\subsection{\texttt{void OnPlayerInput(PlayerConnection@ player, string input)}}
-  Generally called every time there is player input, with a handle to the player
-  and a copy of his input passed as arguments. It will not be called while the
-  player is in a menu, unless the menu provides a command passthrough feature.
 
 \section{Global Functions}
 \begin{itemize}
@@ -137,6 +160,18 @@ static functions.
 \end{itemize}
 
 \section{Interfaces and Built-in Classes}
+\subsection{Multiprecision numbers}
+The engine supports multiprecision numbers through two built-in types: \texttt{MPInt}
+and \texttt{MPFloat}, which are multiprecision integers and floating point numbers,
+respectively. The values they represent can be almost arbitrarily large and precise.
+
+Both types support basic arithmetic, and will soon be accompanied by their own
+versions of the usual mathematical functions.
+
+Multiprecision numbers should not be used unless they are absolutely required,
+as they cost many times more overhead in performance and memory than their
+hardware-supported counterparts.
+
 \subsection{uuid}
 
 \texttt{uuid} is a class built into the engine which stores and generates
@@ -150,13 +185,13 @@ and as its database key.
 
 \begin{itemize}
 \item \texttt{void FromString(string uuid\_as\_string)}\\
-Converts a UUID from provided string representation and stores it in this object.
+  Converts a UUID from provided string representation and stores it in this object.
 
 \item \texttt{string ToString()}\\
-Returns string representation of stored UUID
+  Returns string representation of stored UUID
 
 \item \texttt{void Generate()}\\
-Generates a new, random UUID in this object.
+  Generates a new, random UUID in this object.
 
 \end{itemize}
 
@@ -171,21 +206,13 @@ Commands must implement the ICommand interface and its method \texttt{int
 may be passed through its constructor parameters and stored in the object until
 execution.
 
-\subsection{PlayerConnection}
-\texttt{PlayerConnection} is a class implemented natively in the engine. An
-instance of this class is created for each player after they connect, which is
-passed to the scripter-defined global handler \texttt{OnPlayerConnect}.
-
-Scripters should create a subclass of PlayerConnection (named something like
-"Player"), to store/load game-specific information related to player accounts.
-
 \begin{itemize}
 \item \texttt{void Send(string msg)}\\ Sends the player a message. As with all
   displayed text, the message may be colorized through use of special color
   codes enclosed in backticks.
 
 \item \texttt{void Disconnect()}\\
-Forcibly disconnects the player.
+  Forcibly disconnects the player.
 
 \item \texttt{void QueueCommand(ICommand@ cmd, uint32 delay\_in\_seconds, uint32
   delay\_in\_nanoseconds)}\\ Enqueues an ICommand to run delay\_in\_seconds +
@@ -218,9 +245,9 @@ Database tables, columns, and rows are how object data are stored.
 
 \section{IPersistent}
 
- \textbf{The superclass's \texttt{OnDefineSchema}, \texttt{OnSave}, and
-   \texttt{OnLoad} member functions should be called in the subclass
-   implementations before anything else is done in them}.
+\textbf{The superclass's \texttt{OnDefineSchema}, \texttt{OnSave}, and
+  \texttt{OnLoad} member functions should be called in the subclass
+  implementations before anything else is done in them}.
 
 
 \subsection{\texttt{void OnDefineSchema(DBTable@ table)}}
@@ -246,15 +273,19 @@ containing object).
 
 
 \section{DBTable}
-\subsection{\texttt{void AddUUIDCol(string column\_name, KeyType keytype, DBTable@ foreign\_table)}}}
-Adds a UUID column to the table. The KeyType argument can be omitted or set to
+\texttt{void AddUUIDCol(string column\_name, KeyType keytype, DBTable@ foreign\_table)}
+  Adds a UUID column to the table. The KeyType argument can be omitted or set to
 \texttt{DBKEYTYPE\_PRIMARY}, if this column should be the table's primary key. The \texttt{foreign\_table}
-argument should be omitted unless the key type is set to \texttt{DBKEYTYPE\_FOREIGN}.
-\subsection{\texttt{void AddTextCol(string column\_name, KeyType keytype, DBTable@ foreign\_table)}}
-Same as above, but for holding text data.
-\subsection{\texttt{void AddRealCol(string column\_name, KeyType keytype, DBTable@ foreign\_table)}}
-Same as above, but for holding single or double precision floating point.
-\subsection{\texttt{void AddIntCol(string column\_name, KeyType keytype, DBTable@ foreign\_table)}}
-Same as above, but for holding integers of any type.
+  argument should be omitted unless the key type is set to \texttt{DBKEYTYPE\_FOREIGN}.
+\texttt{void AddTextCol(string column\_name, KeyType keytype, DBTable@ foreign\_table)}
+  Same as above, but for holding text data.
+\texttt{void AddRealCol(string column\_name, KeyType keytype, DBTable@ foreign\_table)}
+  Same as above, but for holding single or double precision floating point.
+\texttt{void AddIntCol(string column\_name, KeyType keytype, DBTable@ foreign\_table)}
+  Same as above, but for holding 8, 16, 32, and 64 bit integers.
+\texttt{void AddMPIntCol(string column\_name, KeyType keytype, DBTable@ foreign\_table)}
+  Adds a column to store an multiprecision integer.
+\texttt{void AddMPFloatCol(string column\_name, KeyType keytype, DBTable@ foreign\_table)}
+  Adds a column to store a multiprecision float.
 
 \end{document}
