@@ -218,7 +218,13 @@ void MPFloat::SerializeOut(std::vector<char>& outbuffer) const
 		memcpy(&outbuffer[0], &sign, sizeof(char));
 		memcpy(&outbuffer[1], &expt, sizeof(int));
 		memcpy(&outbuffer[sizeof(int) + 1], data, countp);
+		dbgprintf("MPFloat outbuffer size: %lu\n", outbuffer.size());
 		free(data);
+	}
+	else
+	{
+		dbgprintf("MPFloat data was NULL!\n");
+		outbuffer.resize(sizeof(int) + 1);
 	}
 }
 

@@ -69,8 +69,8 @@ public:
 	bool GetColumnValue(const std::string &colname, std::string &out, std::string defval = "");
 	bool GetColumnValue(const std::string &colname, std::vector<char> &out);
 	bool GetColumnValue(const std::string &colname, UUID &uuidout);
-	bool GetColumnValue(const std::string &colname, MPFloat& mpfout);
-	bool GetColumnValue(const std::string &colname, MPInt& mpzout);
+	bool GetColumnValue(const std::string &colname, MPFloat& mpfout, double defvalue = 0.0);
+	bool GetColumnValue(const std::string &colname, MPInt& mpzout, int defvalue = 0);
 
 	//These load/store functions just wrap SQLiteTable's
 	bool LoadFromDB();

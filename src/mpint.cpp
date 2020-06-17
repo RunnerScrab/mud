@@ -250,6 +250,10 @@ void MPInt::SerializeOut(std::vector<char>& outbuffer) const
 
 		free(data);
 	}
+	else
+	{
+		outbuffer.resize(1);
+	}
 }
 
 void MPInt::SerializeIn(const char* inbuffer, const size_t len)

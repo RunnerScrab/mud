@@ -46,8 +46,8 @@ class Meower : TestInterface, IPersistent
 	{
 		row.GetColValue("uuid", m_uuid);
 		row.GetColValue("name", m_name);
-		row.GetColValue("xcoord", m_xval);
-		row.GetColValue("ycoord", m_yval);
+		row.GetColValue("xcoord", m_xval, 72);
+		row.GetColValue("ycoord", m_yval, 6.28);
 
 		array<DBRow@> resultarr;
 		DBTable@ podsubtable = table.GetSubTable("testpodarray");
@@ -119,8 +119,6 @@ class Meower : TestInterface, IPersistent
 		Log("Meower constructing.\n");
 		TestInterfaceMethod();
 		m_name = "Meower";
-		m_xval = 123456;
-		m_yval = 3.14159265358979323846264338;
 		m_uuid.Generate();
 		Log("Trying to make a meower. это - кошка!\n");
 		Log("Meower uuid: " + m_uuid.ToString() + "\n");
@@ -425,7 +423,7 @@ void TestDatabaseRead(Player@ player)
 
 	SuperMeower meower;
 
-	if(keyuuid.FromString("01e535c5-0634-42a1-adb9-68652c372953"))
+	if(keyuuid.FromString("2a00e8ba-2104-41da-80e5-5e61c84abf57"))
 	{
 		try
 		{
