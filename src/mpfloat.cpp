@@ -247,14 +247,11 @@ void MPFloat::SerializeIn(const char* inbuffer, const size_t len)
 
 const std::string MPFloat::toString(int digits)
 {
+	char buf[256] = {0};
 	ReadLock();
-	size_t minsize = digits + 2;
-	std::string retval;
-	mp_exp_t exponent = 0;
-	retval.resize(minsize);
-	mpf_get_str(&retval[0], &exponent, 10, digits, m_value);
-	retval.resize(retval.find('\0'));
-	dbgprintf("Converting mpfloat to %s\n", retval.c_str());
+	gmp_snprintf(buf, 256, "%.*Ff",
+				    digits, m_value);
+	std::string retval = buf;
 	Unlock();
 	return retval;
 }
