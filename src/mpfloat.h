@@ -51,6 +51,21 @@ public:
 		}
 	}
 
+	double DoubleConv()
+	{
+		return mpf_get_d(m_value);
+	}
+
+	unsigned int UIConv()
+	{
+		return mpf_get_ui(m_value);
+	}
+
+	int SIConv()
+	{
+		return mpf_get_si(m_value);
+	}
+
 	MPFloat(const MPInt& other);
 
 	MPFloat(const MPFloat& other)

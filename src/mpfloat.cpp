@@ -183,6 +183,21 @@ int RegisterMPFloatClass(asIScriptEngine* engine)
 	RETURNFAIL_IF(result < 0);
 
 	//Conversion operations
+	result = engine->RegisterObjectMethod("MPFloat", "double opImplConv()",
+					      asMETHODPR(MPFloat, DoubleConv, (void), double),
+					      asCALL_THISCALL);
+	RETURNFAIL_IF(result < 0);
+
+	result = engine->RegisterObjectMethod("MPFloat", "int opImplConv()",
+					      asMETHODPR(MPFloat, SIConv, (void), int),
+					      asCALL_THISCALL);
+	RETURNFAIL_IF(result < 0);
+
+	result = engine->RegisterObjectMethod("MPFloat", "uint32 opImplConv()",
+					      asMETHODPR(MPFloat, UIConv, (void), unsigned int),
+					      asCALL_THISCALL);
+	RETURNFAIL_IF(result < 0);
+
 	result = engine->RegisterObjectMethod("MPFloat", "const string toString(int digits = 3)",
 					      asMETHOD(MPFloat, toString), asCALL_THISCALL);
 	return result;

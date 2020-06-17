@@ -14,6 +14,7 @@ extern "C"
 #include "sqlitetable.h"
 #include "mpnumbers.h"
 
+#include "as_addons/scriptmath.h"
 #include "as_addons/scriptstdstring.h"
 #include "as_addons/scriptarray.h"
 #include "as_addons/scripthelper.h"
@@ -59,6 +60,7 @@ int AngelScriptManager_InitEngine(AngelScriptManager *manager,
 	RETURNFAIL_IF(!manager->engine);
 
 	manager->engine->SetEngineProperty(asEP_ALLOW_MULTILINE_STRINGS, true);
+	RegisterScriptMath(manager->engine);
 	RegisterStdString(manager->engine);
 	RegisterScriptArray(manager->engine, true);
 	RegisterScriptHandle(manager->engine);
