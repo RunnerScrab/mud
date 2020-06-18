@@ -240,6 +240,8 @@ class Player
 				num2 *= 3;
 				Send("MPInt test two: '" + num2.toString() + "'\r\n");
 				MPFloat fpoint = 1.75;
+				MPFloat fpoint2 = 1.0;
+				fpoint = fpoint - fpoint2;
 				fpoint = sin(fpoint);
 				Send("MPFloat test result: " + fpoint.toString(9) + "\r\n");
 			}

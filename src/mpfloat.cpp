@@ -132,53 +132,53 @@ int RegisterMPFloatClass(asIScriptEngine* engine)
 	RETURNFAIL_IF(result < 0);
 
 	//Arithmetic operators
-	result = engine->RegisterObjectMethod("MPFloat", "MPFloat& opAdd(const MPFloat& in)",
-					      asMETHODPR(MPFloat, operator+, (const MPFloat&), MPFloat*),
+	result = engine->RegisterObjectMethod("MPFloat", "MPFloat opAdd(const MPFloat& in)",
+					      asMETHODPR(MPFloat, operator+, (const MPFloat&), MPFloat),
 					      asCALL_THISCALL);
 	RETURNFAIL_IF(result < 0);
 
-	result = engine->RegisterObjectMethod("MPFloat", "MPFloat& opAdd(const uint32 num)",
-					      asMETHODPR(MPFloat, operator+, (const unsigned int), MPFloat*),
+	result = engine->RegisterObjectMethod("MPFloat", "MPFloat opAdd(const uint32 num)",
+					      asMETHODPR(MPFloat, operator+, (const unsigned int), MPFloat),
 					      asCALL_THISCALL);
 	RETURNFAIL_IF(result < 0);
 
-	result = engine->RegisterObjectMethod("MPFloat", "MPFloat& opSub(const MPFloat& in)",
-					      asMETHODPR(MPFloat, operator+, (const MPFloat&), MPFloat*),
+	result = engine->RegisterObjectMethod("MPFloat", "MPFloat opSub(const MPFloat& in)",
+					      asMETHODPR(MPFloat, operator+, (const MPFloat&), MPFloat),
 					      asCALL_THISCALL);
 	RETURNFAIL_IF(result < 0);
 
-	result = engine->RegisterObjectMethod("MPFloat", "MPFloat& opSub(const uint32 num)",
-					      asMETHODPR(MPFloat, operator-, (const unsigned int), MPFloat*),
+	result = engine->RegisterObjectMethod("MPFloat", "MPFloat opSub(const uint32 num)",
+					      asMETHODPR(MPFloat, operator-, (const unsigned int), MPFloat),
 					      asCALL_THISCALL);
 	RETURNFAIL_IF(result < 0);
 
-	result = engine->RegisterObjectMethod("MPFloat", "MPFloat& opNeg(const MPFloat& in)",
-					      asMETHODPR(MPFloat, operator-, (void), MPFloat*),
+	result = engine->RegisterObjectMethod("MPFloat", "MPFloat opNeg(const MPFloat& in)",
+					      asMETHODPR(MPFloat, operator-, (void), MPFloat),
 					      asCALL_THISCALL);
 	RETURNFAIL_IF(result < 0);
 
-	result = engine->RegisterObjectMethod("MPFloat", "MPFloat& opMul(const MPFloat& in)",
-					      asMETHODPR(MPFloat, operator*, (const MPFloat&), MPFloat*),
+	result = engine->RegisterObjectMethod("MPFloat", "MPFloat opMul(const MPFloat& in)",
+					      asMETHODPR(MPFloat, operator*, (const MPFloat&), MPFloat),
 					      asCALL_THISCALL);
 	RETURNFAIL_IF(result < 0);
 
-	result = engine->RegisterObjectMethod("MPFloat", "MPFloat& opMul(const uint32 num)",
-					      asMETHODPR(MPFloat, operator*, (const unsigned int), MPFloat*),
+	result = engine->RegisterObjectMethod("MPFloat", "MPFloat opMul(const uint32 num)",
+					      asMETHODPR(MPFloat, operator*, (const unsigned int), MPFloat),
 					      asCALL_THISCALL);
 	RETURNFAIL_IF(result < 0);
 
-	result = engine->RegisterObjectMethod("MPFloat", "MPFloat& opDiv(const MPFloat& in)",
-					      asMETHODPR(MPFloat, operator/, (const MPFloat&), MPFloat*),
+	result = engine->RegisterObjectMethod("MPFloat", "MPFloat opDiv(const MPFloat& in)",
+					      asMETHODPR(MPFloat, operator/, (const MPFloat&), MPFloat),
 					      asCALL_THISCALL);
 	RETURNFAIL_IF(result < 0);
 
-	result = engine->RegisterObjectMethod("MPFloat", "MPFloat& opDiv(const uint32 num)",
-					      asMETHODPR(MPFloat, operator/, (const unsigned int), MPFloat*),
+	result = engine->RegisterObjectMethod("MPFloat", "MPFloat opDiv(const uint32 num)",
+					      asMETHODPR(MPFloat, operator/, (const unsigned int), MPFloat),
 					      asCALL_THISCALL);
 	RETURNFAIL_IF(result < 0);
 
-	result = engine->RegisterObjectMethod("MPFloat", "MPFloat& opPow(const int num)",
-					      asMETHODPR(MPFloat, pow, (const unsigned int), MPFloat*),
+	result = engine->RegisterObjectMethod("MPFloat", "MPFloat opPow(const int num)",
+					      asMETHODPR(MPFloat, pow, (const unsigned int), MPFloat),
 					      asCALL_THISCALL);
 	RETURNFAIL_IF(result < 0);
 
@@ -277,11 +277,11 @@ const std::string MPFloat::toString(int digits)
 	return retval;
 }
 
-MPFloat* operator-(const unsigned int a, const MPFloat& mpnum)
+MPFloat operator-(const unsigned int a, const MPFloat& mpnum)
 {
 	mpnum.ReadLock();
-	MPFloat* temporary = MPFloat::Factory(0);
-	mpf_ui_sub(temporary->m_value, a, mpnum.m_value);
+	MPFloat temporary;
+	mpf_ui_sub(temporary.m_value, a, mpnum.m_value);
 	mpnum.Unlock();
 	return temporary;
 }
@@ -523,78 +523,78 @@ bool MPFloat::isNotSame(const MPFloat& other) const
 	return !isSame(other);
 }
 
-MPFloat* MPFloat::operator+(const MPFloat& other)
+MPFloat MPFloat::operator+(const MPFloat& other)
 {
-	MPFloat* temporary = MPFloat::Factory(0);
+	MPFloat temporary;
 	//Don't need to do any locking with the temporary,
 	//since at this point only we have access to it here
 	ReadLock();
 	other.ReadLock();
-	mpf_add(temporary->m_value, m_value, other.m_value);
+	mpf_add(temporary.m_value, m_value, other.m_value);
 	other.Unlock();
 	Unlock();
 	return temporary;
 }
 
-MPFloat* MPFloat::operator+(const unsigned int num)
+MPFloat MPFloat::operator+(const unsigned int num)
 {
-	MPFloat* temporary = MPFloat::Factory(0);
+	MPFloat temporary;
 	ReadLock();
-	mpf_add_ui(temporary->m_value, m_value, num);
+	mpf_add_ui(temporary.m_value, m_value, num);
 	Unlock();
 	return temporary;
 }
 
-MPFloat* MPFloat::operator-()
+MPFloat MPFloat::operator-()
 {
-	MPFloat* temporary = MPFloat::Factory(0);
+	MPFloat temporary;
 	ReadLock();
-	mpf_neg(temporary->m_value, m_value);
+	mpf_neg(temporary.m_value, m_value);
 	Unlock();
 	return temporary;
 }
 
-MPFloat* MPFloat::operator-(const MPFloat& other)
+MPFloat MPFloat::operator-(const MPFloat& other)
 {
-	MPFloat* temporary = MPFloat::Factory(0);
+	MPFloat temporary;
 	ReadLock();
 	other.ReadLock();
-	mpf_sub(temporary->m_value, m_value, other.m_value);
+	mpf_sub(temporary.m_value, m_value, other.m_value);
 	other.Unlock();
 	Unlock();
 	return temporary;
 }
 
-MPFloat* MPFloat::operator-(const unsigned int num)
+MPFloat MPFloat::operator-(const unsigned int num)
 {
-	MPFloat* temporary = MPFloat::Factory(0);
+	MPFloat temporary;
 	ReadLock();
-	mpf_sub_ui(temporary->m_value, m_value, num);
+	mpf_sub_ui(temporary.m_value, m_value, num);
 	Unlock();
 	return temporary;
 }
 
-MPFloat* MPFloat::operator*(const MPFloat& other)
+MPFloat MPFloat::operator*(const MPFloat& other)
 {
-	MPFloat* temporary = MPFloat::Factory(0);
+	MPFloat temporary;
 	other.ReadLock();
 	ReadLock();
-	mpf_mul(temporary->m_value, m_value, other.m_value);
+	mpf_mul(temporary.m_value, m_value, other.m_value);
 	Unlock();
 	other.Unlock();
 	return temporary;
 }
 
-MPFloat* MPFloat::operator*(const unsigned int num)
+MPFloat MPFloat::operator*(const unsigned int num)
 {
-	MPFloat* temporary = MPFloat::Factory(0);
+	MPFloat temporary;
 	ReadLock();
-	mpf_mul_ui(temporary->m_value, m_value, num);
+	mpf_mul_ui(temporary.m_value, m_value, num);
 	Unlock();
 	return temporary;
 }
 
-MPFloat* MPFloat::operator/(const MPFloat& other)
+MPFloat MPFloat::operator/(const MPFloat& other)
 {
 	if(other == 0)
 	{
@@ -602,16 +602,16 @@ MPFloat* MPFloat::operator/(const MPFloat& other)
 		return 0;
 	}
 
-	MPFloat* temporary = MPFloat::Factory(0);
+	MPFloat temporary;
 	ReadLock();
 	other.ReadLock();
-	mpf_div(temporary->m_value, m_value, other.m_value);
+	mpf_div(temporary.m_value, m_value, other.m_value);
 	other.Unlock();
 	Unlock();
 	return temporary;
 }
 
-MPFloat* MPFloat::operator/(const unsigned int num)
+MPFloat MPFloat::operator/(const unsigned int num)
 {
 	if(!num)
 	{
@@ -619,27 +619,27 @@ MPFloat* MPFloat::operator/(const unsigned int num)
 		return 0;
 	}
 
-	MPFloat* temporary = MPFloat::Factory(0);
+	MPFloat temporary;
 	ReadLock();
-	mpf_div_ui(temporary->m_value, m_value, num);
+	mpf_div_ui(temporary.m_value, m_value, num);
 	Unlock();
 	return temporary;
 }
 
-MPFloat* MPFloat::pow(const unsigned int power)
+MPFloat MPFloat::pow(const unsigned int power)
 {
-	MPFloat* temporary = MPFloat::Factory(0);
+	MPFloat temporary;
 	ReadLock();
-	mpf_pow_ui(temporary->m_value, m_value, power);
+	mpf_pow_ui(temporary.m_value, m_value, power);
 	Unlock();
 	return temporary;
 }
 
-MPFloat* MPFloat::Abs()
+MPFloat MPFloat::Abs()
 {
-	MPFloat* temporary = MPFloat::Factory(0);
+	MPFloat temporary;
 	ReadLock();
-	mpf_abs(temporary->m_value, m_value);
+	mpf_abs(temporary.m_value, m_value);
 	Unlock();
 	return temporary;
 }

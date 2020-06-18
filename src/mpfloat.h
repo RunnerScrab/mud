@@ -16,7 +16,7 @@ class MPFloat:
 	public AS_RefCountedObj, public RWLockingObject
 {
 	friend class MPInt;
-	friend MPFloat* operator-(const unsigned int a, const MPFloat& mpnum);
+	friend MPFloat operator-(const unsigned int a, const MPFloat& mpnum);
 public:
 	static MemoryPoolAllocator* m_static_mempool;
 
@@ -138,22 +138,22 @@ public:
 	bool isNotSame(const MPFloat& other) const;
 
 	//Arithmetic operators
-	MPFloat* operator+(const MPFloat& other);
-	MPFloat* operator+(const unsigned int num);
+	MPFloat operator+(const MPFloat& other);
+	MPFloat operator+(const unsigned int num);
 
-	MPFloat* operator-();
-	MPFloat* operator-(const MPFloat& other);
-	MPFloat* operator-(const unsigned int num);
+	MPFloat operator-();
+	MPFloat operator-(const MPFloat& other);
+	MPFloat operator-(const unsigned int num);
 
-	MPFloat* operator*(const MPFloat& other);
-	MPFloat* operator*(const unsigned int num);
-	MPFloat* operator*(const int num);
+	MPFloat operator*(const MPFloat& other);
+	MPFloat operator*(const unsigned int num);
+	MPFloat operator*(const int num);
 
-	MPFloat* operator/(const MPFloat& other);
-	MPFloat* operator/(const unsigned int num);
+	MPFloat operator/(const MPFloat& other);
+	MPFloat operator/(const unsigned int num);
 
-	MPFloat* pow(const unsigned int power);
-	MPFloat* Abs();
+	MPFloat pow(const unsigned int power);
+	MPFloat Abs();
 
 	//Conversion operators
 	const std::string toString(int digits = 3);
@@ -166,7 +166,7 @@ private:
 
 int RegisterMPFloatClass(asIScriptEngine* engine);
 
-MPFloat* operator-(const unsigned int a, const MPFloat& mpnum);
+MPFloat operator-(const unsigned int a, const MPFloat& mpnum);
 
 
 #endif

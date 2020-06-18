@@ -49,6 +49,11 @@ public:
 		reinterpret_cast<MPInt*>(pMem)->~MPInt();
 	}
 
+	double DoubleConv()
+	{
+		return mpz_get_d(m_value);
+	}
+
 	MPInt(const MPFloat& other);
 
 	MPInt(const MPInt& other)

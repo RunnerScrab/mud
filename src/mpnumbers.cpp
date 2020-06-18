@@ -33,11 +33,11 @@ int RegisterMPNumberClasses(asIScriptEngine* engine)
 	//the types must be registered before their methods
 
 	result = engine->RegisterObjectType("MPInt", sizeof(MPInt),
-					    asOBJ_VALUE);
+					    asOBJ_VALUE | asGetTypeTraits<MPInt>());
 	RETURNFAIL_IF(result < 0);
 
 	result = engine->RegisterObjectType("MPFloat", sizeof(MPFloat),
-					    asOBJ_VALUE);
+					    asOBJ_VALUE | asGetTypeTraits<MPFloat>());
 	RETURNFAIL_IF(result < 0);
 
 	result = RegisterMPIntClass(engine);
