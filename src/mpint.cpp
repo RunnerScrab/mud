@@ -146,63 +146,63 @@ int RegisterMPIntClass(asIScriptEngine* engine)
 
 
 	//Arithmetic operators
-	result = engine->RegisterObjectMethod("MPInt", "MPInt& opAdd(const MPInt& in)",
-					      asMETHODPR(MPInt, operator+, (const MPInt&), MPInt*),
+	result = engine->RegisterObjectMethod("MPInt", "MPInt opAdd(const MPInt& in)",
+					      asMETHODPR(MPInt, operator+, (const MPInt&), MPInt),
 					      asCALL_THISCALL);
 	RETURNFAIL_IF(result < 0);
 
-	result = engine->RegisterObjectMethod("MPInt", "MPInt& opAdd(const uint32 num)",
-					      asMETHODPR(MPInt, operator+, (const unsigned int), MPInt*),
+	result = engine->RegisterObjectMethod("MPInt", "MPInt opAdd(const uint32 num)",
+					      asMETHODPR(MPInt, operator+, (const unsigned int), MPInt),
 					      asCALL_THISCALL);
 	RETURNFAIL_IF(result < 0);
 
-	result = engine->RegisterObjectMethod("MPInt", "MPInt& opSub(const MPInt& in)",
-					      asMETHODPR(MPInt, operator+, (const MPInt&), MPInt*),
+	result = engine->RegisterObjectMethod("MPInt", "MPInt opSub(const MPInt& in)",
+					      asMETHODPR(MPInt, operator+, (const MPInt&), MPInt),
 					      asCALL_THISCALL);
 	RETURNFAIL_IF(result < 0);
 
-	result = engine->RegisterObjectMethod("MPInt", "MPInt& opSub(const uint32 num)",
-					      asMETHODPR(MPInt, operator-, (const unsigned int), MPInt*),
+	result = engine->RegisterObjectMethod("MPInt", "MPInt opSub(const uint32 num)",
+					      asMETHODPR(MPInt, operator-, (const unsigned int), MPInt),
 					      asCALL_THISCALL);
 	RETURNFAIL_IF(result < 0);
 
-	result = engine->RegisterObjectMethod("MPInt", "MPInt& opNeg(const MPInt& in)",
-					      asMETHODPR(MPInt, operator-, (void), MPInt*),
+	result = engine->RegisterObjectMethod("MPInt", "MPInt opNeg(const MPInt& in)",
+					      asMETHODPR(MPInt, operator-, (void), MPInt),
 					      asCALL_THISCALL);
 	RETURNFAIL_IF(result < 0);
 
-	result = engine->RegisterObjectMethod("MPInt", "MPInt& opMul(const MPInt& in)",
-					      asMETHODPR(MPInt, operator*, (const MPInt&), MPInt*),
+	result = engine->RegisterObjectMethod("MPInt", "MPInt opMul(const MPInt& in)",
+					      asMETHODPR(MPInt, operator*, (const MPInt&), MPInt),
 					      asCALL_THISCALL);
 	RETURNFAIL_IF(result < 0);
 
-	result = engine->RegisterObjectMethod("MPInt", "MPInt& opMul(const int num)",
-					      asMETHODPR(MPInt, operator*, (const int), MPInt*),
+	result = engine->RegisterObjectMethod("MPInt", "MPInt opMul(const int num)",
+					      asMETHODPR(MPInt, operator*, (const int), MPInt),
 					      asCALL_THISCALL);
 	RETURNFAIL_IF(result < 0);
 
-	result = engine->RegisterObjectMethod("MPInt", "MPInt& opMul(const uint32 num)",
-					      asMETHODPR(MPInt, operator*, (const unsigned int), MPInt*),
+	result = engine->RegisterObjectMethod("MPInt", "MPInt opMul(const uint32 num)",
+					      asMETHODPR(MPInt, operator*, (const unsigned int), MPInt),
 					      asCALL_THISCALL);
 	RETURNFAIL_IF(result < 0);
 
-	result = engine->RegisterObjectMethod("MPInt", "MPInt& opDiv(const MPInt& in)",
-					      asMETHODPR(MPInt, operator/, (const MPInt&), MPInt*),
+	result = engine->RegisterObjectMethod("MPInt", "MPInt opDiv(const MPInt& in)",
+					      asMETHODPR(MPInt, operator/, (const MPInt&), MPInt),
 					      asCALL_THISCALL);
 	RETURNFAIL_IF(result < 0);
 
-	result = engine->RegisterObjectMethod("MPInt", "MPInt& opDiv(const uint32 num)",
-					      asMETHODPR(MPInt, operator/, (const unsigned int), MPInt*),
+	result = engine->RegisterObjectMethod("MPInt", "MPInt opDiv(const uint32 num)",
+					      asMETHODPR(MPInt, operator/, (const unsigned int), MPInt),
 					      asCALL_THISCALL);
 	RETURNFAIL_IF(result < 0);
 
-	result = engine->RegisterObjectMethod("MPInt", "MPInt& opMod(const MPInt& in)",
-					      asMETHODPR(MPInt, operator%, (const MPInt&), MPInt*),
+	result = engine->RegisterObjectMethod("MPInt", "MPInt opMod(const MPInt& in)",
+					      asMETHODPR(MPInt, operator%, (const MPInt&), MPInt),
 					      asCALL_THISCALL);
 	RETURNFAIL_IF(result < 0);
 
-	result = engine->RegisterObjectMethod("MPInt", "MPInt& opPow(const int num)",
-					      asMETHODPR(MPInt, pow, (const unsigned int), MPInt*),
+	result = engine->RegisterObjectMethod("MPInt", "MPInt opPow(const int num)",
+					      asMETHODPR(MPInt, pow, (const unsigned int), MPInt),
 					      asCALL_THISCALL);
 	RETURNFAIL_IF(result < 0);
 
@@ -270,11 +270,11 @@ void MPInt::SerializeIn(const char* inbuffer, const size_t len)
 }
 
 
-MPInt* operator-(const unsigned int a, const MPInt& mpnum)
+MPInt operator-(const unsigned int a, const MPInt& mpnum)
 {
 	mpnum.ReadLock();
-	MPInt* temporary = MPInt::Factory(0);
-	mpz_ui_sub(temporary->m_value, a, mpnum.m_value);
+	MPInt temporary;
+	mpz_ui_sub(temporary.m_value, a, mpnum.m_value);
 	mpnum.Unlock();
 	return temporary;
 }
@@ -544,87 +544,87 @@ bool MPInt::isNotSame(const MPInt& other) const
 	return !isSame(other);
 }
 
-MPInt* MPInt::operator+(const MPInt& other)
+MPInt MPInt::operator+(const MPInt& other)
 {
-	MPInt* temporary = MPInt::Factory(0);
+	MPInt temporary;
 	//Don't need to do any locking with the temporary,
 	//since at this point only we have access to it here
 	ReadLock();
 	other.ReadLock();
-	mpz_add(temporary->m_value, m_value, other.m_value);
+	mpz_add(temporary.m_value, m_value, other.m_value);
 	other.Unlock();
 	Unlock();
 	return temporary;
 }
 
-MPInt* MPInt::operator+(const unsigned int num)
+MPInt MPInt::operator+(const unsigned int num)
 {
-	MPInt* temporary = MPInt::Factory(0);
+	MPInt temporary;
 	ReadLock();
-	mpz_add_ui(temporary->m_value, m_value, num);
+	mpz_add_ui(temporary.m_value, m_value, num);
 	Unlock();
 	return temporary;
 }
 
-MPInt* MPInt::operator-()
+MPInt MPInt::operator-()
 {
-	MPInt* temporary = MPInt::Factory(0);
+	MPInt temporary;
 	ReadLock();
-	mpz_neg(temporary->m_value, m_value);
+	mpz_neg(temporary.m_value, m_value);
 	Unlock();
 	return temporary;
 }
 
-MPInt* MPInt::operator-(const MPInt& other)
+MPInt MPInt::operator-(const MPInt& other)
 {
-	MPInt* temporary = MPInt::Factory(0);
+	MPInt temporary;
 	ReadLock();
 	other.ReadLock();
-	mpz_sub(temporary->m_value, m_value, other.m_value);
+	mpz_sub(temporary.m_value, m_value, other.m_value);
 	other.Unlock();
 	Unlock();
 	return temporary;
 }
 
-MPInt* MPInt::operator-(const unsigned int num)
+MPInt MPInt::operator-(const unsigned int num)
 {
-	MPInt* temporary = MPInt::Factory(0);
+	MPInt temporary;
 	ReadLock();
-	mpz_sub_ui(temporary->m_value, m_value, num);
+	mpz_sub_ui(temporary.m_value, m_value, num);
 	Unlock();
 	return temporary;
 }
 
-MPInt* MPInt::operator*(const MPInt& other)
+MPInt MPInt::operator*(const MPInt& other)
 {
-	MPInt* temporary = MPInt::Factory(0);
+	MPInt temporary;
 	other.ReadLock();
 	ReadLock();
-	mpz_mul(temporary->m_value, m_value, other.m_value);
+	mpz_mul(temporary.m_value, m_value, other.m_value);
 	Unlock();
 	other.Unlock();
 	return temporary;
 }
 
-MPInt* MPInt::operator*(const unsigned int num)
+MPInt MPInt::operator*(const unsigned int num)
 {
-	MPInt* temporary = MPInt::Factory(0);
+	MPInt temporary;
 	ReadLock();
-	mpz_mul_ui(temporary->m_value, m_value, num);
+	mpz_mul_ui(temporary.m_value, m_value, num);
 	Unlock();
 	return temporary;
 }
 
-MPInt* MPInt::operator*(const int num)
+MPInt MPInt::operator*(const int num)
 {
-	MPInt* temporary = MPInt::Factory(0);
+	MPInt temporary;
 	ReadLock();
-	mpz_mul_si(temporary->m_value, m_value, num);
+	mpz_mul_si(temporary.m_value, m_value, num);
 	Unlock();
 	return temporary;
 }
 
-MPInt* MPInt::operator/(const MPInt& other)
+MPInt MPInt::operator/(const MPInt& other)
 {
 	if(other == 0)
 	{
@@ -632,16 +632,16 @@ MPInt* MPInt::operator/(const MPInt& other)
 		return 0;
 	}
 
-	MPInt* temporary = MPInt::Factory(0);
+	MPInt temporary;
 	ReadLock();
 	other.ReadLock();
-	mpz_tdiv_q(temporary->m_value, m_value, other.m_value);
+	mpz_tdiv_q(temporary.m_value, m_value, other.m_value);
 	other.Unlock();
 	Unlock();
 	return temporary;
 }
 
-MPInt* MPInt::operator/(const unsigned int num)
+MPInt MPInt::operator/(const unsigned int num)
 {
 	if(!num)
 	{
@@ -649,14 +649,14 @@ MPInt* MPInt::operator/(const unsigned int num)
 		return 0;
 	}
 
-	MPInt* temporary = MPInt::Factory(0);
+	MPInt temporary;
 	ReadLock();
-	mpz_tdiv_q_ui(temporary->m_value, m_value, num);
+	mpz_tdiv_q_ui(temporary.m_value, m_value, num);
 	Unlock();
 	return temporary;
 }
 
-MPInt* MPInt::operator%(const MPInt& other)
+MPInt MPInt::operator%(const MPInt& other)
 {
 	if(other == 0)
 	{
@@ -664,15 +664,16 @@ MPInt* MPInt::operator%(const MPInt& other)
 		return 0;
 	}
 
-	MPInt* temporary = MPInt::Factory(0);
+	MPInt temporary;
 	other.ReadLock();
 	ReadLock();
-	mpz_tdiv_r(temporary->m_value, m_value, other.m_value);
+	mpz_tdiv_r(temporary.m_value, m_value, other.m_value);
 	Unlock();
 	other.Unlock();
 	return temporary;
 }
-MPInt* MPInt::operator%(const unsigned int num)
+
+MPInt MPInt::operator%(const unsigned int num)
 {
 	if(num == 0)
 	{
@@ -680,27 +681,27 @@ MPInt* MPInt::operator%(const unsigned int num)
 		return 0;
 	}
 
-	MPInt* temporary = MPInt::Factory(0);
+	MPInt temporary;
 	ReadLock();
-	mpz_tdiv_r_ui(temporary->m_value, m_value, num);
+	mpz_tdiv_r_ui(temporary.m_value, m_value, num);
 	Unlock();
 	return temporary;
 }
 
-MPInt* MPInt::pow(const unsigned int power)
+MPInt MPInt::pow(const unsigned int power)
 {
-	MPInt* temporary = MPInt::Factory(0);
+	MPInt temporary;
 	ReadLock();
-	mpz_pow_ui(temporary->m_value, m_value, power);
+	mpz_pow_ui(temporary.m_value, m_value, power);
 	Unlock();
 	return temporary;
 }
 
-MPInt* MPInt::Abs()
+MPInt MPInt::Abs()
 {
-	MPInt* temporary = MPInt::Factory(0);
+	MPInt temporary;
 	ReadLock();
-	mpz_abs(temporary->m_value, m_value);
+	mpz_abs(temporary.m_value, m_value);
 	Unlock();
 	return temporary;
 }

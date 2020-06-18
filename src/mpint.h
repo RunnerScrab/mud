@@ -22,7 +22,7 @@ class MPInt:
 	public AS_RefCountedObj, public RWLockingObject
 {
 	friend class MPFloat;
-	friend MPInt* operator-(const unsigned int a, const MPInt& mpnum);
+	friend MPInt operator-(const unsigned int a, const MPInt& mpnum);
 public:
 	static MemoryPoolAllocator* m_static_mempool;
 
@@ -126,24 +126,24 @@ public:
 	bool isNotSame(const MPInt& other) const;
 
 	//Arithmetic operators
-	MPInt* operator+(const MPInt& other);
-	MPInt* operator+(const unsigned int num);
+	MPInt operator+(const MPInt& other);
+	MPInt operator+(const unsigned int num);
 
-	MPInt* operator-();
-	MPInt* operator-(const MPInt& other);
-	MPInt* operator-(const unsigned int num);
+	MPInt operator-();
+	MPInt operator-(const MPInt& other);
+	MPInt operator-(const unsigned int num);
 
-	MPInt* operator*(const MPInt& other);
-	MPInt* operator*(const unsigned int num);
-	MPInt* operator*(const int num);
+	MPInt operator*(const MPInt& other);
+	MPInt operator*(const unsigned int num);
+	MPInt operator*(const int num);
 
-	MPInt* operator/(const MPInt& other);
-	MPInt* operator/(const unsigned int num);
+	MPInt operator/(const MPInt& other);
+	MPInt operator/(const unsigned int num);
 
-	MPInt* operator%(const MPInt& other);
-	MPInt* operator%(const unsigned int);
-	MPInt* pow(const unsigned int power);
-	MPInt* Abs();
+	MPInt operator%(const MPInt& other);
+	MPInt operator%(const unsigned int);
+	MPInt pow(const unsigned int power);
+	MPInt Abs();
 
 	//Conversion operators
 	const std::string toString();
@@ -156,7 +156,7 @@ private:
 
 int RegisterMPIntClass(asIScriptEngine* engine);
 
-MPInt* operator-(const unsigned int a, const MPInt& mpnum);
+MPInt operator-(const unsigned int a, const MPInt& mpnum);
 
 
 #endif
