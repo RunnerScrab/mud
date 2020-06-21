@@ -54,7 +54,7 @@ typedef struct
 	asIScriptModule *main_module, *config_module;
 
 	asIScriptFunction *world_tick_func, *on_player_connect_func;
-	asIScriptFunction *on_player_disconnect_func, *on_player_input_func;
+
 	asIScriptFunction *server_setup_func;
 	asIScriptContext *world_tick_scriptcontext;
 

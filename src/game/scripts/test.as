@@ -246,6 +246,17 @@ class Player
 				fpoint = sin(fpoint);
 				Send("MPFloat test result: " + fpoint.toString(9) + "\r\n");
 			}
+			else if("tc" == input)
+			{
+				m_char.QueueAction(TestCommand(5, 7), 0, 0);
+				Send("Command received.\r\n");
+			}
+			else if("tdc" == input)
+			{
+				m_char.QueueAction(TestCommand(1, 9), 6, 0);
+				Send("Command received.\r\n");
+			}
+
 		}
 	}
 
