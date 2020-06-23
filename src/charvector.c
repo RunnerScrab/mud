@@ -21,7 +21,7 @@ void cv_sprintf(cv_t *pcv, const char *fmt, ...)
 	if (bwritten >= pcv->capacity)
 	{
 		//Our buffer wasn't large enough. Resize it!
-		pcv->capacity = max(1, pcv->length);
+		pcv->capacity = max((pcv->capacity<<1), pcv->length);
 		pcv->data = (el_t*) trealloc(pcv->data, sizeof(el_t) * pcv->capacity);
 		memset(pcv->data, 0, sizeof(el_t) * pcv->capacity);
 		vsnprintf(pcv->data, pcv->capacity, fmt, cpyarglist);
