@@ -23,7 +23,9 @@ public:
 	struct Client *m_pClient;
 	struct Actor *m_pActor;
 
+	//This mfunction sends data to the user
 	void Send(std::string &str);
+
 	void Disconnect();
 	static PlayerConnection* Factory(struct Client *client);
 
@@ -32,6 +34,7 @@ public:
 
 	asIScriptFunction* GetInputCallback()
 	{
+		//This callback receives data from the user
 		return m_scriptinputcb;
 	}
 
@@ -45,8 +48,6 @@ protected:
 	~PlayerConnection();
 
 private:
-	int m_refcount;
-	asILockableSharedBool *m_weakrefflag;
 
 	std::atomic<bool> m_bConnected;
 

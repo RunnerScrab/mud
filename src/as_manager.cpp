@@ -13,6 +13,7 @@ extern "C"
 #include "uuid.h"
 #include "sqlitetable.h"
 #include "mpnumbers.h"
+#include "leditor.h"
 
 #include "as_addons/scriptmath.h"
 #include "as_addons/scriptstdstring.h"
@@ -132,6 +133,9 @@ int AngelScriptManager_InitAPI(AngelScriptManager *manager)
 	ServerLog(SERVERLOG_STATUS, "Registered actor class.");
 
 	result = RegisterPlayerConnectionClass(pEngine);
+	RETURNFAIL_IF(result < 0);
+
+	result = RegisterLineEditorClass(pEngine);
 	RETURNFAIL_IF(result < 0);
 
 	result = pEngine->RegisterObjectType("Server", 0,

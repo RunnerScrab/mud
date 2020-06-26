@@ -201,8 +201,10 @@ class Player
 {
 	weakref<PlayerConnection> m_connection;
 	Character@ m_char;
+	LineEditor@ leditor;
 	Player(PlayerConnection@ conn)
 	{
+		@leditor = LineEditor();
 		@m_connection = conn;
 		conn.SetInputCallback(InputCallback(OnInputReceived));
 		conn.SetDisconnectCallback(DisconnectCallback(OnDisconnect));
