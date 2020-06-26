@@ -224,7 +224,9 @@ int AngelScriptManager_LoadServerConfig(AngelScriptManager *manager,
 			"void SetGameBindAddress(string& in, uint16 port)",
 			asFUNCTION(ASAPI_SetGameBindAddress), asCALL_CDECL_OBJFIRST);
 	RETURNFAIL_IF(result < 0);
+
 	RETURNFAIL_IF(manager->config_module->Build() < 0);
+
 	manager->server_setup_func = manager->config_module->GetFunctionByDecl(
 			"void SetupServer(ServerConfig@ config)");
 

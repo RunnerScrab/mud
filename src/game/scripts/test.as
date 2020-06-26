@@ -206,6 +206,7 @@ class Player
 	{
 		@leditor = LineEditor();
 		@m_connection = conn;
+		leditor.SetPlayerConnection(conn);
 		conn.SetInputCallback(InputCallback(OnInputReceived));
 		conn.SetDisconnectCallback(DisconnectCallback(OnDisconnect));
 		@m_char = Character("mychar");

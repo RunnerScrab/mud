@@ -1,8 +1,12 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+
+#include <string>
+
 #include "leditor.h"
 #include "talloc.h"
+#include "player.h"
 #include "angelscript.h"
 #include "utils.h"
 
@@ -38,8 +42,16 @@ struct LineEditor* LineEditor_Factory()
 {
 	struct LineEditor* retval = (struct LineEditor*) talloc(sizeof(struct LineEditor));
 	LineEditor_Init(retval);
-	LineEditor_AddRef(retval);
+	retval->refcount = 1;
 	return retval;
+}
+
+void LineEditor_SetPlayerConnection(struct LineEditor* ple, PlayerConnection* playerobj)
+{
+	dbgprintf("SetPlayerConnection called. Ple refcount: %d\n", ple->refcount);
+	std::string msg = "Meow\r\n";
+	playerobj->Send(msg);
+	playerobj->Release();
 }
 
 int RegisterLineEditorClass(asIScriptEngine* pengine)
@@ -59,6 +71,10 @@ int RegisterLineEditorClass(asIScriptEngine* pengine)
 
 	result = pengine->RegisterObjectBehaviour("LineEditor", asBEHAVE_RELEASE, "void f()",
 						  asFUNCTION(LineEditor_Release), asCALL_CDECL_OBJFIRST);
+	RETURNFAIL_IF(result < 0);
+
+	result = pengine->RegisterObjectMethod("LineEditor", "void SetPlayerConnection(PlayerConnection@ conn)",
+					       asFUNCTION(LineEditor_SetPlayerConnection), asCALL_CDECL_OBJFIRST);
 	RETURNFAIL_IF(result < 0);
 
 	return result;
@@ -96,7 +112,6 @@ void LineEditor_Append(struct LineEditor* le, const char* data, size_t datalen)
 
 void LineEditor_RebuildLineIndices(struct LineEditor* le, size_t from_idx)
 {
-	printf("Rebuilding from line %lu\n", from_idx);
 	const char* buf = le->buffer.data;
 	size_t len = le->buffer.length;
 

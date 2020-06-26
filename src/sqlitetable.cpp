@@ -30,7 +30,6 @@ SQLiteColumn::SQLiteColumn(const std::string &name,
 
 SQLiteColumn::~SQLiteColumn()
 {
-
 	dbgprintf("Value of m_foreigntable: %p\n", m_foreigntable);
 	if (m_foreigntable)
 	{
@@ -72,7 +71,6 @@ struct Database* SQLiteTable::GetDatabaseMetadataPtr()
 
 int RegisterDBTable(sqlite3 *sqldb, asIScriptEngine *sengine)
 {
-	dbgprintf("TESTING IS DEFINED!\n");
 	int result = 0;
 	result = sengine->RegisterObjectType("DBTable", 0, asOBJ_REF);
 
