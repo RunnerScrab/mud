@@ -202,8 +202,10 @@ class Player
 	weakref<PlayerConnection> m_connection;
 	Character@ m_char;
 	LineEditor@ leditor;
+	bool m_bEditMode;
 	Player(PlayerConnection@ conn)
 	{
+		m_bEditMode = false;
 		@leditor = LineEditor();
 		@m_connection = conn;
 		leditor.SetPlayerConnection(conn);
@@ -216,12 +218,22 @@ class Player
 	void OnInputReceived(string input)
 	{
 		PlayerConnection@ conn = m_connection.get();
-		if(conn !is null)
+		if(m_bEditMode)
+		{
+
+			input += "\n";
+			leditor.ProcessInput(input);
+		}
+		else if(conn !is null)
 		{
 			conn.Send("You input: " + input + "\r\n");
 			if(input == "quit")
 			{
 				conn.Disconnect();
+			}
+			else if ("testedit" == input)
+			{
+				m_bEditMode = true;
 			}
 			else if ("testdb" == input)
 			{
@@ -259,7 +271,10 @@ class Player
 				m_char.QueueAction(TestCommand(1, 9), 6, 0);
 				Send("Command received.\r\n");
 			}
-
+		}
+		else
+		{
+			Log("Tried to parse a command from a closed connection?\n");
 		}
 	}
 
@@ -269,6 +284,10 @@ class Player
 		if(conn !is null)
 		{
 			conn.Send(input);
+		}
+		else
+		{
+			Log("Tried to send to a closed connection.\n");
 		}
 	}
 

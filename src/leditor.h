@@ -10,6 +10,9 @@ extern "C"
 #ifdef __cplusplus
 }
 #endif
+
+struct Client;
+
 struct TextLine
 {
 	size_t start, length;
@@ -26,6 +29,7 @@ struct LineEditor
 	unsigned char bSaveResult;
 
 	int refcount;
+	struct Client* client;
 };
 
 int LineEditor_ProcessInput(struct LineEditor* ple, const char* input, size_t len);

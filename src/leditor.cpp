@@ -10,6 +10,8 @@
 #include "angelscript.h"
 #include "utils.h"
 
+#include "client.h"
+
 struct EditorCommand g_editor_commands[] =
 {
 	{".c", ".c", "Clear buffer", EditorCmdClear},
@@ -49,9 +51,14 @@ struct LineEditor* LineEditor_Factory()
 void LineEditor_SetPlayerConnection(struct LineEditor* ple, PlayerConnection* playerobj)
 {
 	dbgprintf("SetPlayerConnection called. Ple refcount: %d\n", ple->refcount);
-	std::string msg = "Meow\r\n";
-	playerobj->Send(msg);
+	ple->client = playerobj->m_pClient;
 	playerobj->Release();
+}
+
+void LineEditor_ProcessInputString(struct LineEditor* ple, const std::string& str)
+{
+	printf("Received: '%s'\n", str.c_str());
+	LineEditor_ProcessInput(ple, str.c_str(), str.length());
 }
 
 int RegisterLineEditorClass(asIScriptEngine* pengine)
@@ -75,6 +82,10 @@ int RegisterLineEditorClass(asIScriptEngine* pengine)
 
 	result = pengine->RegisterObjectMethod("LineEditor", "void SetPlayerConnection(PlayerConnection@ conn)",
 					       asFUNCTION(LineEditor_SetPlayerConnection), asCALL_CDECL_OBJFIRST);
+	RETURNFAIL_IF(result < 0);
+
+	result = pengine->RegisterObjectMethod("LineEditor", "void ProcessInput(const string& in)",
+					       asFUNCTION(LineEditor_ProcessInputString), asCALL_CDECL_OBJFIRST);
 	RETURNFAIL_IF(result < 0);
 
 	return result;
@@ -106,6 +117,7 @@ void LineEditor_RebuildLineIndices(struct LineEditor* le, size_t from_idx);
 
 void LineEditor_Append(struct LineEditor* le, const char* data, size_t datalen)
 {
+	printf("Appending: '%s'\n", data);
 	cv_appendstr(&le->buffer, data, datalen);
 	LineEditor_RebuildLineIndices(le, (le->lines_count > 1) ? (le->lines_count - 1) : 0);
 }
@@ -182,7 +194,6 @@ void LineEditor_InsertAt(struct LineEditor* le, size_t line_idx, const char* dat
 
 void LineEditor_DeleteLine(struct LineEditor* le, size_t line_idx)
 {
-
 	if(line_idx > le->lines_count)
 	{
 		return;
@@ -223,13 +234,13 @@ int EditorCmdPrint(struct LineEditor* pLE, struct LexerResult* plr)
 			}
 			linebuf[linelen] = 0;
 			memcpy(linebuf, &pLE->buffer.data[pLE->lines[idx].start], linelen);
-			printf("%02lu] %s\n", idx, linebuf);
+			Client_Sendf(pLE->client, "%02lu] %s\n", idx, linebuf);
 		}
 		tfree(linebuf);
 	}
 	else
 	{
-		printf("Buffer is empty.\n");
+		Client_Sendf(pLE->client, "Buffer is empty.\n");
 	}
 
 	return 0;
@@ -259,7 +270,7 @@ int EditorCmdDelete(struct LineEditor* pLE, struct LexerResult* plr)
 	size_t tokencount = LexerResult_GetTokenCount(plr);
 	if(tokencount < 2)
 	{
-		printf("*Too few arguments.\n");
+		Client_Sendf(pLE->client, "*Too few arguments.\n");
 		return 0;
 	}
 
@@ -275,7 +286,7 @@ int EditorCmdInsert(struct LineEditor* pLE, struct LexerResult* plr)
 	size_t tokencount = LexerResult_GetTokenCount(plr);
 	if(tokencount < 2)
 	{
-		printf("*Too few arguments.\n");
+		Client_Sendf(pLE->client, "*Too few arguments.\n");
 		return 0;
 	}
 
@@ -322,11 +333,11 @@ int EditorCmdHelp(struct LineEditor* pLE, struct LexerResult* plr)
 {
 	size_t idx = 0;
 	size_t len = 8;
-	printf("%20s   %-20s\n", "Command/Usage", "Description");
-	printf("-----------------------------------------------------\n");
+	Client_Sendf(pLE->client, "%20s   %-20s\n", "Command/Usage", "Description");
+	Client_Sendf(pLE->client, "-----------------------------------------------------\n");
 	for(; idx < len; ++idx)
 	{
-		printf("%20s   %-20s\n", g_editor_commands[idx].usage,
+		Client_Sendf(pLE->client, "%20s   %-20s\n", g_editor_commands[idx].usage,
 		       g_editor_commands[idx].desc);
 	}
 	return 0;
@@ -358,7 +369,7 @@ int LineEditor_ProcessInput(struct LineEditor* ple, const char* input, size_t le
 		}
 		else
 		{
-			printf("*Unrecognized command.\n");
+			Client_Sendf(ple->client, "*Unrecognized command.\n");
 			return 0;
 		}
 	}
