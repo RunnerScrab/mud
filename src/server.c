@@ -184,14 +184,6 @@ void DebugPrintCV(cv_t *buf)
 	}
 }
 
-void* TestTimedTask(void *pArgs)
-{
-	//TODO: Delete this
-	struct Server *pServer = (struct Server*) pArgs;
-	Server_SendAllClients(pServer, "HELLO TIMED TASK HERE\r\n\r\n");
-	return (void*) 0;
-}
-
 void* HandleUserInputTask(void *pArg)
 {
 	//This is the user input processor task dispatched to a worker thread by the threadpool.
@@ -301,8 +293,7 @@ void* HandleUserInputTask(void *pArg)
 	unsigned char inputcomplete = 0;
 	cv_t *cbuf = &(pClient->input_buffer);
 	cv_appendcv(cbuf, &clientinput);
-	dbgprintf("Received %lu bytes.\n", bytes_read);
-	//DebugPrintCV(&clientinput);
+
 	if (cbuf->length >= 2)
 	{
 		//User commands end in a crlf if their client is in line mode,
@@ -330,7 +321,6 @@ void* HandleUserInputTask(void *pArg)
 	if (bytes_read > 0 && inputcomplete)
 	{
 		//At this point, we have a complete user command and can process it
-		dbgprintf("Attemping to process: %s\n", cbuf->data);
 		char out[64] =
 		{ 0 };
 		if (!inet_ntop(pClient->addr.sin_family,
@@ -338,34 +328,10 @@ void* HandleUserInputTask(void *pArg)
 		{
 			ServerLog(SERVERLOG_ERROR, "Couldn't convert client address.");
 		}
-		/* Client_Sendf(pClient, "You (%s) sent: %s\r\n\r\n",
-		 out, cbuf->data);*/
 
-		// TODO: Process data here
-		ServerLog(SERVERLOG_DEBUG, "Calling AS CallOnPlayerInput.");
+		//Data is processed here
 		AngelScriptManager_CallOnPlayerInput(&pServer->as_manager, pClient,
 				cbuf->data);
-		ServerLog(SERVERLOG_DEBUG,
-				"Returned from calling AS CallOnPlayerInput.");
-
-		if (!strncmp(cbuf->data, "kill", min(4, bytes_read)))
-		{
-			//This is obviously just for debugging!
-			//TODO: Get rid of this or put it in an admin only command
-
-			Server_WriteToCmdPipe(pServer, "kill", 5);
-		}
-		else if (!strncmp(cbuf->data, "quit", min(4, bytes_read)))
-		{
-			Server_DisconnectClient(pServer, pClient);
-			bClientDisconnected = 1;
-		}
-		else if (!strncmp(cbuf->data, "testtimer", min(9, bytes_read)))
-		{
-			//TODO: Delete this
-			Server_AddTimedTask(pServer, TestTimedTask, time(0) + 5,
-					(void*) pServer, 0);
-		}
 
 		if (!bClientDisconnected)
 		{

@@ -160,6 +160,11 @@ int AngelScriptManager_InitAPI(AngelScriptManager *manager)
 			asFUNCTION(ASAPI_DebugVariables), asCALL_CDECL_OBJFIRST);
 	RETURNFAIL_IF(result < 0);
 
+	result = pEngine->RegisterObjectMethod("Server",
+					       "void Kill()",
+					       asFUNCTION(ASAPI_KillServer), asCALL_CDECL_OBJFIRST);
+	RETURNFAIL_IF(result < 0);
+
 	result = pEngine->RegisterGlobalFunction("void DebugObject(ref@ obj)",
 			asFUNCTION(ASAPI_DebugObject), asCALL_CDECL);
 	RETURNFAIL_IF(result < 0);

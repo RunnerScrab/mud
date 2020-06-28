@@ -20,6 +20,11 @@ void ASAPI_SendToAll(struct Server *server, std::string &message)
 	Server_SendAllClients(server, message.c_str());
 }
 
+void ASAPI_KillServer(struct Server* server)
+{
+	Server_WriteToCmdPipe(server, "kill", 5);
+}
+
 void* ASAPI_RunScriptAction(void *pArgs)
 {
 	struct RunScriptCmdPkg *pPkg = (struct RunScriptCmdPkg*) pArgs;

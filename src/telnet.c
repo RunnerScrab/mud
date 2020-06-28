@@ -98,7 +98,7 @@ const char* Telnet_DBG_GetTelcodeName(unsigned char code)
 
 void SetTelnetState(unsigned char *curtelstate, unsigned char newval)
 {
-	ServerLog(SERVERLOG_DEBUG, "Switching to telnet state %u", newval);
+	//ServerLog(SERVERLOG_DEBUG, "Switching to telnet state %u", newval);
 	*curtelstate = newval;
 }
 
@@ -115,8 +115,8 @@ unsigned char Is3ByteCmd(unsigned char x)
 void Run2ByteCmd(TelnetStream *stream, unsigned char x)
 {
 	//TODO
-	ServerLog(SERVERLOG_DEBUG, "Received request to run %s",
-			Telnet_DBG_GetTelcodeName(x));
+	//ServerLog(SERVERLOG_DEBUG, "Received request to run %s",
+	//		Telnet_DBG_GetTelcodeName(x));
 }
 
 static void MakeTelCmd(char *response, unsigned char a, unsigned char b,
@@ -201,8 +201,8 @@ void Run3ByteCmd(TelnetStream *stream, unsigned char x)
 		if (last_byte == DO || last_byte == WILL)
 		{
 			MakeTelCmd(response, IAC, last_byte == DO ? WONT : DONT, x);
-			ServerLog(SERVERLOG_DEBUG, "Sent %d %d %d\n", 255 & response[0],
-					255 & response[1], 255 & response[2]);
+			//ServerLog(SERVERLOG_DEBUG, "Sent %d %d %d\n", 255 & response[0],
+			//		255 & response[1], 255 & response[2]);
 			write_full_raw(stream->sock, response, 3);
 
 		}
@@ -259,11 +259,11 @@ void RunSubnegotiationCmd(TelnetStream *stream)
 		{
 			strncpy(stream->opts.terminal_type, &stream->sb_args.data[2],
 					max((len - 2), 41));
-			dbgprintf("Terminal type: %s\n", stream->opts.terminal_type);
+			//dbgprintf("Terminal type: %s\n", stream->opts.terminal_type);
 		}
 			break;
 		case MCCP3:
-			dbgprintf("Enabling MCCP3 from subopt negotiation\n");
+			//dbgprintf("Enabling MCCP3 from subopt negotiation\n");
 			stream->opts.b_mccp3 = 1;
 			break;
 		default:
@@ -339,7 +339,7 @@ int TelnetStream_ProcessByte(TelnetStream *stream, unsigned char x,
 		else
 		{
 			//Begin collecting subnegotiation arguments
-			dbgprintf("Received subnegotiation char %d\n", x);
+			//dbgprintf("Received subnegotiation char %d\n", x);
 			if (cv_pushlimited(&stream->sb_args, x) < 0)
 			{
 				//Client was sending an excessively long subnegotiation stream
