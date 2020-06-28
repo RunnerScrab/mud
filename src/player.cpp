@@ -96,7 +96,7 @@ int RegisterPlayerConnectionClass(asIScriptEngine *engine)
 			asMETHOD(PlayerConnection, Disconnect), asCALL_THISCALL) < 0)
 		return -1;
 
-	if (engine->RegisterFuncdef("void InputCallback(string msg)") < 0)
+	if (engine->RegisterFuncdef("void InputCallback(string &in msg)") < 0)
 	{
 		ServerLog(SERVERLOG_ERROR, "Failed to register callback definition.");
 		return -1;

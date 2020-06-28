@@ -197,85 +197,157 @@ class Character : Actor
 
 	enum PlayerGameState {LOGIN_MENU = 0,
 			      ACCOUNT_NAME_ENTRY, ACCOUNT_PASSWORD_ENTRY };
-class Player
+
+class IPlayerInputMode
 {
-	weakref<PlayerConnection> m_connection;
-	Character@ m_char;
-	LineEditor@ leditor;
-	bool m_bEditMode;
-	Player(PlayerConnection@ conn)
+	int OnInputReceived(string &in input)
 	{
-		m_bEditMode = false;
-		@leditor = LineEditor();
-		@m_connection = conn;
-		leditor.SetPlayerConnection(conn);
-		conn.SetInputCallback(InputCallback(OnInputReceived));
-		conn.SetDisconnectCallback(DisconnectCallback(OnDisconnect));
-		@m_char = Character("mychar");
-		m_gamestate = PlayerGameState::LOGIN_MENU;
+		return 0;
 	}
 
-	void OnInputReceived(string input)
+	void SetPlayerConnection(PlayerConnection@ conn)
 	{
-		PlayerConnection@ conn = m_connection.get();
-		if(m_bEditMode)
-		{
 
-			input += "\n";
-			leditor.ProcessInput(input);
-		}
-		else if(conn !is null)
+	}
+};
+
+class PlayerEditInputMode : IPlayerInputMode
+{
+	LineEditor@ leditor;
+        Player@ player;
+
+	PlayerEditInputMode(Player@ p)
+	{
+		@player = p;
+		@leditor = LineEditor();
+		leditor.SetPlayerConnection(player.m_connection.get());
+	}
+
+	int OnInputReceived(string &in input)
+	{
+		input += "\n";
+		leditor.ProcessInput(input);
+		return 1;
+	}
+
+	void SetPlayerConnection(PlayerConnection@ conn)
+	{
+		leditor.SetPlayerConnection(conn);
+	}
+
+};
+	funcdef int CmdFunc(Player@ player, PlayerConnection@ conn);
+class PlayerDefaultInputMode : IPlayerInputMode
+{
+	weakref<PlayerConnection> pconn;
+	Player@ player;
+	dictionary commanddict;
+
+	PlayerDefaultInputMode(Player@ p)
+	{
+		CmdFunc@ testfunc = function(player, conn)
+			 {
+				 conn.Send("Test dictionary anon function run!\n");
+				 return 0;
+			 };
+		commanddict = {
+			{'testdict', testfunc}
+		};
+		@player = p;
+		pconn = p.m_connection;
+	}
+
+	int OnInputReceived(string &in input)
+	{
+		PlayerConnection@ conn = pconn.get();
+		if(conn !is null)
 		{
 			conn.Send("You input: " + input + "\r\n");
 			if(input == "quit")
 			{
 				conn.Disconnect();
 			}
-			else if ("testedit" == input)
-			{
-				m_bEditMode = true;
-			}
 			else if ("testdb" == input)
 			{
-				TestDatabase(this);
-				Send("Ran TestDatabase().\r\n");
+				TestDatabase(player);
+				conn.Send("Ran TestDatabase().\r\n");
 			}
 			else if("testdbread" == input)
 			{
-				TestDatabaseRead(this);
+				TestDatabaseRead(player);
 			}
 			else if("testmp" == input)
 			{
 				MPInt num = "-1234567891011121314151617";
-				Send("MPInt test: '" + num.toString() + "'\r\n");
+				conn.Send("MPInt test: '" + num.toString() + "'\r\n");
 				num = 67890;
 
 				MPInt num2 = num;
 				num2 = num + 3.5;
-				Send("MPInt num2 initialized to: " + num2.toString() + "\r\n");
+				conn.Send("MPInt num2 initialized to: " + num2.toString() + "\r\n");
 				num2 *= 3;
-				Send("MPInt test two: '" + num2.toString() + "'\r\n");
+				player.Send("MPInt test two: '" + num2.toString() + "'\r\n");
 				MPFloat fpoint = 1.75;
 				MPFloat fpoint2 = 1.0;
 				fpoint = fpoint - fpoint2;
 				fpoint = sin(fpoint);
-				Send("MPFloat test result: " + fpoint.toString(9) + "\r\n");
+				conn.Send("MPFloat test result: " + fpoint.toString(9) + "\r\n");
 			}
 			else if("tc" == input)
 			{
-				m_char.QueueAction(TestCommand(5, 7), 0, 0);
-				Send("Command received.\r\n");
+				player.m_char.QueueAction(TestCommand(5, 7), 0, 0);
+				conn.Send("Command received.\r\n");
 			}
 			else if("tdc" == input)
 			{
-				m_char.QueueAction(TestCommand(1, 9), 6, 0);
-				Send("Command received.\r\n");
+				player.m_char.QueueAction(TestCommand(1, 9), 6, 0);
+				conn.Send("Command received.\r\n");
 			}
 		}
-		else
+		return 0;
+
+	}
+
+	void SetPlayerConnection(PlayerConnection@ c)
+	{
+
+	}
+};
+
+
+class Player
+{
+	weakref<PlayerConnection> m_connection;
+	Character@ m_char;
+	IPlayerInputMode@ currentmode;
+
+	bool m_bEditMode;
+	Player(PlayerConnection@ conn)
+	{
+		m_bEditMode = false;
+		@m_connection = conn;
+		conn.SetInputCallback(InputCallback(OnInputReceived));
+		conn.SetDisconnectCallback(DisconnectCallback(OnDisconnect));
+		@m_char = Character("mychar");
+		m_gamestate = PlayerGameState::LOGIN_MENU;
+
+		@currentmode = PlayerDefaultInputMode(this);
+		//PlayerEditInputMode();
+	}
+
+	void OnInputReceived(string &in input)
+	{
+		if(currentmode !is null)
 		{
-			Log("Tried to parse a command from a closed connection?\n");
+			if("testedit" == input)
+			{
+				@currentmode = PlayerEditInputMode(this);
+			}
+			else
+				currentmode.OnInputReceived(input);
 		}
+		else
+			Log("Current mode is null.\n");
 	}
 
 	void Send(string input)

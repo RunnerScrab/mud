@@ -15,6 +15,7 @@ extern "C"
 #include "mpnumbers.h"
 #include "leditor.h"
 
+#include "as_addons/scriptdictionary.h"
 #include "as_addons/scriptmath.h"
 #include "as_addons/scriptstdstring.h"
 #include "as_addons/scriptarray.h"
@@ -61,9 +62,11 @@ int AngelScriptManager_InitEngine(AngelScriptManager *manager,
 	RETURNFAIL_IF(!manager->engine);
 
 	manager->engine->SetEngineProperty(asEP_ALLOW_MULTILINE_STRINGS, true);
+
 	RegisterScriptMath(manager->engine);
 	RegisterStdString(manager->engine);
 	RegisterScriptArray(manager->engine, true);
+	RegisterScriptDictionary(manager->engine);
 	RegisterScriptHandle(manager->engine);
 	RegisterScriptWeakRef(manager->engine);
 	RegisterExceptionRoutines(manager->engine);
@@ -372,6 +375,7 @@ int AngelScriptManager_LoadScripts(AngelScriptManager *manager,
 			manager->main_module->AddScriptSection("game", &script[0], len) < 0);
 
 	RETURNFAIL_IF(LoadActorProxyScript(manager->main_module));
+
 	RETURNFAIL_IF(manager->main_module->Build() < 0);
 
 #ifdef DEBUG
