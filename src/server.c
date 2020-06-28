@@ -148,7 +148,7 @@ void ReleaseHandleUserInputTaskPkg(void *pArg)
 	struct HandleUserInputTaskPkg *pkg = (struct HandleUserInputTaskPkg*) pArg;
 	struct Server *pServer = pkg->pServer;
 	struct Client *pClient = pkg->pClient;
-	ServerLog(SERVERLOG_DEBUG, "Client ref is being decremented.");
+
 	Client_ReleaseRef(pClient);
 
 	if (pClient->bDisconnected && !Client_GetRefCount(pClient))
@@ -173,15 +173,6 @@ static void RearmClientSocket(struct Server *pServer, struct Client *pClient)
 	ev.events = EPOLLIN | EPOLLONESHOT;
 	ev.data.ptr = &(pClient->ev_pkg);
 	epoll_ctl(pServer->epfd, EPOLL_CTL_MOD, pClient->sock, &ev);
-}
-
-void DebugPrintCV(cv_t *buf)
-{
-	size_t idx = 0, z = buf->capacity;
-	for (; idx < z; ++idx)
-	{
-		dbgprintf(idx < z - 1 ? "%d," : "%d\n", 255 & cv_at(buf, idx));
-	}
 }
 
 void* HandleUserInputTask(void *pArg)
@@ -426,7 +417,6 @@ void Server_HandleUserInput(struct Server *pServer, struct Client *pClient)
 	pPkg->pServer = pServer;
 	pPkg->pClient = pClient;
 	Client_AddRef(pClient);
-	ServerLog(SERVERLOG_DEBUG, "Client ref is being incremented.");
 	if (FAILURE(
 			ThreadPool_AddTask(&(pServer->thread_pool), HandleUserInputTask, 1,
 					pPkg, ReleaseHandleUserInputTaskPkg)))
@@ -466,7 +456,7 @@ int Server_AcceptClient(struct Server *server)
 				pConnectingClient);
 #ifdef DEBUG
 		Client_Sendf(pConnectingClient,
-			"\r\n`#ff0000`*****The server is running as a DEBUG build*****`default`\r\n\r\n");
+			"\r\n`#ff0000`*****The server build running is a debug version*****`default`\r\n\r\n");
 #endif
 		epoll_ctl(server->epfd, EPOLL_CTL_ADD, accepted_sock, &clev);
 		return accepted_sock;
