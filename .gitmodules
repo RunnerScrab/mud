@@ -4,3 +4,6 @@
 [submodule "src/libsodium"]
 	path = src/libsodium
 	url = https://github.com/jedisct1/libsodium.git
+[submodule "src/zlib"]
+	path = src/zlib
+	url = https://github.com/madler/zlib
