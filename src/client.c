@@ -7,6 +7,7 @@
 #include <time.h>
 #include <errno.h>
 
+#include "server.h"
 #include "utils.h"
 #include "threadpool.h"
 #include "zcompressor.h"
@@ -126,7 +127,7 @@ int Client_WriteTo(struct Client *pTarget, const char *buf, size_t len)
 			int err = errno;
 			char msg[512] = {0};
 			strerror_r(err, msg, 512);
-			dbgprintf("Socket write error: %s\n", msg);
+			ServerLog(SERVERLOG_ERROR, "Socket write error: %s\n", msg);
 		}
 		pthread_mutex_unlock(&pTarget->connection_state_mtx);
 		cv_destroy(&compout);
@@ -143,7 +144,7 @@ int Client_WriteTo(struct Client *pTarget, const char *buf, size_t len)
 			int err = errno;
 			char msg[512] = {0};
 			strerror_r(err, msg, 512);
-			dbgprintf("Socket write error: %s\n", msg);
+			ServerLog(SERVERLOG_ERROR, "Socket write error: %s\n", msg);
 		}
 		cv_destroy(&color_buf);
 		pthread_mutex_unlock(&pTarget->connection_state_mtx);

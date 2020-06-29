@@ -272,6 +272,8 @@ class PlayerDefaultInputMode : IPlayerInputMode
 				conn.Send("Killing server.\n");
 				game_server.Kill();
 			}
+			else if("testfunc" == input)
+				TestFunction(conn);
 			else if ("testdb" == input)
 			{
 				TestDatabase(player);
