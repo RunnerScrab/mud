@@ -45,8 +45,16 @@ START_TEST(test_cv_strcat)
 	cv_init(&str, 64);
 	cv_sprintf(&str, "Meow");
 	ck_assert_int_eq(5, cv_len(&str));
-	cv_strcat(&str, " meow");
-	cv_strcat(&str, " rowr");
+	printf("Str: '%s' cv_len: %u\n", str.data, cv_len(&str));
+
+	cv_strncat(&str, " meow", 5);
+	ck_assert_int_eq(10, cv_len(&str));
+	printf("Str: '%s' cv_len: %u\n", str.data, cv_len(&str));
+
+	cv_strncat(&str, " rowr", 5);
+	printf("Str: '%s' cv_len: %u\n", str.data, cv_len(&str));
+
+	ck_assert_int_eq(15, cv_len(&str));
 	ck_assert(!strcmp(str.data, "Meow meow rowr"));
 	ck_assert_int_eq(0, cv_at(&str, cv_len(&str) - 1));
 	ck_assert_int_eq(15, cv_len(&str));
@@ -84,6 +92,6 @@ int main(void)
 
 	srunner_free(sr);
 
-	talloc_subsys_release();
+	//talloc_subsys_release();
 	return (tests_failed == 0) ? EXIT_SUCCESS : EXIT_FAILURE;
 }

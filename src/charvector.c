@@ -123,8 +123,7 @@ void cv_strncpy(cv_t *dest, const el_t *source, size_t len)
 
 void cv_strncat(cv_t *dest, const el_t *source, size_t len)
 {
-	// To account for the null byte, the length must have 1 added to it and dest->length must have 1 subtracted
-	size_t new_len = dest->length + len + 1;
+	size_t new_len = strnlen(dest->data, dest->capacity) + len + 1;
 	if (new_len >= dest->capacity)
 	{
 		size_t oldcap = dest->capacity;

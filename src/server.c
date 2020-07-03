@@ -180,6 +180,7 @@ void* HandleUserInputTask(void *pArg)
 	//This is the user input processor task dispatched to a worker thread by the threadpool.
 	//Handling of user commands should generally run from this point without dispatching another task
 	//(except for commands that add a timed event and the like)
+
 	struct HandleUserInputTaskPkg *pPkg = (struct HandleUserInputTaskPkg*) pArg;
 	struct Server *pServer = pPkg->pServer;
 	struct Client *pClient = pPkg->pClient;

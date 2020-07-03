@@ -3,8 +3,8 @@
 
 #define CLIENT_STOREDCMDINTERVALS 6 //How many intervals to calculate average cmd/s from, for throttling
 #define CLIENT_MAXCMDRATE 10.f //How many cmd/s a user may achieve before being kicked
-#define CLIENT_MAXBPS 150 //Maximum bytes/s a user may send before being kicked
-#define CLIENT_MAXINPUTLEN 512 //Maximum length of user input
+#define CLIENT_MAXBPS 1500 //Maximum bytes/s a user may send before being kicked
+#define CLIENT_MAXINPUTLEN 2048 //Maximum length of user input
 #define CLIENT_MAXTELCMDLEN 64 //Maximum length of telnet command
 
 #define SERVER_PORT 9001
