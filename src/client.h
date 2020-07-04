@@ -33,6 +33,7 @@ struct Client
 	int sock;
 	struct EvPkg ev_pkg;
 	struct sockaddr_in addr;
+	char ip_address_text[64];
 
 	TelnetStream tel_stream;
 	ZCompressor zstreams;

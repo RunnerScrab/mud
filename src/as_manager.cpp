@@ -382,6 +382,7 @@ extern "C"
 				asfiles.push_back(std::string(pDirEntry->d_name));
 			}
 		}
+		closedir(pDir);
 
 		//TODO: May want to impose some kind of directory structure on scripts
 

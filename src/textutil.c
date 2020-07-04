@@ -534,3 +534,22 @@ void ReflowText(const char* input, const size_t len, cv_t* output, struct Reflow
 	ReflowTextImpl(input, len, output, parameters->line_width,
 		parameters->num_indent_spaces, parameters->bAllowHyphenation, ReflowParagraph);
 }
+
+void RemoveCRs(const char* in, size_t len, cv_t* out)
+{
+	/* Remove carriage returns */
+	size_t idx = 0;
+	for(; idx < len;)
+	{
+		char* p = memchr(&in[idx], '\r', len - idx);
+		if(!p)
+		{
+			cv_strncat(out, &in[idx], len - idx);
+			return;
+		}
+		size_t cridx = (p - in);
+		cv_strncat(out, &in[idx], cridx - idx);
+
+		idx = cridx + 1;
+	}
+}

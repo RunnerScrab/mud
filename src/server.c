@@ -24,6 +24,7 @@
 #include "ansicolor.h"
 #include "rand.h"
 #include "crypto.h"
+#include "textutil.h"
 
 #include "tickthread.h"
 
@@ -202,7 +203,8 @@ void* HandleUserInputTask(void *pArg)
 	{
 		ServerLog(SERVERLOG_ERROR, "Client sending data too fast!");
 		Client_Sendf(pClient,
-				"\r\n`@255;0;0`You are sending data too fast and are being disconnected.`default`\r\n");
+				"\r\n`@255;0;0`You are sending data too fast"
+			" and are being disconnected.`default`\r\n");
 		cv_destroy(&clientinput);
 		Server_DisconnectClient(pServer, pClient);
 		return (void*) -1;
@@ -313,18 +315,14 @@ void* HandleUserInputTask(void *pArg)
 	if (bytes_read > 0 && inputcomplete)
 	{
 		//At this point, we have a complete user command and can process it
-		char out[64] =
-		{ 0 };
-		if (!inet_ntop(pClient->addr.sin_family,
-				(void*) &pClient->addr.sin_addr, out, sizeof(char) * 64))
-		{
-			ServerLog(SERVERLOG_ERROR, "Couldn't convert client address.");
-		}
 
 		//Data is processed here
+		cv_t cleaned_input;
+		cv_init(&cleaned_input, cbuf->length);
+		RemoveCRs(cbuf->data, cbuf->length, &cleaned_input);
 		AngelScriptManager_CallOnPlayerInput(&pServer->as_manager, pClient,
-				cbuf->data);
-
+				cleaned_input.data);
+		cv_destroy(&cleaned_input);
 		if (!bClientDisconnected)
 		{
 			cv_clear(cbuf);
@@ -449,6 +447,18 @@ int Server_AcceptClient(struct Server *server)
 		pthread_rwlock_wrlock(&server->clients_rwlock);
 		Vector_Push(&server->clients, pConnectingClient);
 		pthread_rwlock_unlock(&server->clients_rwlock);
+
+		if (!inet_ntop(pConnectingClient->addr.sin_family,
+				(void*) &pConnectingClient->addr.sin_addr,
+				pConnectingClient->ip_address_text, 64))
+		{
+			ServerLog(SERVERLOG_ERROR, "Couldn't convert client address.");
+		}
+		else
+		{
+			ServerLog(SERVERLOG_STATUS, "Client connected from address '%s'.\n",
+				pConnectingClient->ip_address_text);
+		}
 
 		TelnetStream_SendPreamble(&pConnectingClient->tel_stream);
 

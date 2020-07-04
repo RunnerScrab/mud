@@ -12,10 +12,8 @@ struct ReflowParameters
 	unsigned char bAllowHyphenation;
 };
 
-//O(n * log(n)), in practice sometimes performs better than the shortest-paths algorithm
-void ReflowTextBinary(const char* input, const size_t len, cv_t* output, struct ReflowParameters* params);
-
 //O(width * n), in practice sometimes perform better than the binary-search algorithm
 void ReflowText(const char* input, const size_t len, cv_t* output, struct ReflowParameters* params);
+void RemoveCRs(const char* in, size_t len, cv_t* output);
 
 #endif
