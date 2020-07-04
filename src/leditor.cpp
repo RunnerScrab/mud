@@ -229,6 +229,11 @@ LineEditorResult EditorCmdPrint(struct LineEditor* pLE, struct LexerResult* plr)
 {
 	if(pLE->buffer.length)
 	{
+		unsigned char bHideColor = (LexerResult_GetTokenCount(plr) > 1
+					    && LexerResult_GetTokenAt(plr, 1)[0] == 'r');
+		void (*SendFn)(struct Client*, const char* fmt, ...)
+			= bHideColor ? Client_SendfShowColorTags : Client_Sendf;
+
 		size_t idx = 0;
 		size_t linebuf_reserved = 512;
 		char* linebuf = (char*) talloc(linebuf_reserved);
@@ -244,7 +249,7 @@ LineEditorResult EditorCmdPrint(struct LineEditor* pLE, struct LexerResult* plr)
 			}
 			linebuf[linelen] = 0;
 			memcpy(linebuf, &pLE->buffer.data[pLE->lines[idx].start], linelen);
-			Client_Sendf(pLE->client, "%02lu] %s\n", idx, linebuf);
+			SendFn(pLE->client, "%02lu] %s\n", idx, linebuf);
 		}
 		tfree(linebuf);
 	}

@@ -92,16 +92,24 @@ void Client_Destroy(void *p)
 
 //This should be used for all client writes, since it knows whether or not
 //to perform stream compression
-int Client_WriteTo(struct Client *pTarget, const char *buf, size_t len)
+int Client_WriteToImpl(struct Client *pTarget, unsigned char bColorize, const char *buf, size_t len)
 {
 	if(pTarget->bDisconnected)
 	{
 		return -1;
 	}
 
+	const char* pBuffer = buf;
+	size_t dwBufferLen = len;
+
 	cv_t color_buf;
-	cv_init(&color_buf, len);
-	ANSIColorizeString(buf, len, &color_buf);
+	if(bColorize)
+	{
+		cv_init(&color_buf, len);
+		ANSIColorizeString(buf, len, &color_buf);
+		pBuffer = color_buf.data;
+		dwBufferLen = color_buf.length;
+	}
 
 	pthread_mutex_lock(&pTarget->connection_state_mtx);
 	switch (pTarget->tel_stream.opts.b_mccp2)
@@ -112,12 +120,13 @@ int Client_WriteTo(struct Client *pTarget, const char *buf, size_t len)
 		cv_init(&compout, len);
 
 		//We don't need or want to send the null terminator over the network
-		if (ZCompressor_CompressRawData(&pTarget->zstreams, color_buf.data,
-				color_buf.length - 1, &compout) < 0)
+		if (ZCompressor_CompressRawData(&pTarget->zstreams, pBuffer,
+				dwBufferLen - 1, &compout) < 0)
 		{
 			pthread_mutex_unlock(&pTarget->connection_state_mtx);
 			cv_destroy(&compout);
-			cv_destroy(&color_buf);
+			if(bColorize)
+				cv_destroy(&color_buf);
 			return -1;
 		}
 
@@ -131,14 +140,15 @@ int Client_WriteTo(struct Client *pTarget, const char *buf, size_t len)
 		}
 		pthread_mutex_unlock(&pTarget->connection_state_mtx);
 		cv_destroy(&compout);
-		cv_destroy(&color_buf);
+		if(bColorize)
+			cv_destroy(&color_buf);
 		return result;
 	}
 	default:
 	{
 		//Don't send the null terminator
-		int written = write_full_raw(pTarget->sock, color_buf.data,
-				color_buf.length - 1);
+		int written = write_full_raw(pTarget->sock, pBuffer,
+				dwBufferLen - 1);
 		if(written < 0)
 		{
 			int err = errno;
@@ -146,11 +156,22 @@ int Client_WriteTo(struct Client *pTarget, const char *buf, size_t len)
 			strerror_r(err, msg, 512);
 			ServerLog(SERVERLOG_ERROR, "Socket write error: %s\n", msg);
 		}
-		cv_destroy(&color_buf);
+		if(bColorize)
+			cv_destroy(&color_buf);
 		pthread_mutex_unlock(&pTarget->connection_state_mtx);
 		return written;
 	}
 	}
+}
+
+int Client_WriteTo(struct Client *pTarget, const char *buf, size_t len)
+{
+	return Client_WriteToImpl(pTarget, 1, buf, len);
+}
+
+int Client_WriteToShowRawColorTags(struct Client *pTarget, const char* buf, size_t len)
+{
+	return Client_WriteToImpl(pTarget, 0, buf, len);
 }
 
 //This uses Client_WriteTo for a printf style send
@@ -171,7 +192,31 @@ void Client_Sendf(struct Client *pTarget, const char *fmt, ...)
 
 	buf.length = required;
 
-	Client_WriteTo(pTarget, buf.data, buf.length);
+	Client_WriteToImpl(pTarget, 1, buf.data, buf.length);
+
+	cv_destroy(&buf);
+	va_end(arglist);
+	va_end(argcpy);
+}
+
+void Client_SendfShowColorTags(struct Client* pTarget, const char* fmt, ...)
+{
+	if(!pTarget)
+	{
+		return;
+	}
+
+	va_list arglist, argcpy;
+	va_start(arglist, fmt);
+	va_copy(argcpy, arglist);
+	cv_t buf;
+	cv_init(&buf, 512);
+	size_t required = vsnprintf(buf.data, 512, fmt, arglist) + 1;
+	cv_resize(&buf, required);
+
+	buf.length = required;
+
+	Client_WriteToImpl(pTarget, 0, buf.data, buf.length);
 
 	cv_destroy(&buf);
 	va_end(arglist);

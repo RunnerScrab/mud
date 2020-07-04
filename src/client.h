@@ -61,8 +61,12 @@ struct Client
 };
 
 void Client_Disconnect(struct Client *pTarget);
-int Client_WriteTo(struct Client *pTarget, const char *buf, size_t len); //What the rest of the engine should use for client output
+//What the rest of the engine should use for client output
+int Client_WriteTo(struct Client *pTarget, const char *buf, size_t len);
+//Same as Client_WriteTo, but does not interpret ANSI color code sequences
+int Client_WriteToShowRawColorTags(struct Client *pTarget, const char* buf, size_t len);
 void Client_Sendf(struct Client *pTarget, const char *fmt, ...); //Uses WriteTo
+void Client_SendfShowColorTags(struct Client* pTarget, const char* fmt, ...);
 struct Client* Client_Create(int sock, struct Server*, struct ActionScheduler*);
 void Client_Destroy(void *p);
 
