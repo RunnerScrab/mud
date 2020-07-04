@@ -23,179 +23,7 @@ interface TestInterface
 	void TestInterfaceMethod();
 };
 
-class TestPOD
-{
-	string m_name;
-	string m_ability;
-	TestPOD(string name, string ability)
-	{
-		m_name = name;
-		m_ability = ability;
-	}
-};
-
-class Meower : TestInterface, IPersistent
-{
-	uuid m_uuid;
-	string m_name;
-	array<TestPOD@> m_testpods;
-	MPInt m_xval;
-	MPFloat m_yval;
-
-	void OnLoad(DBTable@ table, DBRow@ row)
-	{
-		row.GetColValue("uuid", m_uuid);
-		row.GetColValue("name", m_name);
-		row.GetColValue("xcoord", m_xval, 72);
-		row.GetColValue("ycoord", m_yval, 6.28);
-
-		array<DBRow@> resultarr;
-		DBTable@ podsubtable = table.GetSubTable("testpodarray");
-		if(@podsubtable !is null)
-		{
-			podsubtable.LoadSubTable(row, resultarr);
-			for(int i = 0, len = resultarr.length(); i < len; ++i)
-			{
-				string name;
-				string ability;
-				DBRow@ hRow = resultarr[i];
-				hRow.GetColValue("name", name);
-				hRow.GetColValue("ability", ability);
-				m_testpods.insertLast(TestPOD(name, ability));
-			}
-		}
-	}
-
-	void OnDefineSchema(DBTable@ table)
-	{
-		Log("Calling Meower's DefineSchema()\n");
-		table.AddUUIDCol("uuid", DBKEYTYPE_PRIMARY);
-		table.AddTextCol("name");
-		table.AddMPIntCol("xcoord");
-		table.AddMPFloatCol("ycoord");
-		DBTable@ testpodtable = table.CreateSubTable("testpodarray");
-		testpodtable.AddTextCol("name");
-		testpodtable.AddTextCol("ability");
-	}
-
-	void OnSave(DBTable@ table, DBRow@ row)
-	{
-		Log("Calling Meower OnSave().\r\n");
-		if(@row !is null)
-		{
-			row.SetColValue("uuid", m_uuid);
-			row.SetColValue("name", m_name);
-			row.SetColValue("xcoord", m_xval);
-			row.SetColValue("ycoord", m_yval);
-
-			DBTable@ testpodtable = table.GetSubTable("testpodarray");
-
-			for(int i = 0, len = m_testpods.length();
-			    i < len; ++i)
-			{
-//tptrow.ClearValues();
-				TestPOD@ thispod = m_testpods[i];
-				DBRow@ tptrow = DBRow(testpodtable);
-				tptrow.SetColValue("subtable_index", i);
-				tptrow.SetColValue("name", thispod.m_name);
-				tptrow.SetColValue("ability", thispod.m_ability);
-				row.StoreChildRow(tptrow);
-			}
-
-		}
-		else
-		{
-			Log("OnSave was passed a null pointer.\n");
-		}
-	}
-
-	void TestInterfaceMethod()
-	{
-		Log("Calling Meower's testinterface method.\n");
-	}
-
-	Meower()
-	{
-		Log("Meower constructing.\n");
-		TestInterfaceMethod();
-		m_name = "Meower";
-		m_uuid.Generate();
-		Log("Trying to make a meower. это - кошка!\n");
-		Log("Meower uuid: " + m_uuid.ToString() + "\n");
-		Log("Meower coord: " + m_xval.toString() + "\n");
-		Log("Meower ycoord: " + m_yval.toString() + "\n");
-	}
-	~Meower()
-	{
-
-	}
-	string GetUUID()
-	{
-		return m_uuid.ToString();
-	}
-};
-
-class SuperMeower : Meower
-{
-	string m_superpowername;
-
-	void TestInterfaceMethod()
-	{
-		Log("Calling SuperMeower's testinterface method.\n");
-		Meower::TestInterfaceMethod();
-	}
-
-	void OnDefineSchema(DBTable@ table)
-	{
-		Meower::OnDefineSchema(table);
-		Log("Calling SuperMeower's OnDefineSchema()\n");
-		table.AddTextCol("superpower");
-	}
-
-	SuperMeower()
-	{
-		Log("SuperMeower constructing.\n");
-		TestInterfaceMethod();
-		m_superpowername = "meowing";
-	}
-	void OnSave(DBTable@ table, DBRow@ row)
-	{
-		Meower::OnSave(table, row);
-		Log("Calling SuperMeower OnSave().\r\n");
-		row.SetColValue("superpower", m_superpowername);
-	}
-	void OnLoad(DBTable@ table, DBRow@ row)
-	{
-		Meower::OnLoad(table, row);
-		row.GetColValue("superpower", m_superpowername);
-	}
-
-};
-
-class MegaMeower : SuperMeower
-{
-	MegaMeower()
-	{
-
-	}
-	void OnDefineSchema(DBTable@ table)
-	{
-		SuperMeower::OnDefineSchema(table);
-		Log("Calling MegaMeower's OnDefineSchema()");
-	}
-
-};
-
-class Character : Actor
-{
-	string m_name;
-	Character(string name)
-	{
-		m_name = name;
-	}
-}
-
-	enum PlayerGameState {LOGIN_MENU = 0,
+enum PlayerGameState {LOGIN_MENU = 0,
 			      ACCOUNT_NAME_ENTRY, ACCOUNT_PASSWORD_ENTRY };
 
 class IPlayerInputMode
@@ -215,6 +43,7 @@ class PlayerEditInputMode : IPlayerInputMode
 {
 	LineEditor@ leditor;
         Player@ player;
+	string target;
 
 	PlayerEditInputMode(Player@ p)
 	{
@@ -226,8 +55,7 @@ class PlayerEditInputMode : IPlayerInputMode
 	int OnInputReceived(string &in input)
 	{
 		input += "\n";
-		leditor.ProcessInput(input);
-		return 1;
+		return leditor.ProcessInput(input);
 	}
 
 	void SetPlayerConnection(PlayerConnection@ conn)
@@ -236,7 +64,14 @@ class PlayerEditInputMode : IPlayerInputMode
 	}
 
 };
-	funcdef int CmdFunc(Player@ player, PlayerConnection@ conn);
+
+int TestFunction2(Player@ player, PlayerConnection@ conn)
+{
+	conn.Send("Ran TestFunction2()!\r\n");
+	return 0;
+}
+
+funcdef int CmdFunc(Player@ player, PlayerConnection@ conn);
 class PlayerDefaultInputMode : IPlayerInputMode
 {
 	weakref<PlayerConnection> pconn;
@@ -251,7 +86,8 @@ class PlayerDefaultInputMode : IPlayerInputMode
 				 return 0;
 			 };
 		commanddict = {
-			{'testdict', testfunc}
+			{'testdict', testfunc},
+			{'testdict2', TestFunction2}
 		};
 		@player = p;
 		pconn = p.m_connection;
@@ -310,6 +146,17 @@ class PlayerDefaultInputMode : IPlayerInputMode
 				player.m_char.QueueAction(TestCommand(1, 9), 6, 0);
 				conn.Send("Command received.\r\n");
 			}
+			else
+			{
+				if(commanddict.exists(input))
+				{
+					CmdFunc@ func;
+					if(commanddict.get(input, @func))
+					{
+						func(player, conn);
+					}
+				}
+			}
 		}
 		return 0;
 
@@ -319,119 +166,6 @@ class PlayerDefaultInputMode : IPlayerInputMode
 	{
 
 	}
-};
-
-
-class Player
-{
-	weakref<PlayerConnection> m_connection;
-	Character@ m_char;
-	IPlayerInputMode@ currentmode;
-
-	bool m_bEditMode;
-	Player(PlayerConnection@ conn)
-	{
-		m_bEditMode = false;
-		@m_connection = conn;
-		conn.SetInputCallback(InputCallback(OnInputReceived));
-		conn.SetDisconnectCallback(DisconnectCallback(OnDisconnect));
-		@m_char = Character("mychar");
-		m_gamestate = PlayerGameState::LOGIN_MENU;
-
-		@currentmode = PlayerDefaultInputMode(this);
-		//PlayerEditInputMode();
-	}
-
-	void OnInputReceived(string &in input)
-	{
-		if(currentmode !is null)
-		{
-			if("testedit" == input)
-			{
-				@currentmode = PlayerEditInputMode(this);
-			}
-			else
-				currentmode.OnInputReceived(input);
-		}
-		else
-			Log("Current mode is null.\n");
-	}
-
-	void Send(string input)
-	{
-		PlayerConnection@ conn = m_connection.get();
-		if(conn !is null)
-		{
-			conn.Send(input);
-		}
-		else
-		{
-			Log("Tried to send to a closed connection.\n");
-		}
-	}
-
-	void OnDisconnect()
-	{
-		Log("Callback: Player disconnecting\n");
-		int removeidx = g_players.findByRef(this);
-		if(removeidx >= 0)
-		{
-			Log("Attempting to remove player at idx " + removeidx);
-			int meoweridx = g_meowers.findByRef(GetMeower());
-			game_server.SendToAll("g_meowers size: " + g_meowers.length() + "\r\n");
-
-			game_server.SendToAll("g_meowers size after removal: " + g_meowers.length() + "\r\n");
-			g_players.removeAt(removeidx);
-			game_server.SendToAll("Someone has disconnected. There are now " + g_players.length() + " players connected.\r\n");
-			g_meowers.removeAt(meoweridx);
-		}
-		else
-		{
-			Log("Couldn't find player in g_players.\n");
-		}
-
-
-	}
-
-	~Player()
-	{
-		Log("Calling script player destructor.\n");
-//m_connection.DetachUserEventObserver(this);
-	}
-
-	PlayerGameState GetPlayerGameState()
-	{
-		return m_gamestate;
-	}
-
-	void SetPlayerGameState(PlayerGameState v)
-	{
-		m_gamestate = v;
-	}
-
-	string GetName()
-	{
-		return m_name;
-	}
-
-	void SetName(string v)
-	{
-		m_name = v;
-	}
-
-	Meower@ GetMeower() { return m_meower;}
-	void SetMeower(Meower@ m)
-	{
-		@m_meower = @m;
-		Log("Attempting to set player meower.\n");
-		Send("Trying to set your meower. это - кошка. \r\n");
-		string msg = "\r\nYour meower's UUID is `@ff0000`" + m_meower.GetUUID() + "`default`!\r\n";
-		Send(msg);
-	}
-
-private PlayerGameState m_gamestate;
-	string m_name;
-		     private Meower@ m_meower;
 };
 
 TestCommand tc(1, 2);

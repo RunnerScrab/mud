@@ -32,7 +32,9 @@ struct LineEditor
 	struct Client* client;
 };
 
-int LineEditor_ProcessInput(struct LineEditor* ple, const char* input, size_t len);
+typedef enum {LEDITOR_OK = 0, LEDITOR_QUIT = 1, LEDITOR_SAVE = 2} LineEditorResult;
+
+LineEditorResult LineEditor_ProcessInput(struct LineEditor* ple, const char* input, size_t len);
 int LineEditor_Init(struct LineEditor* le);
 void LineEditor_Destroy(struct LineEditor* le);
 
@@ -41,17 +43,17 @@ struct EditorCommand
 	const char* name;
 	const char* usage;
 	const char* desc;
-	int (*cmdfp)(struct LineEditor*, struct LexerResult*);
+	LineEditorResult (*cmdfp)(struct LineEditor*, struct LexerResult*);
 };
 
-int EditorCmdFormat(struct LineEditor* pLE, struct LexerResult* plr);
-int EditorCmdDelete(struct LineEditor* pLE, struct LexerResult* plr);
-int EditorCmdInsert(struct LineEditor* pLE, struct LexerResult* plr);
-int EditorCmdPrint(struct LineEditor* pLE, struct LexerResult* plr);
-int EditorCmdQuit(struct LineEditor* pLE, struct LexerResult* plr);
-int EditorCmdSave(struct LineEditor* pLE, struct LexerResult* plr);
-int EditorCmdClear(struct LineEditor* pLE, struct LexerResult* plr);
-int EditorCmdHelp(struct LineEditor* pLE, struct LexerResult* plr);
+LineEditorResult EditorCmdFormat(struct LineEditor* pLE, struct LexerResult* plr);
+LineEditorResult EditorCmdDelete(struct LineEditor* pLE, struct LexerResult* plr);
+LineEditorResult EditorCmdInsert(struct LineEditor* pLE, struct LexerResult* plr);
+LineEditorResult EditorCmdPrint(struct LineEditor* pLE, struct LexerResult* plr);
+LineEditorResult EditorCmdQuit(struct LineEditor* pLE, struct LexerResult* plr);
+LineEditorResult EditorCmdSave(struct LineEditor* pLE, struct LexerResult* plr);
+LineEditorResult EditorCmdClear(struct LineEditor* pLE, struct LexerResult* plr);
+LineEditorResult EditorCmdHelp(struct LineEditor* pLE, struct LexerResult* plr);
 
 #ifdef __cplusplus
 class asIScriptEngine;

@@ -30,7 +30,6 @@ SQLiteColumn::SQLiteColumn(const std::string &name,
 
 SQLiteColumn::~SQLiteColumn()
 {
-	dbgprintf("Value of m_foreigntable: %p\n", m_foreigntable);
 	if (m_foreigntable)
 	{
 		m_foreigntable->Release();

@@ -24,7 +24,6 @@ struct EditorCommand g_editor_commands[] =
 	{".s", ".s", "Save buffer and quit", EditorCmdSave}
 };
 
-
 void LineEditor_AddRef(struct LineEditor* le)
 {
 	asAtomicInc(le->refcount);
@@ -65,6 +64,18 @@ int RegisterLineEditorClass(asIScriptEngine* pengine)
 {
 	int result = 0;
 
+	result = pengine->RegisterEnum("LineEditorResult");
+	RETURNFAIL_IF(result < 0);
+
+	result = pengine->RegisterEnumValue("LineEditorResult", "LEDITOR_OK", LEDITOR_OK);
+	RETURNFAIL_IF(result < 0);
+
+	result = pengine->RegisterEnumValue("LineEditorResult", "LEDITOR_SAVE", LEDITOR_SAVE);
+	RETURNFAIL_IF(result < 0);
+
+	result = pengine->RegisterEnumValue("LineEditorResult", "LEDITOR_QUIT", LEDITOR_QUIT);
+	RETURNFAIL_IF(result < 0);
+
 	result = pengine->RegisterObjectType("LineEditor", 0, asOBJ_REF);
 	RETURNFAIL_IF(result < 0);
 
@@ -84,7 +95,7 @@ int RegisterLineEditorClass(asIScriptEngine* pengine)
 					       asFUNCTION(LineEditor_SetPlayerConnection), asCALL_CDECL_OBJFIRST);
 	RETURNFAIL_IF(result < 0);
 
-	result = pengine->RegisterObjectMethod("LineEditor", "void ProcessInput(const string& in)",
+	result = pengine->RegisterObjectMethod("LineEditor", "LineEditorResult ProcessInput(const string& in)",
 					       asFUNCTION(LineEditor_ProcessInputString), asCALL_CDECL_OBJFIRST);
 	RETURNFAIL_IF(result < 0);
 
@@ -117,7 +128,6 @@ void LineEditor_RebuildLineIndices(struct LineEditor* le, size_t from_idx);
 
 void LineEditor_Append(struct LineEditor* le, const char* data, size_t datalen)
 {
-	printf("Appending: '%s'\n", data);
 	cv_appendstr(&le->buffer, data, datalen);
 	LineEditor_RebuildLineIndices(le, (le->lines_count > 1) ? (le->lines_count - 1) : 0);
 }
@@ -215,7 +225,7 @@ void LineEditor_DeleteLine(struct LineEditor* le, size_t line_idx)
 	tfree(temp);
 }
 
-int EditorCmdPrint(struct LineEditor* pLE, struct LexerResult* plr)
+LineEditorResult EditorCmdPrint(struct LineEditor* pLE, struct LexerResult* plr)
 {
 	if(pLE->buffer.length)
 	{
@@ -243,10 +253,10 @@ int EditorCmdPrint(struct LineEditor* pLE, struct LexerResult* plr)
 		Client_Sendf(pLE->client, "Buffer is empty.\n");
 	}
 
-	return 0;
+	return LEDITOR_OK;
 }
 
-int EditorCmdFormat(struct LineEditor* pLE, struct LexerResult* plr)
+LineEditorResult EditorCmdFormat(struct LineEditor* pLE, struct LexerResult* plr)
 {
 	cv_t out;
 	struct ReflowParameters rfparams;
@@ -262,32 +272,32 @@ int EditorCmdFormat(struct LineEditor* pLE, struct LexerResult* plr)
 
 	LineEditor_RebuildLineIndices(pLE, 0);
 	cv_destroy(&out);
-	return 0;
+	return LEDITOR_OK;
 }
 
-int EditorCmdDelete(struct LineEditor* pLE, struct LexerResult* plr)
+LineEditorResult EditorCmdDelete(struct LineEditor* pLE, struct LexerResult* plr)
 {
 	size_t tokencount = LexerResult_GetTokenCount(plr);
 	if(tokencount < 2)
 	{
 		Client_Sendf(pLE->client, "*Too few arguments.\n");
-		return 0;
+		return LEDITOR_OK;
 	}
 
 	char* pos_str = LexerResult_GetTokenAt(plr, 1);
 	size_t delete_idx = atoi(pos_str);
 
 	LineEditor_DeleteLine(pLE, delete_idx);
-	return 0;
+	return LEDITOR_OK;
 }
 
-int EditorCmdInsert(struct LineEditor* pLE, struct LexerResult* plr)
+LineEditorResult EditorCmdInsert(struct LineEditor* pLE, struct LexerResult* plr)
 {
 	size_t tokencount = LexerResult_GetTokenCount(plr);
 	if(tokencount < 2)
 	{
 		Client_Sendf(pLE->client, "*Too few arguments.\n");
-		return 0;
+		return LEDITOR_OK;
 	}
 
 	char* pos_str = LexerResult_GetTokenAt(plr, 1);
@@ -303,33 +313,30 @@ int EditorCmdInsert(struct LineEditor* pLE, struct LexerResult* plr)
 		LineEditor_InsertAt(pLE, insert_idx, temp, insertstr_len + 2);
 		tfree(temp);
 	}
-	return 0;
+	return LEDITOR_OK;
 }
 
-
-int EditorCmdQuit(struct LineEditor* pLE, struct LexerResult* plr)
+LineEditorResult EditorCmdQuit(struct LineEditor* pLE, struct LexerResult* plr)
 {
 	pLE->bSaveResult = 0;
-	return -1;
+	return LEDITOR_QUIT;
 }
 
-int EditorCmdSave(struct LineEditor* pLE, struct LexerResult* plr)
+LineEditorResult EditorCmdSave(struct LineEditor* pLE, struct LexerResult* plr)
 {
-
 	pLE->bSaveResult = 1;
-	return -1;
+	return LEDITOR_SAVE;
 }
 
-int EditorCmdClear(struct LineEditor* pLE, struct LexerResult* plr)
+LineEditorResult EditorCmdClear(struct LineEditor* pLE, struct LexerResult* plr)
 {
 	pLE->bSaveResult = 0;
 	cv_clear(&pLE->buffer);
 	LineEditor_RebuildLineIndices(pLE, 0);
-	return 0;
+	return LEDITOR_OK;
 }
 
-
-int EditorCmdHelp(struct LineEditor* pLE, struct LexerResult* plr)
+LineEditorResult EditorCmdHelp(struct LineEditor* pLE, struct LexerResult* plr)
 {
 	size_t idx = 0;
 	size_t len = 8;
@@ -340,7 +347,7 @@ int EditorCmdHelp(struct LineEditor* pLE, struct LexerResult* plr)
 		Client_Sendf(pLE->client, "%20s   %-20s\n", g_editor_commands[idx].usage,
 		       g_editor_commands[idx].desc);
 	}
-	return 0;
+	return LEDITOR_OK;
 }
 
 int EditorCmdCmp(const void* pA, const void* pB)
@@ -349,7 +356,7 @@ int EditorCmdCmp(const void* pA, const void* pB)
 	return strcmp((const char*) pA, pCmd->name);
 }
 
-int LineEditor_ProcessInput(struct LineEditor* ple, const char* input, size_t len)
+LineEditorResult LineEditor_ProcessInput(struct LineEditor* ple, const char* input, size_t len)
 {
 	if('.' == input[0])
 	{
@@ -370,13 +377,13 @@ int LineEditor_ProcessInput(struct LineEditor* ple, const char* input, size_t le
 		else
 		{
 			Client_Sendf(ple->client, "*Unrecognized command.\n");
-			return 0;
+			return LEDITOR_OK;
 		}
 	}
 	else
 	{
 		LineEditor_Append(ple, input, len);
-		return 0;
+		return LEDITOR_OK;
 	}
-	return 0;
+	return LEDITOR_OK;
 }

@@ -320,8 +320,10 @@ void* HandleUserInputTask(void *pArg)
 		cv_t cleaned_input;
 		cv_init(&cleaned_input, cbuf->length);
 		RemoveCRs(cbuf->data, cbuf->length, &cleaned_input);
+
 		AngelScriptManager_CallOnPlayerInput(&pServer->as_manager, pClient,
 				cleaned_input.data);
+
 		cv_destroy(&cleaned_input);
 		if (!bClientDisconnected)
 		{
