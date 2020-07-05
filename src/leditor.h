@@ -18,6 +18,8 @@ struct TextLine
 	size_t start, length;
 };
 
+typedef struct EditableText EditableText;
+
 struct LineEditor
 {
 	cv_t buffer;
@@ -30,6 +32,12 @@ struct LineEditor
 
 	int refcount;
 	struct Client* client;
+
+	size_t max_lines; // 0 means there is no limitation
+	size_t max_length; // 0 means there is no limitation
+
+	struct ReflowParameters rfparams;
+	EditableText* pEditTarget;
 };
 
 typedef enum {LEDITOR_OK = 0, LEDITOR_QUIT = 1, LEDITOR_SAVE = 2} LineEditorResult;
@@ -37,6 +45,7 @@ typedef enum {LEDITOR_OK = 0, LEDITOR_QUIT = 1, LEDITOR_SAVE = 2} LineEditorResu
 LineEditorResult LineEditor_ProcessInput(struct LineEditor* ple, const char* input, size_t len);
 int LineEditor_Init(struct LineEditor* le);
 void LineEditor_Destroy(struct LineEditor* le);
+void LineEditor_Append(struct LineEditor* le, const char* data, size_t datalen);
 
 struct EditorCommand
 {

@@ -553,3 +553,18 @@ void RemoveCRs(const char* in, size_t len, cv_t* out)
 		idx = cridx + 1;
 	}
 }
+
+size_t CountNewlines(const char* in, size_t len)
+{
+	size_t idx = 0;
+	size_t count = 0;
+	for(; idx < len;)
+	{
+		char* p = memchr(&in[idx], '\n', len - idx);
+		if(!p)
+			return count;
+		++count;
+		idx = (p - in) + 1;
+	}
+	return count;
+}

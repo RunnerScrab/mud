@@ -13,6 +13,7 @@ extern "C"
 #include "uuid.h"
 #include "sqlitetable.h"
 #include "mpnumbers.h"
+#include "editabletext.h"
 #include "leditor.h"
 
 #include "as_addons/scriptdictionary.h"
@@ -120,6 +121,10 @@ extern "C"
 		int result = 0;
 		struct Server *server = manager->server;
 		asIScriptEngine *pEngine = manager->engine;
+
+		result = RegisterEditableTextClass(manager->engine);
+		RETURNFAIL_IF(result < 0);
+
 		result = RegisterMPNumberClasses(manager->engine);
 		RETURNFAIL_IF(result < 0);
 

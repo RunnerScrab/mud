@@ -11,6 +11,7 @@
 #include "utils.h"
 
 #include "client.h"
+#include "editabletext.h"
 
 struct EditorCommand g_editor_commands[] =
 {
@@ -19,7 +20,7 @@ struct EditorCommand g_editor_commands[] =
 	{".f", ".f", "Format buffer", EditorCmdFormat},
 	{".h", ".h", "Show this help", EditorCmdHelp},
 	{".i", ".i <line #> <text>", "Insert text before line #",EditorCmdInsert},
-	{".p", ".p", "Show buffer", EditorCmdPrint},
+	{".p", ".p [r]", "Show buffer; r flag shows raw color tags", EditorCmdPrint},
 	{".q", ".q", "Quit without saving", EditorCmdQuit},
 	{".s", ".s", "Save buffer and quit", EditorCmdSave}
 };
@@ -34,6 +35,12 @@ void LineEditor_Release(struct LineEditor* le)
 	asAtomicDec(le->refcount);
 	if(!le->refcount)
 	{
+		if(le->pEditTarget)
+		{
+			le->pEditTarget->Release();
+			le->pEditTarget = 0;
+		}
+
 		LineEditor_Destroy(le);
 		tfree(le);
 	}
@@ -49,9 +56,21 @@ struct LineEditor* LineEditor_Factory()
 
 void LineEditor_SetPlayerConnection(struct LineEditor* ple, PlayerConnection* playerobj)
 {
-	dbgprintf("SetPlayerConnection called. Ple refcount: %d\n", ple->refcount);
 	ple->client = playerobj->m_pClient;
-	playerobj->Release();
+	playerobj->Release(); //we are not storing any reference to the playerobj
+}
+
+void LineEditor_SetEditTarget(struct LineEditor* ple, EditableText* target)
+{
+	ple->pEditTarget = target;
+	const std::string& str = target->GetString();
+
+	ple->max_length = target->GetMaxLength();
+	ple->max_lines = target->GetMaxLines();
+	ple->rfparams.num_indent_spaces = target->GetIndentationCount();
+	ple->rfparams.line_width = target->GetLineWidth();
+	ple->rfparams.bAllowHyphenation = target->GetHyphenationEnabled() ? 1 : 0;
+	LineEditor_Append(ple, str.c_str(), str.size());
 }
 
 void LineEditor_ProcessInputString(struct LineEditor* ple, const std::string& str)
@@ -80,7 +99,7 @@ int RegisterLineEditorClass(asIScriptEngine* pengine)
 	RETURNFAIL_IF(result < 0);
 
 	result = pengine->RegisterObjectBehaviour("LineEditor", asBEHAVE_FACTORY, "LineEditor@ f()",
-						   asFUNCTION(LineEditor_Factory), asCALL_CDECL);
+						  asFUNCTION(LineEditor_Factory), asCALL_CDECL);
 	RETURNFAIL_IF(result < 0);
 
 	result = pengine->RegisterObjectBehaviour("LineEditor", asBEHAVE_ADDREF, "void f()",
@@ -92,6 +111,10 @@ int RegisterLineEditorClass(asIScriptEngine* pengine)
 	RETURNFAIL_IF(result < 0);
 
 	result = pengine->RegisterObjectMethod("LineEditor", "void SetPlayerConnection(PlayerConnection@ conn)",
+					       asFUNCTION(LineEditor_SetPlayerConnection), asCALL_CDECL_OBJFIRST);
+	RETURNFAIL_IF(result < 0);
+
+	result = pengine->RegisterObjectMethod("LineEditor", "void SetEditTarget(EditableText@ conn)",
 					       asFUNCTION(LineEditor_SetPlayerConnection), asCALL_CDECL_OBJFIRST);
 	RETURNFAIL_IF(result < 0);
 
@@ -112,6 +135,14 @@ int LineEditor_Init(struct LineEditor* le)
 	le->lines = (struct TextLine*) talloc(sizeof(struct TextLine) * le->lines_reserved);
 	memset(le->lines, 0, sizeof(struct TextLine) * le->lines_reserved);
 	le->lines_count = 0;
+	le->client = 0;
+	le->pEditTarget = 0;
+	le->max_lines = 0;
+	le->max_length = 0;
+
+	le->rfparams.num_indent_spaces = 0;
+	le->rfparams.line_width = 80;
+	le->rfparams.bAllowHyphenation = 0;
 
 	return 0;
 }
@@ -128,8 +159,22 @@ void LineEditor_RebuildLineIndices(struct LineEditor* le, size_t from_idx);
 
 void LineEditor_Append(struct LineEditor* le, const char* data, size_t datalen)
 {
-	cv_appendstr(&le->buffer, data, datalen);
-	LineEditor_RebuildLineIndices(le, (le->lines_count > 1) ? (le->lines_count - 1) : 0);
+	size_t nlcount = CountNewlines(data, datalen);
+	if(le->max_length && datalen + le->buffer.length > le->max_length)
+	{
+		Client_Sendf(le->client, "Would exceed the maximum length of this text (%lu)\r\n",
+			     le->max_length);
+	}
+	else if(le->max_lines && le->lines_count + nlcount > le->max_lines)
+	{
+		Client_Sendf(le->client, "Would exceed the maximum number of lines (%lu).\r\n",
+			le->max_lines);
+	}
+	else
+	{
+		cv_appendstr(&le->buffer, data, datalen);
+		LineEditor_RebuildLineIndices(le, (le->lines_count > 1) ? (le->lines_count - 1) : 0);
+	}
 }
 
 void LineEditor_RebuildLineIndices(struct LineEditor* le, size_t from_idx)
@@ -264,14 +309,9 @@ LineEditorResult EditorCmdPrint(struct LineEditor* pLE, struct LexerResult* plr)
 LineEditorResult EditorCmdFormat(struct LineEditor* pLE, struct LexerResult* plr)
 {
 	cv_t out;
-	struct ReflowParameters rfparams;
-
-	rfparams.num_indent_spaces = 2;
-	rfparams.line_width = 80;
-	rfparams.bAllowHyphenation = 1;
 
 	cv_init(&out, pLE->buffer.length);
-	ReflowText(pLE->buffer.data, pLE->buffer.length, &out, &rfparams);
+	ReflowText(pLE->buffer.data, pLE->buffer.length, &out, &pLE->rfparams);
 
 	cv_swap(&pLE->buffer, &out);
 
@@ -330,6 +370,10 @@ LineEditorResult EditorCmdQuit(struct LineEditor* pLE, struct LexerResult* plr)
 LineEditorResult EditorCmdSave(struct LineEditor* pLE, struct LexerResult* plr)
 {
 	pLE->bSaveResult = 1;
+	if(pLE->pEditTarget)
+	{
+		pLE->pEditTarget->assign(pLE->buffer.data, pLE->buffer.length);
+	}
 	return LEDITOR_SAVE;
 }
 
@@ -350,7 +394,7 @@ LineEditorResult EditorCmdHelp(struct LineEditor* pLE, struct LexerResult* plr)
 	for(; idx < len; ++idx)
 	{
 		Client_Sendf(pLE->client, "%20s   %-20s\n", g_editor_commands[idx].usage,
-		       g_editor_commands[idx].desc);
+			     g_editor_commands[idx].desc);
 	}
 	return LEDITOR_OK;
 }

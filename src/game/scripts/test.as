@@ -43,12 +43,12 @@ class PlayerEditInputMode : IPlayerInputMode
 {
 	LineEditor@ leditor;
         Player@ player;
-	string target;
 
-	PlayerEditInputMode(Player@ p)
+	PlayerEditInputMode(Player@ p, EditableText@ target)
 	{
 		@player = p;
 		@leditor = LineEditor();
+		leditor.SetEditTarget(target);
 		leditor.SetPlayerConnection(player.m_connection.get());
 	}
 
@@ -126,7 +126,7 @@ class PlayerDefaultInputMode : IPlayerInputMode
 				num = 67890;
 
 				MPInt num2 = num;
-				num2 = num + 3.5;
+				num2 = num + int(3.5);
 				conn.Send("MPInt num2 initialized to: " + num2.toString() + "\r\n");
 				num2 *= 3;
 				player.Send("MPInt test two: '" + num2.toString() + "'\r\n");

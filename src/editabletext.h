@@ -2,12 +2,13 @@
 #define EDTIABLETEXT_H_
 
 #include <string>
+#include <atomic>
 #include "angelscript.h"
 
 #include "as_refcountedobj.h"
 #include "rwlockingobj.h"
 
-class EditableText : public AS_RefCountedObj
+class EditableText : public AS_RefCountedObj, public RWLockingObject
 {
 /* std strings as registered by AngelScript are quick for string literals and
  * are easily compatible with C++ functions which use std::strings. Their chief
@@ -36,10 +37,10 @@ public:
 	EditableText();
 	EditableText(const std::string& str);
 
+	void assign(const char* str, size_t len);
 	EditableText& operator=(const std::string& str);
 	EditableText& operator+=(const std::string& str);
-	std::string& GetString();
-	const std::string& GetConstString();
+	const std::string& GetString();
 
 	void SetMaxLines(unsigned int lines)
 	{
@@ -54,6 +55,11 @@ public:
 	void SetHyphenationEnabled(bool v)
 	{
 		m_bAllowHyphenation = v;
+	}
+
+	void SetLineWidth(unsigned int v)
+	{
+		m_line_width = v;
 	}
 
 	unsigned int GetMaxLines()
@@ -71,10 +77,31 @@ public:
 		return m_bAllowHyphenation;
 	}
 
+	unsigned int GetLineWidth()
+	{
+		return m_line_width;
+	}
+
+	unsigned int GetMaxLength()
+	{
+		return m_maxlength;
+	}
+
+	void SetMaxLength(unsigned int v)
+	{
+		m_maxlength = v;
+	}
+
+
+
+
 private:
-	std::string m_text;
+	std::atomic<bool> m_bCopyNeedsUpdate;
+	std::string m_text, m_cachedret;
+	unsigned int m_maxlength;
 	unsigned int m_maxlines;
 	unsigned int m_indentation_amt;
+	unsigned int m_line_width;
 	bool m_bAllowHyphenation;
 };
 

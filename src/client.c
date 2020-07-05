@@ -25,6 +25,7 @@ size_t Client_GetRefCount(struct Client *client)
 
 void Client_AddRef(struct Client *client)
 {
+	printf("Client addref called.\n");
 	pthread_rwlock_wrlock(&client->refcount_rwlock);
 	++client->refcount;
 	pthread_rwlock_unlock(&client->refcount_rwlock);
@@ -32,6 +33,7 @@ void Client_AddRef(struct Client *client)
 
 void Client_ReleaseRef(struct Client *client)
 {
+	printf("Client release called.\n");
 	pthread_rwlock_wrlock(&client->refcount_rwlock);
 	--client->refcount;
 	pthread_rwlock_unlock(&client->refcount_rwlock);

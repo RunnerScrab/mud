@@ -48,7 +48,7 @@ int RegisterEditableTextClass(asIScriptEngine* pEngine)
 					       asCALL_THISCALL);
 	RETURNFAIL_IF(result < 0);
 
-	result = pEngine->RegisterObjectMethod("EditableText", "string& GetString()",
+	result = pEngine->RegisterObjectMethod("EditableText", "const string& GetString()",
 					       asMETHOD(EditableText, GetString), asCALL_THISCALL);
 	RETURNFAIL_IF(result < 0);
 
@@ -64,6 +64,14 @@ int RegisterEditableTextClass(asIScriptEngine* pEngine)
 					       asMETHOD(EditableText, SetHyphenationEnabled), asCALL_THISCALL);
 	RETURNFAIL_IF(result < 0);
 
+	result = pEngine->RegisterObjectMethod("EditableText", "void SetLineWidth(uint32 v)",
+					       asMETHOD(EditableText, SetLineWidth), asCALL_THISCALL);
+	RETURNFAIL_IF(result < 0);
+
+	result = pEngine->RegisterObjectMethod("EditableText", "void SetMaxLength(uint32 v)",
+					       asMETHOD(EditableText, SetMaxLength), asCALL_THISCALL);
+	RETURNFAIL_IF(result < 0);
+
 	result = pEngine->RegisterObjectMethod("EditableText", "uint32 GetMaxLines()",
 					       asMETHOD(EditableText, GetMaxLines), asCALL_THISCALL);
 	RETURNFAIL_IF(result < 0);
@@ -76,16 +84,26 @@ int RegisterEditableTextClass(asIScriptEngine* pEngine)
 					       asMETHOD(EditableText, GetHyphenationEnabled), asCALL_THISCALL);
 	RETURNFAIL_IF(result < 0);
 
-	result = pEngine->RegisterObjectMethod("EditableText", "string& opImplConv()",
-					       asMETHOD(EditableText, GetConstString), asCALL_THISCALL);
+	result = pEngine->RegisterObjectMethod("EditableText", "uint32 GetLineWidth()",
+					       asMETHOD(EditableText, GetLineWidth), asCALL_THISCALL);
+	RETURNFAIL_IF(result < 0);
+
+	result = pEngine->RegisterObjectMethod("EditableText", "uint32 GetMaxLength()",
+					       asMETHOD(EditableText, GetMaxLength), asCALL_THISCALL);
+	RETURNFAIL_IF(result < 0);
+
+	result = pEngine->RegisterObjectMethod("EditableText", "const string& opImplConv()",
+					       asMETHOD(EditableText, GetString), asCALL_THISCALL);
 	return result;
 }
 
-EditableText::EditableText() :
-	m_maxlines(0), m_indentation_amt(0),
-	m_bAllowHyphenation(false)
+EditableText::EditableText()
 {
-
+	m_maxlines = 0;
+	m_maxlength = 0;
+	m_indentation_amt = 0;
+	m_line_width = 80;
+	m_bAllowHyphenation = false;
 }
 
 EditableText::EditableText(const std::string& str) : EditableText()
@@ -109,8 +127,19 @@ EditableText* EditableText::Factory(const std::string& str)
 
 EditableText& EditableText::operator=(const std::string& str)
 {
+	WriteLock();
 	m_text = str;
+	m_bCopyNeedsUpdate = true;
+	Unlock();
 	return *this;
+}
+
+void EditableText::assign(const char* str, size_t len)
+{
+	WriteLock();
+	m_text.assign(str, len);
+	m_bCopyNeedsUpdate = true;
+	Unlock();
 }
 
 EditableText& EditableText::operator+=(const std::string& str)
@@ -119,12 +148,14 @@ EditableText& EditableText::operator+=(const std::string& str)
 	return *this;
 }
 
-std::string& EditableText::GetString()
+const std::string& EditableText::GetString()
 {
-	return m_text;
-}
-
-const std::string& EditableText::GetConstString()
-{
-	return m_text;
+	if(true == m_bCopyNeedsUpdate)
+	{
+		ReadLock();
+		m_cachedret = m_text;
+		m_bCopyNeedsUpdate = false;
+		Unlock();
+	}
+	return m_cachedret;
 }
