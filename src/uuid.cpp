@@ -4,10 +4,10 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <arpa/inet.h>
-#ifndef TESTING_
+
 #include "as_manager.h"
 #include "angelscript.h"
-#endif
+
 
 void ConstructUUID(UUID *uuid)
 {
@@ -24,7 +24,7 @@ void CopyConstructUUID(UUID *newuuid, const UUID &source)
 	new (newuuid) UUID(source);
 }
 
-#ifndef TESTING_
+
 int RegisterUUIDClass(AngelScriptManager *manager)
 {
 	asIScriptEngine *pEngine = manager->engine;
@@ -63,7 +63,6 @@ int RegisterUUIDClass(AngelScriptManager *manager)
 
 	return 0;
 }
-#endif
 
 UUID::UUID()
 {

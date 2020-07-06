@@ -40,7 +40,7 @@ public:
 	void assign(const char* str, size_t len);
 	EditableText& operator=(const std::string& str);
 	EditableText& operator+=(const std::string& str);
-	const std::string& GetString();
+	const std::string& GetString() const;
 
 	void SetMaxLines(unsigned int lines)
 	{
@@ -96,8 +96,9 @@ public:
 
 
 private:
-	std::atomic<bool> m_bCopyNeedsUpdate;
-	std::string m_text, m_cachedret;
+	std::string m_text;
+	mutable std::atomic<bool> m_bCopyNeedsUpdate;
+	mutable std::string m_cachedret;
 	unsigned int m_maxlength;
 	unsigned int m_maxlines;
 	unsigned int m_indentation_amt;

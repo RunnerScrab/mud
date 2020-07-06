@@ -207,6 +207,7 @@ public:
 		m_storedtype = VARREAL;
 	}
 
+
 	void SetValue(const std::string &v)
 	{
 		if (VARBLOB == m_storedtype || VARTEXT == m_storedtype)

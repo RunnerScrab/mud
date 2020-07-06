@@ -149,7 +149,7 @@ EditableText& EditableText::operator+=(const std::string& str)
 	return *this;
 }
 
-const std::string& EditableText::GetString()
+const std::string& EditableText::GetString() const
 {
 	if(true == m_bCopyNeedsUpdate)
 	{

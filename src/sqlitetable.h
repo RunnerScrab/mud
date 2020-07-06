@@ -5,10 +5,8 @@
 #include <string>
 #include "sqlitevariant.h"
 
-#ifndef TESTING_
 class asIScriptEngine;
 class CScriptArray;
-#endif
 
 struct Database;
 class SQLiteRow;
@@ -111,11 +109,9 @@ public:
 		return m_pDB;
 	}
 
-#ifndef TESTING_
 	void AddRef();
 	void Release();
 	static SQLiteTable* Factory(const std::string &tablename);
-#endif
 
 private:
 	std::vector<SQLiteColumn*> m_columns;
@@ -130,9 +126,9 @@ private:
 
 	sqlite3 *m_pDB;
 	bool m_bIsSubTable;
-#ifndef TESTING_
+
 	int m_refcount;
-#endif
+
 
 	int PerformUpsert(SQLiteRow *row, SQLiteRow *parent_row = 0);
 	//The a list of SQLite assignments to all the columns during an upsert (update/insert)
@@ -179,11 +175,8 @@ public:
 	SQLiteTable* CreateSubTable(const std::string &name);
 	SQLiteTable* GetSubTable(const std::string &name);
 
-#ifndef TESTING_
+
 	bool LoadSubTable(SQLiteRow *parent_row, CScriptArray *resultarray);
-#else
-	bool LoadSubTable(SQLiteRow* parent_row, std::vector<SQLiteRow*>& resultarray);
-#endif
 
 	bool AddColumn(const std::string &name, SQLiteVariant::StoredType vartype,
 			SQLiteColumn::KeyType keytype = SQLiteColumn::KeyType::KEY_NONE,
@@ -227,8 +220,6 @@ public:
 	SQLiteRow* CreateRow();
 };
 
-#ifndef TESTING_
 int RegisterDBTable(sqlite3 *sqldb, asIScriptEngine *sengine);
-#endif
 
 #endif
