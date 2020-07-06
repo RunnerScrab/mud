@@ -115,7 +115,7 @@ int RegisterLineEditorClass(asIScriptEngine* pengine)
 	RETURNFAIL_IF(result < 0);
 
 	result = pengine->RegisterObjectMethod("LineEditor", "void SetEditTarget(EditableText@ conn)",
-					       asFUNCTION(LineEditor_SetPlayerConnection), asCALL_CDECL_OBJFIRST);
+					       asFUNCTION(LineEditor_SetEditTarget), asCALL_CDECL_OBJFIRST);
 	RETURNFAIL_IF(result < 0);
 
 	result = pengine->RegisterObjectMethod("LineEditor", "LineEditorResult ProcessInput(const string& in)",
@@ -369,9 +369,11 @@ LineEditorResult EditorCmdQuit(struct LineEditor* pLE, struct LexerResult* plr)
 
 LineEditorResult EditorCmdSave(struct LineEditor* pLE, struct LexerResult* plr)
 {
+	printf("Trying to run editor save command.\n");
 	pLE->bSaveResult = 1;
 	if(pLE->pEditTarget)
 	{
+		printf("Editor save command running.\n");
 		pLE->pEditTarget->assign(pLE->buffer.data, pLE->buffer.length);
 	}
 	return LEDITOR_SAVE;

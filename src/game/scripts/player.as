@@ -47,6 +47,11 @@ class Player
 				Send("Changing input mode.\r\n");
 				@currentmode = PlayerEditInputMode(this, testeditstring);
 			}
+			else if("exitedit" == input)
+			{
+				Send("Edit complete.\r\n");
+				Send(testeditstring.GetString() + "\r\n");
+			}
 			else
 			{
 				currentmode.OnInputReceived(input);

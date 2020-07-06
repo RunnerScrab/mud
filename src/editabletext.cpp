@@ -104,6 +104,7 @@ EditableText::EditableText()
 	m_indentation_amt = 0;
 	m_line_width = 80;
 	m_bAllowHyphenation = false;
+	m_bCopyNeedsUpdate = false;
 }
 
 EditableText::EditableText(const std::string& str) : EditableText()
@@ -114,14 +115,12 @@ EditableText::EditableText(const std::string& str) : EditableText()
 EditableText* EditableText::Factory()
 {
 	EditableText* retval = new EditableText();
-	retval->AddRef();
 	return retval;
 }
 
 EditableText* EditableText::Factory(const std::string& str)
 {
 	EditableText* retval = new EditableText(str);
-	retval->AddRef();
 	return retval;
 }
 
@@ -129,6 +128,7 @@ EditableText& EditableText::operator=(const std::string& str)
 {
 	WriteLock();
 	m_text = str;
+	printf("Op Assigning string!\n");
 	m_bCopyNeedsUpdate = true;
 	Unlock();
 	return *this;
@@ -137,6 +137,7 @@ EditableText& EditableText::operator=(const std::string& str)
 void EditableText::assign(const char* str, size_t len)
 {
 	WriteLock();
+	printf("Assigning string!\n");
 	m_text.assign(str, len);
 	m_bCopyNeedsUpdate = true;
 	Unlock();
@@ -154,6 +155,7 @@ const std::string& EditableText::GetString()
 	{
 		ReadLock();
 		m_cachedret = m_text;
+		printf("Cached string:\n%s\n", m_cachedret.c_str());
 		m_bCopyNeedsUpdate = false;
 		Unlock();
 	}
