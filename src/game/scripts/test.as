@@ -23,9 +23,6 @@ interface TestInterface
 	void TestInterfaceMethod();
 };
 
-enum PlayerGameState {LOGIN_MENU = 0,
-			      ACCOUNT_NAME_ENTRY, ACCOUNT_PASSWORD_ENTRY };
-
 class IPlayerInputMode
 {
 	int OnInputReceived(string &in input)
@@ -357,6 +354,7 @@ void OnPlayerInput(Player@ player, string rawinput)
 	}
 	else
 	{
+		/*
 		switch(player.GetPlayerGameState())
 		{
 		case PlayerGameState::LOGIN_MENU:
@@ -377,5 +375,6 @@ void OnPlayerInput(Player@ player, string rawinput)
 		default:
 			break;
 		}
+		*/
 	}
 }

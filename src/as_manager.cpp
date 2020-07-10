@@ -111,6 +111,12 @@ extern "C"
 		return len;
 	}
 
+	int CheckExtension(const char* str, size_t len, const char* ext, size_t ext_len)
+	{
+		size_t minlen = len < ext_len ? len : ext_len;
+		return 0 == strncmp(ext, &str[len - ext_len], minlen) ? 1 : 0;
+	}
+
 	asIScriptModule* AngelScriptManager_GetMainModule(AngelScriptManager* manager)
 	{
 		return manager->main_module;
@@ -382,7 +388,8 @@ extern "C"
 				break;
 			}
 			//d_name is a maximum of 256 bytes
-			if(strstr(pDirEntry->d_name, ".as"))
+			if(CheckExtension(pDirEntry->d_name, strnlen(pDirEntry->d_name, 256),
+					  ".as", 3))
 			{
 				asfiles.push_back(std::string(pDirEntry->d_name));
 			}

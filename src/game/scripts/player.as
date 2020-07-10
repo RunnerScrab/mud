@@ -10,7 +10,7 @@ class Object
 	string sdesc;
 	string mdesc;
 
-	void EditObject(Player@ player)
+	void EditObject(Player@ player, const string &in input)
 	{
 
 	}
@@ -18,12 +18,21 @@ class Object
 
 class Player
 {
+	string m_name;
+     	private Meower@ m_meower;
+
 	weakref<PlayerConnection> m_connection;
 	Character@ m_char;
 	IPlayerInputMode@ currentmode;
 	EditableText@ testeditstring;
 
 	bool m_bEditMode;
+
+	PlayerConnection@ GetConnection()
+	{
+		return m_connection.get();
+	}
+
 	Player(PlayerConnection@ conn)
 	{
 		@testeditstring = EditableText();
@@ -32,7 +41,6 @@ class Player
 		conn.SetInputCallback(InputCallback(OnInputReceived));
 		conn.SetDisconnectCallback(DisconnectCallback(OnDisconnect));
 		@m_char = Character("mychar");
-		m_gamestate = PlayerGameState::LOGIN_MENU;
 
 		@currentmode = PlayerDefaultInputMode(this);
 		//PlayerEditInputMode();
@@ -105,16 +113,6 @@ class Player
 //m_connection.DetachUserEventObserver(this);
 	}
 
-	PlayerGameState GetPlayerGameState()
-	{
-		return m_gamestate;
-	}
-
-	void SetPlayerGameState(PlayerGameState v)
-	{
-		m_gamestate = v;
-	}
-
 	string GetName()
 	{
 		return m_name;
@@ -135,7 +133,5 @@ class Player
 		Send(msg);
 	}
 
-private PlayerGameState m_gamestate;
-	string m_name;
-		     private Meower@ m_meower;
+
 }
