@@ -4,14 +4,39 @@
 #include <stdlib.h>
 #include <string.h>
 
-
-void LexerResult_Prepare(struct LexerResult* lr, unsigned char bParseSubcommands)
+void Lexer_Prepare(struct Lexer* lx, unsigned char bParseSubcommands, size_t max_tokens)
 {
-	lr->subcmdmarker_length = 0;
-	lr->subcmdmarker_reserved = 4;
-	lr->subcmdmarkers = bParseSubcommands ? malloc(lr->subcmdmarker_reserved * sizeof(char*)) : 0;
+	lx->bParseSubcmds = bParseSubcommands;
+	lx->max_tokens = max_tokens;
 
-	lr->bParseSubcmds = bParseSubcommands;
+	lx->subcmdmarker_length = 0;
+	lx->subcmdmarker_reserved = 4;
+	lx->subcmdmarkers = bParseSubcommands ? malloc(lx->subcmdmarker_reserved * sizeof(char*)) : 0;
+	if(bParseSubcommands)
+	{
+		memset(lx->subcmdmarkers, 0, sizeof(char*) * lx->subcmdmarker_reserved);
+	}
+
+}
+
+void Lexer_Destroy(struct Lexer* lx)
+{
+	size_t idx = 0;
+	for(; idx < lx->subcmdmarker_length; ++idx)
+	{
+		free(lx->subcmdmarkers[idx]);
+	}
+
+	if(lx->subcmdmarkers)
+	{
+		free(lx->subcmdmarkers);
+		lx->subcmdmarkers = 0;
+	}
+}
+
+void LexerResult_Prepare(struct LexerResult* lr)
+{
+	lr->bFilled = 0;
 	lr->token_count = 0;
 	lr->token_reserved = 2;
 	lr->orig_str = 0;
@@ -23,11 +48,6 @@ void LexerResult_Prepare(struct LexerResult* lr, unsigned char bParseSubcommands
 
 	memset(lr->tokens, 0, sizeof(char*) * lr->token_reserved);
 	memset(lr->token_starts, 0, sizeof(size_t) * lr->token_reserved);
-
-	if(bParseSubcommands)
-	{
-		memset(lr->subcmdmarkers, 0, sizeof(char*) * lr->subcmdmarker_reserved);
-	}
 }
 
 void LexerResult_AddToken(struct LexerResult* lr, size_t start, const char* token,
@@ -42,7 +62,6 @@ void LexerResult_AddToken(struct LexerResult* lr, size_t start, const char* toke
 						sizeof(size_t) * lr->token_reserved);
 	}
 
-
 	lr->tokens[lr->token_count] = malloc(tokenlen + 1);
 
 	strncpy(lr->tokens[lr->token_count], token, tokenlen + 1);
@@ -52,13 +71,8 @@ void LexerResult_AddToken(struct LexerResult* lr, size_t start, const char* toke
 
 void LexerResult_Clear(struct LexerResult* lr)
 {
-	//TODO: Freeing the elements of the array but not the array itself
-	//is idiotic; do both or neither when you aren't half asleep
-/*	unsigned char bParse = lr->bParseSubcmds;
-	LexerResult_Destroy(lr);
-	memset(lr, 0, sizeof(struct LexerResult));
-	LexerResult_Prepare(lr, bParse);
-	return;*/
+	lr->bFilled = 0;
+
 	size_t idx = 0;
 	for(; idx < lr->token_count; ++idx)
 	{
@@ -86,20 +100,9 @@ void LexerResult_Clear(struct LexerResult* lr)
 	}
 
 	lr->subcmd_length = 0;
-
-	/*
-	  Don't reset the subcmd markers as these are likely to be reused
-	  for(idx = 0; idx < lr->subcmdmarker_length; ++idx)
-	  {
-	  free(lr->subcmdmarkers[idx]);
-	  lr->subcmdmarkers[idx] = 0;
-	  }
-
-	  lr->subcmdmarker_length = 0;
-	*/
 }
 
-void LexerResult_AddSubcommandMarkers(struct LexerResult* lr, const char left, const char right)
+void Lexer_AddSubcommandMarkers(struct Lexer* lr, const char left, const char right)
 {
 	if(lr->subcmdmarker_length >= lr->subcmdmarker_reserved)
 	{
@@ -146,17 +149,6 @@ void LexerResult_Destroy(struct LexerResult* lr)
 		free(lr->subcommands);
 		lr->subcommands = 0;
 	}
-
-	for(idx = 0; idx < lr->subcmdmarker_length; ++idx)
-	{
-		free(lr->subcmdmarkers[idx]);
-	}
-
-	if(lr->subcmdmarkers)
-	{
-		free(lr->subcmdmarkers);
-		lr->subcmdmarkers = 0;
-	}
 }
 
 size_t LexerResult_GetTokenCount(struct LexerResult* lr)
@@ -176,19 +168,14 @@ char* LexerResult_GetStringAfterToken(struct LexerResult* lr, size_t token)
 	return &lr->orig_str[lr->token_starts[token]];
 }
 
-struct SubCommandIndex
-{
-	size_t index, length;
-};
-
-int SubCommandIndexCmp(const void* a, const void* b)
+static int SubCommandIndexCmp(const void* a, const void* b)
 {
 	struct SubCommandIndex* pa = (struct SubCommandIndex*) a;
 	struct SubCommandIndex* pb = (struct SubCommandIndex*) b;
 	return pa->index - pb->index;
 }
 
-char* LexerResult_ExtractSubcommands(struct LexerResult* lexer, const char* str, size_t len)
+char* Lexer_ExtractSubcommands(const struct Lexer* lexer, struct LexerResult* lxresult, const char* str, size_t len)
 {
 	//TODO: This function is probably pretty slow; optimize
 	struct SubCommandIndex* subcmdindices = 0;
@@ -204,16 +191,16 @@ char* LexerResult_ExtractSubcommands(struct LexerResult* lexer, const char* str,
 	size_t idx = 0;
 	char* start = 0, *end = 0;
 
-	lexer->subcmd_length = 0;
-	lexer->subcmd_reserved = 4;
+	lxresult->subcmd_length = 0;
+	lxresult->subcmd_reserved = 4;
 
-	subcmdindices = malloc(sizeof(struct SubCommandIndex) * lexer->subcmd_reserved);
-	memset(subcmdindices, 0, sizeof(struct SubCommandIndex) * lexer->subcmd_reserved);
+	subcmdindices = malloc(sizeof(struct SubCommandIndex) * lxresult->subcmd_reserved);
+	memset(subcmdindices, 0, sizeof(struct SubCommandIndex) * lxresult->subcmd_reserved);
 
-	if(!lexer->subcommands)
+	if(!lxresult->subcommands)
 	{
-		lexer->subcommands = malloc(sizeof(char*) * lexer->subcmd_reserved);
-		memset(subcmdindices, 0, sizeof(struct SubCommandIndex) * lexer->subcmd_reserved);
+		lxresult->subcommands = malloc(sizeof(char*) * lxresult->subcmd_reserved);
+		memset(subcmdindices, 0, sizeof(struct SubCommandIndex) * lxresult->subcmd_reserved);
 	}
 
 	size_t markeridx = 0;
@@ -231,25 +218,25 @@ char* LexerResult_ExtractSubcommands(struct LexerResult* lexer, const char* str,
 
 				if(end && end > start)
 				{
-					if(lexer->subcmd_length >= lexer->subcmd_reserved)
+					if(lxresult->subcmd_length >= lxresult->subcmd_reserved)
 					{
-						lexer->subcmd_reserved <<= 1;
-						lexer->subcommands = realloc(lexer->subcommands,
-									sizeof(char*) * lexer->subcmd_reserved);
+						lxresult->subcmd_reserved <<= 1;
+						lxresult->subcommands = realloc(lxresult->subcommands,
+									sizeof(char*) * lxresult->subcmd_reserved);
 						subcmdindices = realloc(subcmdindices, sizeof(struct SubCommandIndex) *
-									lexer->subcmd_reserved);
+									lxresult->subcmd_reserved);
 					}
 
 					size_t subcmdlen = end - start + 1;
-					subcmdindices[lexer->subcmd_length].index = start - str;
-					subcmdindices[lexer->subcmd_length].length = subcmdlen;
+					subcmdindices[lxresult->subcmd_length].index = start - str;
+					subcmdindices[lxresult->subcmd_length].length = subcmdlen;
 
-					lexer->subcommands[lexer->subcmd_length] = malloc(subcmdlen + 1);
-					memset(lexer->subcommands[lexer->subcmd_length], 0, subcmdlen);
+					lxresult->subcommands[lxresult->subcmd_length] = malloc(subcmdlen + 1);
+					memset(lxresult->subcommands[lxresult->subcmd_length], 0, subcmdlen);
 
-					strncat(lexer->subcommands[lexer->subcmd_length], start, subcmdlen);
+					strncat(lxresult->subcommands[lxresult->subcmd_length], start, subcmdlen);
 
-					++lexer->subcmd_length;
+					++lxresult->subcmd_length;
 
 					idx = end - str + 1;
 				}
@@ -262,13 +249,13 @@ char* LexerResult_ExtractSubcommands(struct LexerResult* lexer, const char* str,
 		while(start);
 	}
 
-	qsort(subcmdindices, lexer->subcmd_length, sizeof(struct SubCommandIndex),
+	qsort(subcmdindices, lxresult->subcmd_length, sizeof(struct SubCommandIndex),
 		SubCommandIndexCmp);
 
 	size_t lastidx = 0;
 
 	//Reconstitute string with the subcommands extracted
-	for(idx = 0; idx < lexer->subcmd_length; ++idx)
+	for(idx = 0; idx < lxresult->subcmd_length; ++idx)
 	{
 		size_t scmdidx = subcmdindices[idx].index;
 		size_t space =
@@ -292,7 +279,7 @@ char* LexerResult_ExtractSubcommands(struct LexerResult* lexer, const char* str,
 	return parsedstr;
 }
 
-void LexerResult_LexString(struct LexerResult* lr, const char* str, size_t len, size_t max_tokens)
+void Lexer_LexString(const struct Lexer* lx, const char* str, size_t len, struct LexerResult* lr)
 {
 	if(lr->orig_str)
 	{
@@ -301,9 +288,9 @@ void LexerResult_LexString(struct LexerResult* lr, const char* str, size_t len, 
 		return;
 	}
 
-	if(lr->bParseSubcmds)
+	if(lx->bParseSubcmds)
 	{
-		lr->orig_str = LexerResult_ExtractSubcommands(lr, str, len);
+		lr->orig_str = Lexer_ExtractSubcommands(lx, lr, str, len);
 	}
 	else
 	{
@@ -325,7 +312,7 @@ void LexerResult_LexString(struct LexerResult* lr, const char* str, size_t len, 
 			LexerResult_AddToken(lr, result - copy, result,
 					strnlen(result, len + 1));
 
-			if(max_tokens && lr->token_count >= max_tokens)
+			if(lx->max_tokens && lr->token_count >= lx->max_tokens)
 			{
 				free(copy);
 				return;

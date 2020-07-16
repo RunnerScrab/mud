@@ -127,7 +127,8 @@ int RegisterLineEditorClass(asIScriptEngine* pengine)
 
 int LineEditor_Init(struct LineEditor* le)
 {
-	LexerResult_Prepare(&le->lexresult, 0);
+	Lexer_Prepare(&le->lexer, 0, 2);
+	LexerResult_Prepare(&le->lexresult);
 
 	le->bSaveResult = 0;
 	cv_init(&le->buffer, 512);
@@ -153,6 +154,7 @@ void LineEditor_Destroy(struct LineEditor* le)
 	cv_destroy(&le->buffer);
 
 	LexerResult_Destroy(&le->lexresult);
+	Lexer_Destroy(&le->lexer);
 }
 
 void LineEditor_RebuildLineIndices(struct LineEditor* le, size_t from_idx);
@@ -412,7 +414,7 @@ LineEditorResult LineEditor_ProcessInput(struct LineEditor* ple, const char* inp
 	if('.' == input[0])
 	{
 		LexerResult_Clear(&ple->lexresult);
-		LexerResult_LexString(&ple->lexresult, input, len, 3);
+		Lexer_LexString(&ple->lexer, input, len, &ple->lexresult);
 
 		char* cmdstr = LexerResult_GetTokenAt(&ple->lexresult, 0);
 

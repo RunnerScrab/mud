@@ -23,6 +23,7 @@ typedef struct EditableText EditableText;
 struct LineEditor
 {
 	cv_t buffer;
+	struct Lexer lexer;
 	struct LexerResult lexresult;
 
 	struct TextLine* lines;
