@@ -50,7 +50,7 @@ libsodium.so:
 	make -C libsodium/
 	cp libsodium/src/libsodium/.libs/libsodium.so* .
 
-zlib.a:
+libz.a:
 	(cd ./zlib && ./configure)
 	make -C zlib/
 	cp zlib/libz.a .
