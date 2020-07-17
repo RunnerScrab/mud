@@ -92,11 +92,11 @@ class Player
 		{
 			Log("Attempting to remove player at idx " + removeidx);
 			int meoweridx = g_meowers.findByRef(GetMeower());
-			game_server.SendToAll("g_meowers size: " + g_meowers.length() + "\r\n");
+			Global::game_server.SendToAll("g_meowers size: " + g_meowers.length() + "\r\n");
 
-			game_server.SendToAll("g_meowers size after removal: " + g_meowers.length() + "\r\n");
+			Global::game_server.SendToAll("g_meowers size after removal: " + g_meowers.length() + "\r\n");
 			g_players.removeAt(removeidx);
-			game_server.SendToAll("Someone has disconnected. There are now " + g_players.length() + " players connected.\r\n");
+			Global::game_server.SendToAll("Someone has disconnected. There are now " + g_players.length() + " players connected.\r\n");
 			g_meowers.removeAt(meoweridx);
 		}
 		else

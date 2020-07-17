@@ -182,7 +182,13 @@ extern "C"
 							 asFUNCTION(ASAPI_DebugObject), asCALL_CDECL);
 		RETURNFAIL_IF(result < 0);
 
+		result = pEngine->SetDefaultNamespace("Global");
+		RETURNFAIL_IF(result < 0);
+
 		result = pEngine->RegisterGlobalProperty("Server game_server", server);
+		RETURNFAIL_IF(result < 0);
+
+		result = pEngine->SetDefaultNamespace("");
 		RETURNFAIL_IF(result < 0);
 
 		result = pEngine->RegisterGlobalFunction("void Log(string& in)",

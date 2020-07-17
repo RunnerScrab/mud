@@ -13,7 +13,7 @@ private int a;
 	int opCall()
 	{
 		int sum = a + b;
-		game_server.SendToAll("`blink``bgblue`Ran TestCommand. Result: " + sum + "`default`\r\n");
+		Global::game_server.SendToAll("`blink``bgblue`Ran TestCommand. Result: " + sum + "`default`\r\n");
 		return 0;
 	}
 };
@@ -103,7 +103,7 @@ class PlayerDefaultInputMode : IPlayerInputMode
 			else if("kill" == input)
 			{
 				conn.Send("Killing server.\n");
-				game_server.Kill();
+				Global::game_server.Kill();
 			}
 			else if("testfunc" == input)
 				TestFunction(conn);
@@ -172,9 +172,9 @@ array<Meower@> g_meowers;
 void GameTick()
 {
 	return;
-	game_server.SendToAll("`red`Hello!`default`");
-	game_server.QueueGlobalAction(tc, 4);
-	game_server.QueueGlobalAction(tc, 2);
+	Global::game_server.SendToAll("`red`Hello!`default`");
+	Global::game_server.QueueGlobalAction(tc, 4);
+	Global::game_server.QueueGlobalAction(tc, 2);
 	if(hPlayer !is null)
 	{
 		hPlayer.Send("Ticking for player\r\n");
@@ -202,7 +202,7 @@ void OnPlayerConnect(PlayerConnection@ conn)
 		g_meowers.insertLast(SuperMeower());
 		player.SetMeower(g_meowers[g_meowers.length() - 1]);
 
-		game_server.SendToAll("\r\nSomeone has connected. There are " + g_players.length() + " players connected.\r\n");
+		Global::game_server.SendToAll("\r\nSomeone has connected. There are " + g_players.length() + " players connected.\r\n");
 
 	}
 	catch
@@ -367,7 +367,7 @@ void OnPlayerInput(Player@ player, string rawinput)
 			break;
 		case PlayerGameState::ACCOUNT_PASSWORD_ENTRY:
 		{
-			game_server.SendToAll(player.GetName() + " says: " + input + "\r\n");
+			Global::game_server.SendToAll(player.GetName() + " says: " + input + "\r\n");
 			string output = HashPassword(input);
 			player.Send("Your password hash is:" + output);
 			break;

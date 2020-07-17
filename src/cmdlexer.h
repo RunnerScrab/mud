@@ -28,8 +28,13 @@ struct LexerResult
 
 	char** subcommands;
 	size_t subcmd_length, subcmd_reserved;
+
+	int refcount;
 };
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 void Lexer_Prepare(struct Lexer* lx, unsigned char bParseSubcommands, size_t max_tokens);
 void Lexer_Destroy(struct Lexer* lx);
@@ -48,6 +53,10 @@ size_t LexerResult_GetSubcommandCount(struct LexerResult* lr);
 char* LexerResult_GetSubcommandAt(struct LexerResult* lr, size_t idx);
 //token = 0 gets the entire string (with subcommands parsed out)
 char* LexerResult_GetStringAfterToken(struct LexerResult* lr, size_t token);
+
+#ifdef __cplusplus
+}
+#endif
 
 
 #endif
