@@ -1,4 +1,4 @@
-#include "cmdtagparser.h"
+#include "cmdtaglexer.h"
 
 int TaggedTokenCmp(const void* a, const void* b)
 {
@@ -7,14 +7,14 @@ int TaggedTokenCmp(const void* a, const void* b)
 	return strcmp(pa->token, pb->token);
 }
 
-void TagParser_Init(struct TagParser* parser, const char* tlist)
+void TagLexer_Init(struct TagLexer* parser, const char* tlist)
 {
 	parser->tokenlistlen = strnlen(tlist, 128);
 	parser->tokenlist = malloc(parser->tokenlistlen + 1);
 	strncpy(parser->tokenlist, tlist, parser->tokenlistlen + 1);
 }
 
-void TagParserSubList_Init(struct TagParserSubList* sublist)
+void TagLexerSubList_Init(struct TagLexerSubList* sublist)
 {
 	sublist->total_sub_len = 0;
 	sublist->subscount = 0;
@@ -23,7 +23,7 @@ void TagParserSubList_Init(struct TagParserSubList* sublist)
 						sublist->subsreserved);
 }
 
-void TagParserSubList_Destroy(struct TagParserSubList* sublist)
+void TagLexerSubList_Destroy(struct TagLexerSubList* sublist)
 {
 	size_t idx = 0;
 	for(; idx < sublist->subscount; ++idx)
@@ -33,12 +33,12 @@ void TagParserSubList_Destroy(struct TagParserSubList* sublist)
 	free(sublist->subs);
 }
 
-struct TagSub* TagParserSubList_GetSubAt(struct TagParserSubList* sublist, size_t idx)
+struct TagSub* TagLexerSubList_GetSubAt(struct TagLexerSubList* sublist, size_t idx)
 {
 	return &sublist->subs[idx];
 }
 
-char* TagParserResult_PerformSub(struct TagParserResult* result, struct TagParserSubList* subs,
+char* TagLexerResult_PerformSub(struct TagLexerResult* result, struct TagLexerSubList* subs,
 				const char* str, size_t len)
 {
 	if(result->tokencount != subs->subscount)
@@ -71,7 +71,7 @@ char* TagParserResult_PerformSub(struct TagParserResult* result, struct TagParse
 	return subbedstr;
 }
 
-void TagParserSubList_AddSub(struct TagParserSubList* sublist, const char* str, size_t len)
+void TagLexerSubList_AddSub(struct TagLexerSubList* sublist, const char* str, size_t len)
 {
 	if(sublist->subscount >= sublist->subsreserved)
 	{
@@ -89,7 +89,7 @@ void TagParserSubList_AddSub(struct TagParserSubList* sublist, const char* str, 
 	sublist->total_sub_len += len;
 }
 
-void TagParserResult_Init(struct TagParserResult* result)
+void TagLexerResult_Init(struct TagLexerResult* result)
 {
 	result->total_token_len = 0;
 	result->tokenreserved = 4;
@@ -99,17 +99,17 @@ void TagParserResult_Init(struct TagParserResult* result)
 	memset(result->tokens, 0, sizeof(struct TaggedToken) * result->tokenreserved);
 }
 
-size_t TagParserResult_GetTokenCount(struct TagParserResult* result)
+size_t TagLexerResult_GetTokenCount(struct TagLexerResult* result)
 {
 	return result->tokencount;
 }
 
-const char* TagParserResult_GetTokenAt(struct TagParserResult* result, size_t idx)
+const char* TagLexerResult_GetTokenAt(struct TagLexerResult* result, size_t idx)
 {
 	return result->tokens[idx].token;
 }
 
-void TagParserResult_Destroy(struct TagParserResult* result)
+void TagLexerResult_Destroy(struct TagLexerResult* result)
 {
 	size_t idx = 0;
 	for(; idx < result->tokencount; ++idx)
@@ -119,12 +119,12 @@ void TagParserResult_Destroy(struct TagParserResult* result)
 	free(result->tokens);
 }
 
-void TagParser_Destroy(struct TagParser* parser)
+void TagLexer_Destroy(struct TagLexer* parser)
 {
 	free(parser->tokenlist);
 }
 
-static void TagParser_AddTaggedToken(struct TagParserResult* result,
+static void TagLexer_AddTaggedToken(struct TagLexerResult* result,
 				const char* str,
 			size_t index, size_t len, unsigned char bCap)
 {
@@ -166,8 +166,8 @@ static unsigned char ShouldCapitalize(const char* str, const char* start)
 	return 1;
 }
 
-void TagParser_Parse(struct TagParser* parser, const char* str, size_t len,
-		struct TagParserResult* result)
+void TagLexer_Parse(struct TagLexer* parser, const char* str, size_t len,
+		struct TagLexerResult* result)
 {
 	char* start = 0;
 	size_t idx = 0;
@@ -188,7 +188,7 @@ void TagParser_Parse(struct TagParser* parser, const char* str, size_t len,
 
 			if(length > 1)
 			{
-				TagParser_AddTaggedToken(result, &str[offset], offset, length,
+				TagLexer_AddTaggedToken(result, &str[offset], offset, length,
 							ShouldCapitalize(str, start));
 			}
 			idx = offset + length;
