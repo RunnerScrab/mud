@@ -18,6 +18,7 @@ class asCJITCompiler;
 class asIScriptModule;
 class asIScriptFunction;
 class ActionScheduler;
+class CommandLexer;
 #else
 typedef struct asIScriptContext asIScriptContext;
 typedef struct asIScriptEngine asIScriptEngine;
@@ -25,6 +26,7 @@ typedef struct asCJITCompiler asCJITCompiler;
 typedef struct asIScriptModule asIScriptModule;
 typedef struct asIScriptFunction asIScriptFunction;
 typedef struct ActionScheduler ActionScheduler;
+typedef struct CommandLexer CommandLexer;
 #endif
 
 struct Server;
@@ -45,6 +47,7 @@ typedef struct
 
 typedef struct
 {
+	CommandLexer* lexer;
 	struct Server* server;
 	asIScriptEngine *engine;
 	asCJITCompiler *jit;
@@ -54,6 +57,8 @@ typedef struct
 	asIScriptModule *main_module, *config_module;
 
 	asIScriptFunction *world_tick_func, *on_player_connect_func;
+
+	asIScriptFunction *server_init_func;
 
 	asIScriptFunction *server_setup_func;
 	asIScriptContext *world_tick_scriptcontext;
@@ -90,6 +95,7 @@ void AngelScriptManager_CallOnPlayerDisconnect(
 		AngelScriptManager *manager, struct Client *pClient);
 void AngelScriptManager_CallOnPlayerInput(AngelScriptManager *manager,
 		struct Client *pClient, const char *input);
+int AngelScriptManager_CallOnServerStartFunc(AngelScriptManager* manager);
 
 int ASContextPool_Init(ASContextPool*, asIScriptEngine*,
 		AngelScriptManager*, size_t);

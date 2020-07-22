@@ -1,4 +1,4 @@
-#include "cmdlexer.h"
+#include "lexer.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -7,43 +7,16 @@
 #include "angelscript.h"
 #include "utils.h"
 
-void LexerResult_AddRef(struct LexerResult* result)
-{
-	asAtomicInc(result->refcount);
-}
+void LexerResult_AddToken(struct LexerResult* lr, size_t start, const char* token,
+			size_t tokenlen);
 
-void LexerResult_Release(struct LexerResult* result)
+void Lexer_Prepare(struct Lexer* lx)
 {
-	asAtomicDec(result->refcount);
-	if(!result->refcount)
-	{
-	    LexerResult_Destroy(result);
-	    free(result);
-	}
-}
-
-int RegisterLexerClasses(asIScriptEngine* pengine)
-{
-	int result = 0;
-	//Should register the lexer as a global, singleton
-	//angelscript resource
-	return result;
-}
-
-void Lexer_Prepare(struct Lexer* lx, unsigned char bParseSubcommands, size_t max_tokens)
-{
-	lx->bParseSubcmds = bParseSubcommands;
-	lx->max_tokens = max_tokens;
-
 	lx->subcmdmarker_length = 0;
 	lx->subcmdmarker_reserved = 4;
-	lx->subcmdmarkers = bParseSubcommands ?
-	  (char**) malloc(lx->subcmdmarker_reserved * sizeof(char*)) : 0;
-	if(bParseSubcommands)
-	{
-		memset(lx->subcmdmarkers, 0, sizeof(char*) * lx->subcmdmarker_reserved);
-	}
-
+	lx->subcmdmarkers =
+	  (char**) malloc(lx->subcmdmarker_reserved * sizeof(char*));
+	memset(lx->subcmdmarkers, 0, sizeof(char*) * lx->subcmdmarker_reserved);
 }
 
 void Lexer_Destroy(struct Lexer* lx)
@@ -63,7 +36,6 @@ void Lexer_Destroy(struct Lexer* lx)
 
 void LexerResult_Prepare(struct LexerResult* lr)
 {
-	lr->refcount = 1;
 	lr->bFilled = 0;
 	lr->token_count = 0;
 	lr->token_reserved = 2;
@@ -313,7 +285,9 @@ char* Lexer_ExtractSubcommands(const struct Lexer* lexer, struct LexerResult* lx
 	return parsedstr;
 }
 
-void Lexer_LexString(const struct Lexer* lx, const char* str, size_t len, struct LexerResult* lr)
+void Lexer_LexString(const struct Lexer* lx, const char* str, size_t len,
+		     size_t max_tokens, unsigned char bParseSubCommands,
+		     struct LexerResult* lr)
 {
 	if(lr->orig_str)
 	{
@@ -322,7 +296,7 @@ void Lexer_LexString(const struct Lexer* lx, const char* str, size_t len, struct
 		return;
 	}
 
-	if(lx->bParseSubcmds)
+	if(bParseSubCommands)
 	{
 		lr->orig_str = Lexer_ExtractSubcommands(lx, lr, str, len);
 	}
@@ -346,7 +320,7 @@ void Lexer_LexString(const struct Lexer* lx, const char* str, size_t len, struct
 			LexerResult_AddToken(lr, result - copy, result,
 					strnlen(result, len + 1));
 
-			if(lx->max_tokens && lr->token_count >= lx->max_tokens)
+			if(max_tokens && lr->token_count >= max_tokens)
 			{
 				free(copy);
 				return;

@@ -5,7 +5,7 @@ extern "C"
 {
 #endif
 #include "charvector.h"
-#include "cmdlexer.h"
+#include "lexer.h"
 #include "textutil.h"
 #ifdef __cplusplus
 }

@@ -68,6 +68,14 @@ int TestFunction2(Player@ player, PlayerConnection@ conn)
 	return 0;
 }
 
+int OnServerStart()
+{
+	Log("main() run!\r\n");
+	Global::lexer.AddSubcommandMarkers("(", ")");
+	Global::lexer.AddSubcommandMarkers("[", "]");
+	return 0;
+}
+
 funcdef int CmdFunc(Player@ player, PlayerConnection@ conn);
 class PlayerDefaultInputMode : IPlayerInputMode
 {
@@ -106,7 +114,9 @@ class PlayerDefaultInputMode : IPlayerInputMode
 				Global::game_server.Kill();
 			}
 			else if("testfunc" == input)
+			{
 				TestFunction(conn);
+			}
 			else if ("testdb" == input)
 			{
 				TestDatabase(player);
@@ -115,6 +125,20 @@ class PlayerDefaultInputMode : IPlayerInputMode
 			else if("testdbread" == input)
 			{
 				TestDatabaseRead(player);
+			}
+			else if("testlex" == input)
+			{
+				conn.Send("Running testlex\r\n");
+				string test = "this (first subcommand) [second subcommand] is a test";
+				CommandLexerResult@ result = Global::lexer.LexString(test, 0, true);
+				for(int i = 0; i < result.GetSubCmdCount(); ++i)
+				{
+					conn.Send("Subcmd: " + result.GetSubCmdAt(i) + "\r\n");
+				}
+				for(int i = 0; i < result.GetTokenCount(); ++i)
+				{
+					conn.Send("Token: " + result.GetTokenAt(i) + "\r\n");
+				}
 			}
 			else if("testmp" == input)
 			{

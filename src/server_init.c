@@ -169,6 +169,16 @@ static int Server_LoadGame(struct Server *server)
 		ServerLog(SERVERLOG_STATUS, "Persistence layer initialized.");
 	}
 
+	if(FAILURE(AngelScriptManager_CallOnServerStartFunc(&server->as_manager)))
+	{
+		ServerLog(SERVERLOG_ERROR, "OnServerInit() script function returned failure!\n");
+		return -1;
+	}
+	else
+	{
+		ServerLog(SERVERLOG_STATUS, "OnServerInit() script function return success.\n");
+	}
+
 	Server_LoadMOTD(server);
 
 	return 0;

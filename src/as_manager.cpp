@@ -15,6 +15,7 @@ extern "C"
 #include "mpnumbers.h"
 #include "editabletext.h"
 #include "leditor.h"
+#include "commandlexer.h"
 
 #include "as_addons/scriptdictionary.h"
 #include "as_addons/scriptmath.h"
@@ -53,6 +54,7 @@ extern "C"
 					  struct Server *server)
 	{
 		MemoryPool_Init(&manager->mem_pool, 32);
+		manager->lexer = new CommandLexer();
 		manager->server = server;
 		manager->engine = asCreateScriptEngine();
 		manager->engine->SetEngineProperty(asEP_BUILD_WITHOUT_LINE_CUES, true);
@@ -99,7 +101,7 @@ extern "C"
 #if __x86_64__
 		delete manager->jit;
 #endif
-
+		delete manager->lexer;
 		MemoryPool_Destroy(&manager->mem_pool);
 	}
 
@@ -111,7 +113,7 @@ extern "C"
 		return len;
 	}
 
-	int CheckExtension(const char* str, size_t len, const char* ext, size_t ext_len)
+	static int CheckExtension(const char* str, size_t len, const char* ext, size_t ext_len)
 	{
 		size_t minlen = len < ext_len ? len : ext_len;
 		return 0 == strncmp(ext, &str[len - ext_len], minlen) ? 1 : 0;
@@ -127,6 +129,9 @@ extern "C"
 		int result = 0;
 		struct Server *server = manager->server;
 		asIScriptEngine *pEngine = manager->engine;
+
+		result = RegisterLexerClasses(manager->engine);
+		RETURNFAIL_IF(result < 0);
 
 		result = RegisterEditableTextClass(manager->engine);
 		RETURNFAIL_IF(result < 0);
@@ -186,6 +191,9 @@ extern "C"
 		RETURNFAIL_IF(result < 0);
 
 		result = pEngine->RegisterGlobalProperty("Server game_server", server);
+		RETURNFAIL_IF(result < 0);
+
+		result = pEngine->RegisterGlobalProperty("CommandLexer lexer", manager->lexer);
 		RETURNFAIL_IF(result < 0);
 
 		result = pEngine->SetDefaultNamespace("");
@@ -442,6 +450,9 @@ extern "C"
 #ifdef __x86_64__
 		manager->jit->finalizePages();
 #endif
+		manager->server_init_func = manager->main_module->GetFunctionByDecl(
+			"int OnServerStart()");
+		RETURNFAIL_IF(0 == manager->server_init_func);
 
 		manager->world_tick_func = manager->main_module->GetFunctionByDecl(
 			"void GameTick()");
@@ -477,6 +488,19 @@ extern "C"
 			ASContextPool_ReturnContextByIndex(&manager->ctx_pool, idx);
 		}
 
+	}
+
+	int AngelScriptManager_CallOnServerStartFunc(AngelScriptManager* manager)
+	{
+		//The init function of the scripts
+		size_t ctxidx = ASContextPool_GetFreeContextIndex(&manager->ctx_pool);
+		asIScriptContext *ctx = ASContextPool_GetContextAt(&manager->ctx_pool,
+								   ctxidx);
+		ctx->Prepare(manager->server_init_func);
+		ctx->Execute();
+		int retval = ctx->GetReturnDWord();
+		ASContextPool_ReturnContextByIndex(&manager->ctx_pool, ctxidx);
+		return retval;
 	}
 
 	void AngelScriptManager_CallOnPlayerInput(AngelScriptManager *manager,

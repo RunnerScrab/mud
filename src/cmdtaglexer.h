@@ -44,6 +44,10 @@ struct TagLexer
 	size_t tokenlistlen;
 };
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 void TagLexer_Init(struct TagLexer* parser, const char* tlist);
 void TagLexer_Destroy(struct TagLexer* parser);
 void TagLexer_Parse(struct TagLexer* parser, const char* str, size_t len,
@@ -64,5 +68,10 @@ size_t TagLexerResult_GetTokenCount(struct TagLexerResult* result);
 const char* TagLexerResult_GetTokenAt(struct TagLexerResult* result,
 				size_t idx);
 void TagLexerResult_Destroy(struct TagLexerResult* result);
+
+#ifdef __cplusplus
+}
+#endif
+
 
 #endif
