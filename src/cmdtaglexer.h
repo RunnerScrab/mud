@@ -48,9 +48,10 @@ struct TagLexer
 extern "C" {
 #endif
 
-void TagLexer_Init(struct TagLexer* parser, const char* tlist);
-void TagLexer_Destroy(struct TagLexer* parser);
-void TagLexer_Parse(struct TagLexer* parser, const char* str, size_t len,
+void TagLexer_Init(struct TagLexer* tlexer, const char* tlist);
+void TagLexer_SetTagList(struct TagLexer* tlexer, const char* tlist);
+void TagLexer_Destroy(struct TagLexer* tlexer);
+void TagLexer_Parse(struct TagLexer* tlexer, const char* str, size_t len,
 		struct TagLexerResult* result);
 
 void TagLexerSubList_Init(struct TagLexerSubList* sublist);
@@ -61,7 +62,7 @@ void TagLexerSubList_AddSub(struct TagLexerSubList* sublist,
 			const char* str, size_t len);
 char* TagLexerResult_PerformSub(struct TagLexerResult* result,
 				struct TagLexerSubList* subs,
-				const char* str, size_t len);
+				const char* str, size_t len); //Substitute tokens in str with words in subs
 
 void TagLexerResult_Init(struct TagLexerResult* result);
 size_t TagLexerResult_GetTokenCount(struct TagLexerResult* result);

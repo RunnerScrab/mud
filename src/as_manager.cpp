@@ -58,6 +58,7 @@ extern "C"
 		manager->server = server;
 		manager->engine = asCreateScriptEngine();
 		manager->engine->SetEngineProperty(asEP_BUILD_WITHOUT_LINE_CUES, true);
+		manager->engine->SetEngineProperty(asEP_USE_CHARACTER_LITERALS, true);
 #ifdef __x86_64__
 		ServerLog(SERVERLOG_STATUS, "x86_64 Build. Enabling Angelscript JIT module.");
 		manager->jit = new asCJITCompiler(0);

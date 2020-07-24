@@ -11,6 +11,26 @@ int RegisterLexerClasses(asIScriptEngine* pengine)
 	result = pengine->RegisterObjectType("CommandLexer", 0, asOBJ_REF | asOBJ_NOCOUNT);
 	RETURNFAIL_IF(result < 0);
 
+
+	result = pengine->RegisterObjectType("CommandTagLexerResult", 0, asOBJ_REF);
+	RETURNFAIL_IF(result < 0);
+
+	result = pengine->RegisterObjectBehaviour("CommandTagLexerResult", asBEHAVE_ADDREF, "void f()",
+						  asMETHOD(CommandTagLexerResult, AddRef), asCALL_THISCALL);
+	RETURNFAIL_IF(result < 0);
+
+	result = pengine->RegisterObjectBehaviour("CommandTagLexerResult", asBEHAVE_RELEASE, "void f()",
+						  asMETHOD(CommandTagLexerResult, Release), asCALL_THISCALL);
+	RETURNFAIL_IF(result < 0);
+
+	result = pengine->RegisterObjectMethod("CommandTagLexerResult", "uint GetTokenCount()",
+					       asMETHOD(CommandTagLexerResult, GetTokenCount), asCALL_THISCALL);
+	RETURNFAIL_IF(result < 0);
+
+	result = pengine->RegisterObjectMethod("CommandTagLexerResult", "string GetTokenAt(uint idx)",
+					       asMETHOD(CommandTagLexerResult, GetTokenAt), asCALL_THISCALL);
+	RETURNFAIL_IF(result < 0);
+
 	result = pengine->RegisterObjectType("CommandLexerResult", 0, asOBJ_REF);
 	RETURNFAIL_IF(result < 0);
 
@@ -60,6 +80,14 @@ int RegisterLexerClasses(asIScriptEngine* pengine)
 					       asMETHODPR(CommandLexer, AddSubcommandMarkers, (const std::string&, const std::string&), void),
 					       asCALL_THISCALL);
 
+	result = pengine->RegisterObjectMethod("CommandLexer",
+					       "void SetTagList(const string& in)",
+					       asMETHOD(CommandLexer, SetTagList), asCALL_THISCALL);
+	RETURNFAIL_IF(result < 0);
+
+	result = pengine->RegisterObjectMethod("CommandLexer",
+					       "CommandTagLexerResult@ LexStringTags(const string& in)",
+					       asMETHOD(CommandLexer, LexStringTags), asCALL_THISCALL);
 	return result;
 }
 
@@ -73,7 +101,18 @@ CommandLexerResult::~CommandLexerResult()
 {
 	LexerResult_Destroy(m_result);
 	free(m_result);
-	m_result = 0;
+}
+
+CommandTagLexerResult::CommandTagLexerResult()
+{
+	m_result = (struct TagLexerResult*) malloc(sizeof(struct TagLexerResult));
+	TagLexerResult_Init(m_result);
+}
+
+CommandTagLexerResult::~CommandTagLexerResult()
+{
+	TagLexerResult_Destroy(m_result);
+	free(m_result);
 }
 
 size_t CommandLexerResult::GetTokenCount()
@@ -103,6 +142,9 @@ std::string CommandLexerResult::GetStringAfterToken(size_t tokenidx)
 
 CommandLexer::CommandLexer()
 {
+	m_taglexer = (struct TagLexer*) malloc(sizeof(struct TagLexer));
+	TagLexer_Init(m_taglexer, "");
+
 	m_lexer = (struct Lexer*) malloc(sizeof(struct Lexer));
 	memset(m_lexer, 0, sizeof(struct Lexer));
 	Lexer_Prepare(m_lexer);
@@ -110,6 +152,12 @@ CommandLexer::CommandLexer()
 
 CommandLexer::~CommandLexer()
 {
+	if(m_taglexer)
+	{
+		TagLexer_Destroy(m_taglexer);
+		free(m_taglexer);
+		m_taglexer = 0;
+	}
 	Lexer_Destroy(m_lexer);
 	free(m_lexer);
 }
@@ -117,10 +165,8 @@ CommandLexer::~CommandLexer()
 CommandLexerResult* CommandLexer::LexString(const std::string& str, size_t max_tokens, bool bParseSubCmds)
 {
 	CommandLexerResult* result = new CommandLexerResult();
-
 	Lexer_LexString(m_lexer, str.c_str(), str.length(), max_tokens, bParseSubCmds,
 			result->m_result);
-
 	return result;
 }
 
@@ -129,15 +175,25 @@ void CommandLexer::AddSubcommandMarkers(const std::string& left, const std::stri
 	Lexer_AddSubcommandMarkers(m_lexer, left[0], right[0]);
 }
 
-/*
-void CommandLexer::SetTagLexerSymbols(const std::string& symbols)
+void CommandLexer::SetTagList(const std::string& tags)
 {
-	if(!m_taglexer)
-	{
-		m_taglexer = (struct TagLexer*) malloc(sizeof(struct TagLexer));
-		memset(m_taglexer, 0, sizeof(struct TagLexer));
-	}
-
-	TagLexer_Init(m_taglexer, symbols.c_str());
+	TagLexer_SetTagList(m_taglexer, tags.c_str());
 }
-*/
+
+CommandTagLexerResult* CommandLexer::LexStringTags(const std::string& str)
+{
+	CommandTagLexerResult* result = new CommandTagLexerResult();
+	TagLexer_Parse(m_taglexer, str.c_str(), str.length(), result->m_result);
+	return result;
+}
+
+size_t CommandTagLexerResult::GetTokenCount()
+{
+	return m_result->tokencount;
+}
+
+std::string CommandTagLexerResult::GetTokenAt(size_t idx)
+{
+	std::string result = TagLexerResult_GetTokenAt(m_result, idx);
+	return result;
+}

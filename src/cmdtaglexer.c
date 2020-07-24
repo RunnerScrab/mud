@@ -7,11 +7,19 @@ int TaggedTokenCmp(const void* a, const void* b)
 	return strcmp(pa->token, pb->token);
 }
 
-void TagLexer_Init(struct TagLexer* parser, const char* tlist)
+void TagLexer_Init(struct TagLexer* tlexer, const char* tlist)
 {
-	parser->tokenlistlen = strnlen(tlist, 128);
-	parser->tokenlist = malloc(parser->tokenlistlen + 1);
-	strncpy(parser->tokenlist, tlist, parser->tokenlistlen + 1);
+	tlexer->tokenlistlen = strnlen(tlist, 128);
+	tlexer->tokenlist = malloc(tlexer->tokenlistlen + 1);
+	strncpy(tlexer->tokenlist, tlist, tlexer->tokenlistlen + 1);
+}
+
+void TagLexer_SetTagList(struct TagLexer* lexer, const char* tlist)
+{
+	//This shouldn't be called often
+	lexer->tokenlistlen = strnlen(tlist, 128);
+	lexer->tokenlist = (char*) realloc(lexer->tokenlist, lexer->tokenlistlen + 1);
+	strncpy(lexer->tokenlist, tlist, lexer->tokenlistlen + 1);
 }
 
 void TagLexerSubList_Init(struct TagLexerSubList* sublist)
@@ -119,9 +127,9 @@ void TagLexerResult_Destroy(struct TagLexerResult* result)
 	free(result->tokens);
 }
 
-void TagLexer_Destroy(struct TagLexer* parser)
+void TagLexer_Destroy(struct TagLexer* tlexer)
 {
-	free(parser->tokenlist);
+	free(tlexer->tokenlist);
 }
 
 static void TagLexer_AddTaggedToken(struct TagLexerResult* result,
@@ -166,14 +174,14 @@ static unsigned char ShouldCapitalize(const char* str, const char* start)
 	return 1;
 }
 
-void TagLexer_Parse(struct TagLexer* parser, const char* str, size_t len,
+void TagLexer_Parse(struct TagLexer* tlexer, const char* str, size_t len,
 		struct TagLexerResult* result)
 {
 	char* start = 0;
 	size_t idx = 0;
 	do
 	{
-		start = strpbrk(&str[idx], parser->tokenlist);
+		start = strpbrk(&str[idx], tlexer->tokenlist);
 		if(start)
 		{
 			size_t offset = start - str;

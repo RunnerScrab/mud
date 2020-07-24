@@ -70,9 +70,9 @@ int TestFunction2(Player@ player, PlayerConnection@ conn)
 
 int OnServerStart()
 {
-	Log("main() run!\r\n");
 	Global::lexer.AddSubcommandMarkers("(", ")");
 	Global::lexer.AddSubcommandMarkers("[", "]");
+	Global::lexer.SetTagList("~!#%^&=");
 	return 0;
 }
 
@@ -139,6 +139,29 @@ class PlayerDefaultInputMode : IPlayerInputMode
 				{
 					conn.Send("Token: " + result.GetTokenAt(i) + "\r\n");
 				}
+
+				string tagtest = "this ~meow looks at !man and ^man shoes.";
+				CommandTagLexerResult@ tresult = Global::lexer.LexStringTags(tagtest);
+				for(int i = 0; i < tresult.GetTokenCount(); ++i)
+				{
+					string token = tresult.GetTokenAt(i);
+					conn.Send("Tagged token: " + tresult.GetTokenAt(i) + "\r\n");
+					switch(token[0])
+					{
+					case '~':
+						conn.Send("It is a tilde token.\r\n");
+						break;
+					case '!':
+						conn.Send("It is an exclamation token.\r\n");
+						break;
+					case '^':
+						conn.Send("It is a hat token.\r\n");
+						break;
+					default:
+						break;
+					}
+				}
+
 			}
 			else if("testmp" == input)
 			{
