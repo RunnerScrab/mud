@@ -142,6 +142,7 @@ class PlayerDefaultInputMode : IPlayerInputMode
 
 				string tagtest = "this ~meow looks at !man and ^man shoes.";
 				CommandTagLexerResult@ tresult = Global::lexer.LexStringTags(tagtest);
+				array<string>@ subs = array<string>();
 				for(int i = 0; i < tresult.GetTokenCount(); ++i)
 				{
 					string token = tresult.GetTokenAt(i);
@@ -150,17 +151,23 @@ class PlayerDefaultInputMode : IPlayerInputMode
 					{
 					case '~':
 						conn.Send("It is a tilde token.\r\n");
+						subs.insertLast("Meow");
 						break;
 					case '!':
 						conn.Send("It is an exclamation token.\r\n");
+						subs.insertLast("him");
 						break;
 					case '^':
 						conn.Send("It is a hat token.\r\n");
+						subs.insertLast("meow's");
 						break;
 					default:
+						subs.insertLast("meow");
 						break;
 					}
 				}
+				string subbed = tresult.PerformSubs(subs, tagtest);
+				conn.Send("Subbed: " + subbed + "\r\n");
 
 			}
 			else if("testmp" == input)

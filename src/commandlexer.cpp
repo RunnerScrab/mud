@@ -4,13 +4,13 @@
 #include "lexer.h"
 #include "cmdtaglexer.h"
 #include "utils.h"
+#include "as_addons/scriptarray.h"
 
 int RegisterLexerClasses(asIScriptEngine* pengine)
 {
 	int result = 0;
 	result = pengine->RegisterObjectType("CommandLexer", 0, asOBJ_REF | asOBJ_NOCOUNT);
 	RETURNFAIL_IF(result < 0);
-
 
 	result = pengine->RegisterObjectType("CommandTagLexerResult", 0, asOBJ_REF);
 	RETURNFAIL_IF(result < 0);
@@ -29,6 +29,10 @@ int RegisterLexerClasses(asIScriptEngine* pengine)
 
 	result = pengine->RegisterObjectMethod("CommandTagLexerResult", "string GetTokenAt(uint idx)",
 					       asMETHOD(CommandTagLexerResult, GetTokenAt), asCALL_THISCALL);
+	RETURNFAIL_IF(result < 0);
+
+	result = pengine->RegisterObjectMethod("CommandTagLexerResult", "string PerformSubs(array<string>& in, const string& in)",
+					       asMETHOD(CommandTagLexerResult, PerformSubs), asCALL_THISCALL);
 	RETURNFAIL_IF(result < 0);
 
 	result = pengine->RegisterObjectType("CommandLexerResult", 0, asOBJ_REF);
@@ -113,6 +117,51 @@ CommandTagLexerResult::~CommandTagLexerResult()
 {
 	TagLexerResult_Destroy(m_result);
 	free(m_result);
+}
+
+std::string CommandTagLexerResult::PerformSubs(CScriptArray* subs, const std::string& str)
+{
+	/*
+	size_t z = subs->GetSize();
+	size_t idx = 0;
+	for(; idx < z; ++idx)
+	{
+		void* p = subs->At(idx);
+		std::string* pstr = (std::string*) p;
+		dbgprintf("string: %s\n", pstr->c_str());
+	}
+	return "";
+	*/
+	size_t subcount = subs->GetSize();
+	if(m_result->tokencount != subcount)
+	{
+		return 0;
+	}
+
+	//size_t required = (len - result->total_token_len) + subs->total_sub_len + 1;
+	std::string subbedstr;
+
+	size_t idx = 0;
+	size_t strpos = 0;
+
+	for(; idx < subcount; ++idx)
+	{
+		subbedstr += std::string(&str[strpos], m_result->tokens[idx].index - strpos);
+		std::string* psubstr = reinterpret_cast<std::string*>(subs->At(idx));
+
+		if(m_result->tokens[idx].bShouldCap)
+		{
+			psubstr->operator[](0) = toupper(psubstr->operator[](0));
+		}
+		subbedstr += *psubstr;
+
+		strpos += m_result->tokens[idx].index - strpos
+			+ m_result->tokens[idx].length;
+	}
+	subbedstr += std::string(&str[strpos], str.length() - strpos);
+
+	return subbedstr;
+
 }
 
 size_t CommandLexerResult::GetTokenCount()

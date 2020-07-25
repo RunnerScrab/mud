@@ -9,7 +9,9 @@ struct LexerResult;
 struct TagLexer;
 struct TagLexerResult;
 struct TaggedToken;
+
 class asIScriptEngine;
+class CScriptArray;
 
 class CommandLexerResult : public AS_RefCountedObj
 {
@@ -37,6 +39,7 @@ public:
 	~CommandTagLexerResult();
 	size_t GetTokenCount();
 	std::string GetTokenAt(size_t idx);
+	std::string PerformSubs(CScriptArray* subs, const std::string& str);
 private:
 	struct TagLexerResult* m_result;
 };
