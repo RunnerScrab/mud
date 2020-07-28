@@ -121,24 +121,12 @@ CommandTagLexerResult::~CommandTagLexerResult()
 
 std::string CommandTagLexerResult::PerformSubs(CScriptArray* subs, const std::string& str)
 {
-	/*
-	size_t z = subs->GetSize();
-	size_t idx = 0;
-	for(; idx < z; ++idx)
-	{
-		void* p = subs->At(idx);
-		std::string* pstr = (std::string*) p;
-		dbgprintf("string: %s\n", pstr->c_str());
-	}
-	return "";
-	*/
 	size_t subcount = subs->GetSize();
 	if(m_result->tokencount != subcount)
 	{
 		return 0;
 	}
 
-	//size_t required = (len - result->total_token_len) + subs->total_sub_len + 1;
 	std::string subbedstr;
 
 	size_t idx = 0;
@@ -181,7 +169,8 @@ size_t CommandLexerResult::GetSubCmdCount()
 
 std::string CommandLexerResult::GetSubCmdAt(size_t idx)
 {
-	return std::string(LexerResult_GetSubcommandAt(m_result, idx));
+	std::string retval = LexerResult_GetSubcommandAt(m_result, idx);
+	return retval.substr(1, retval.length() - 2);
 }
 
 std::string CommandLexerResult::GetStringAfterToken(size_t tokenidx)

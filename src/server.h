@@ -62,6 +62,8 @@ struct Server
 
 	char *MOTD;
 	size_t MOTDlen;
+
+	struct timespec realtime_offset; //The CLOCK_MONOTONIC to CLOCK_REALTIME offset from server start
 };
 
 void ServerLog(unsigned int code, const char *fmt, ...);

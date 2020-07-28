@@ -91,6 +91,7 @@ extern "C"
 	{
 		manager->action_scheduler->StopThread();
 		delete manager->action_scheduler;
+		manager->action_scheduler = 0;
 
 		if (manager->world_tick_scriptcontext)
 		{
@@ -101,9 +102,13 @@ extern "C"
 
 #if __x86_64__
 		delete manager->jit;
+		manager->jit = 0;
 #endif
 		delete manager->lexer;
+		manager->lexer = 0;
+
 		MemoryPool_Destroy(&manager->mem_pool);
+		memset(manager, 0, sizeof(AngelScriptManager));
 	}
 
 	static size_t GetFileLength(FILE *fp)
@@ -182,6 +187,11 @@ extern "C"
 		result = pEngine->RegisterObjectMethod("Server",
 						       "void Kill()",
 						       asFUNCTION(ASAPI_KillServer), asCALL_CDECL_OBJFIRST);
+		RETURNFAIL_IF(result < 0);
+
+		result = pEngine->RegisterObjectMethod("Server",
+						       "void Reload()",
+						       asFUNCTION(ASAPI_ReloadServer), asCALL_CDECL_OBJFIRST);
 		RETURNFAIL_IF(result < 0);
 
 		result = pEngine->RegisterGlobalFunction("void DebugObject(ref@ obj)",
@@ -413,8 +423,16 @@ extern "C"
 
 		//TODO: May want to impose some kind of directory structure on scripts
 
+		if(manager && manager->engine)
+		{
 		manager->main_module = manager->engine->GetModule("game_module",
 								  asGM_ALWAYS_CREATE);
+		}
+		else
+		{
+			ServerLog(SERVERLOG_ERROR, "Trying to dereference a null engine pointer!");
+			return -1;
+		}
 
 		RETURNFAIL_IF(LoadActorProxyScript(manager->main_module));
 

@@ -114,6 +114,7 @@ void ThreadPool_Destroy(struct ThreadPool *tp)
 	tp->pThreads = 0;
 
 	AllocPool_Destroy(&tp->alloc_pool);
+	memset(tp, 0, sizeof(struct ThreadPool));
 }
 
 int ThreadPool_Init(struct ThreadPool *tp, unsigned int cores)

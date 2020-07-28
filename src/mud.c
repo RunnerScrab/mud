@@ -72,10 +72,10 @@ int main(int argc, char **argv)
 				{
 					Server_AcceptClient(&server);
 				}
-				//HACK: ugh, I should make "EvPkg" both more general and descriptive
-				//Basically all it does is allow epoll to pass us back the socket
-				//experiencing activity and a pointer to a client IF AND ONLY IF
-				//it's actually a client.
+				//Basically all EvPKG does is allow epoll to
+				//pass us back the socket experiencing activity
+				//and a pointer to a client only if it's
+				//actually a client.
 				else if (server.evlist[loop_ctr].data.ptr == server.cmd_pipe)
 				{
 					//Received something on cmd pipe
@@ -85,12 +85,24 @@ int main(int argc, char **argv)
 					buf[bread - 1] = 0;
 					ServerLog(SERVERLOG_DEBUG, "Received on cmd pipe: %s\n",
 							buf);
-					if (strstr(buf, "kill"))
+
+					if (0 == strncmp(buf, "kill", 4))
 					{
 						Server_SendAllClients(&server,
 								"\r\nServer going down!\r\n");
 						mudloop_running = 0;
 						break;
+					}
+					else if (0 == strncmp(buf, "reload", 6))
+					{
+						Server_SendAllClients(&server, "\r\nServer reloading.\r\n");
+						if(FAILURE(Server_Reload(&server)))
+						{
+							ServerLog(SERVERLOG_ERROR, "Server reload FAILED!");
+							mudloop_running = 0;
+							return 0;
+						}
+						Server_SendAllClients(&server, "\r\nServer has reloaded.\r\n");
 					}
 				}
 				else

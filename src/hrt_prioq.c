@@ -153,13 +153,6 @@ void hrt_prioq_decreasekey(struct hrt_prioq *pHeap, int idx,
 	int i = 0;
 	if (CmpTs(&pNode->key, &pHeap->array[idx].key) <= 0)
 	{
-		/*
-		 for(i = idx; i > 0 && hrt_prioq_get_key_at(pHeap, parent(i)) > hrt_prioq_get_key_at(pHeap, i);)
-		 {
-		 swap_hrtprioq_node(&(pHeap->array[i]), &(pHeap->array[parent(i)]));
-		 i = parent(i);
-		 }
-		 */
 		struct timespec a, b;
 		for (i = idx; i > 0;)
 		{
@@ -283,4 +276,3 @@ void hrt_prioq_destroy(struct hrt_prioq *pHeap)
 #ifdef __cplusplus
 }
 #endif
-

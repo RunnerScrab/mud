@@ -58,29 +58,6 @@ int prioq_IsMinHeap(struct prioq *pHeap, size_t idx)
 							&& prioq_IsMinHeap(pHeap, leftidx)));
 }
 
-/* static void min_heapify_rec(struct prioq* pHeap, int idx) */
-/* { */
-/*   int leftidx = left(idx); */
-/*   int rightidx = right(idx); */
-/*   int smallestidx = idx; */
-/*   int arraylen = pHeap->len; */
-/*   register struct prioqnode* arr = pHeap->array; */
-
-/*   if(leftidx < arraylen && arr[idx].key > arr[leftidx].key) */
-/*     { */
-/*       smallestidx = leftidx; */
-/*     } */
-/*   if(rightidx < arraylen && arr[smallestidx].key > arr[rightidx].key) */
-/*     { */
-/*       smallestidx = rightidx; */
-/*     } */
-/*   if(idx < arraylen && smallestidx != idx) */
-/*     { */
-/*       swap_heap_node(&(arr[idx]), &(arr[smallestidx])); */
-/*       min_heapify_rec(pHeap, smallestidx); */
-/*     } */
-/* } */
-
 static inline void min_heapify_it(struct prioq *pHeap, size_t idx)
 {
 	size_t arraylen = pHeap->len;

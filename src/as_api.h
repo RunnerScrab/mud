@@ -28,6 +28,7 @@ void ASAPI_DebugObject(CScriptHandle obj);
 void ASAPI_DebugArray(CScriptArray &arr);
 
 void ASAPI_KillServer(struct Server* server);
+void ASAPI_ReloadServer(struct Server* server);
 
 void ASAPI_SendToAll(struct Server *server, std::string &message);
 void ASAPI_QueueScriptAction(struct Server *server, asIScriptObject *obj,
