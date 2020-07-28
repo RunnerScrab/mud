@@ -364,7 +364,7 @@ bool ASAPI_SaveObject(asIScriptObject *obj)
 	return false;
 }
 
-static int RegisterDatabaseAPI(struct Database *asdb)
+int RegisterDatabaseAPI(struct Database *asdb)
 {
 	sqlite3 *sqldb = asdb->pDB;
 	asIScriptEngine *sengine =
@@ -510,5 +510,6 @@ int Database_Init(struct Database *asdb, struct Server *server,
 void Database_Release(struct Database *asdb)
 {
 	sqlite3_close(asdb->pDB);
+	memset(asdb, 0, sizeof(struct Database));
 }
 }

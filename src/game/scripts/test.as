@@ -91,11 +91,12 @@ class PlayerDefaultInputMode : IPlayerInputMode
 				 return 0;
 			 };
 		commanddict = {
-			{'testdict', testfunc},
-			{'testdict2', TestFunction2}
+			{"testdict", testfunc},
+			{"testdict2", TestFunction2}
 		};
 		@player = p;
 		pconn = p.m_connection;
+		pconn.get().Send("PlayerDefaultInputMode created.\r\n");
 	}
 
 	int OnInputReceived(string &in input)
@@ -113,6 +114,10 @@ class PlayerDefaultInputMode : IPlayerInputMode
 				conn.Send("Killing server.\n");
 				Global::game_server.Kill();
 			}
+			else if("reload" == input)
+			{
+				Global::game_server.Reload();
+			}
 			else if("testfunc" == input)
 			{
 				TestFunction(conn);
@@ -125,6 +130,10 @@ class PlayerDefaultInputMode : IPlayerInputMode
 			else if("testdbread" == input)
 			{
 				TestDatabaseRead(player);
+			}
+			else if("testshit" == input)
+			{
+				conn.Send("Testing shit\r\n");
 			}
 			else if("testlex" == input)
 			{
@@ -206,6 +215,10 @@ class PlayerDefaultInputMode : IPlayerInputMode
 					{
 						func(player, conn);
 					}
+				}
+				else
+				{
+					conn.Send("Command '" + input + "' not found.\r\n");
 				}
 			}
 		}

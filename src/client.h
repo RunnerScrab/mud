@@ -52,7 +52,7 @@ struct Client
 
 	struct MemoryPool mem_pool;
 
-	PlayerConnection *player_obj;
+	PlayerConnection *player_obj; //This is a pointer to an AS script object proxy
 
 	unsigned char bDisconnected;
 	unsigned int refcount;
